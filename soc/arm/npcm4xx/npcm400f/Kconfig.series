@@ -1,0 +1,13 @@
+# Nuvoton NPCM400F Cortex-M4
+
+# Copyright (c) 2021 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_SERIES_NPCM400F
+	bool "Nuvoton NPCM400F Series"
+	select ARM
+	select CPU_CORTEX_M4
+	select CPU_CORTEX_M_HAS_DWT
+	select SOC_FAMILY_NPCM4XX
+	help
+	  Enable support for Nuvoton NPCM400F series

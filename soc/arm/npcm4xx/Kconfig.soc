@@ -1,0 +1,6 @@
+# Nuvoton NPCM4XX Cortex-M4
+
+# Copyright (c) 2021 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+source "soc/arm/npcm4xx/*/Kconfig.series"

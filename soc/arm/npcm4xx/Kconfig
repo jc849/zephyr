@@ -1,0 +1,18 @@
+# Nuvoton NPCM4XX Cortex-M4
+
+# Copyright (c) 2021 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_FAMILY_NPCM4XX
+	select PLATFORM_SPECIFIC_INIT
+	bool
+
+if SOC_FAMILY_NPCM4XX
+config SOC_FAMILY
+	string
+	default "npcm4xx"
+
+# Select SoC Part No. and configuration options
+source "soc/arm/npcm4xx/*/Kconfig.soc"
+
+endif # SOC_FAMILY_NPCM4XX
