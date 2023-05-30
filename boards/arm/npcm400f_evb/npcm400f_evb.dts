@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2021 Nuvoton Technology Corporation.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <nuvoton/npcm400fm4.dtsi>
+
+/ {
+	model = "Nuvoton NPCM400F evaluation board";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	aliases {
+	};
+
+
+	power-states {
+		suspend_to_idle0: suspend-to-idle0 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <0>;
+			min-residency-us = <1000>;
+		};
+
+		suspend_to_idle1: suspend-to-idle1 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <1>;
+			min-residency-us = <201000>;
+		};
+	};
+};

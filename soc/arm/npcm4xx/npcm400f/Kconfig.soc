@@ -1,0 +1,13 @@
+# Nuvoton NPCM400F Cortex-M4
+
+# Copyright (c) 2021 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+choice
+	prompt "NPCM400F Selection"
+	depends on SOC_SERIES_NPCM400F
+
+config SOC_NPCM400F
+	bool "npcm400f"
+
+endchoice

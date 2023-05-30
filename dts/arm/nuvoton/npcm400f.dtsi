@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2021 Nuvoton Technology Corporation.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+
+/* Device tree declarations of npcm4xx soc family */
+#include "npcm4xx.dtsi"
+
+/ {
+	soc {
+		/* Specific soc devices in npcx7 series */
+		itims: timer@400bc000 {
+			compatible = "nuvoton,npcx-itim-timer";
+			reg = <0x400bc000 0x2000
+			       0x400be000 0x2000>;
+			reg-names = "evt_itim", "sys_itim";
+			clocks = <&pcc NPCX_CLOCK_BUS_LFCLK NPCX_PWDWN_CTL4 3
+				  &pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL7 5>;
+			interrupts = <46 2>; /* Event timer interrupt */
+			label = "ITIM";
+		};
+
+		uart0: serial@fff900 {
+			compatible = "nuvoton,npcm-uart";
+			reg = <0xfff900 0x100>;
+			/*interrupts = <33 3>;*/
+			/*clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL1 4>;*/
+			/*pinctrl-0 = <&alta_uart1_sl1>;*/ /* PIN10.11 */
+			/*uart-rx = <&wui_cr_sin1>;*/
+			status = "disabled";
+			label = "UART_0";
+		};
+	};
+
+	soc-id {
+		chip-id = <0x07>;
+		revision-reg = <0x00007FFC 1>;
+	};
+
+	booter-variant {
+		hif-type-auto;
+	};
+};
