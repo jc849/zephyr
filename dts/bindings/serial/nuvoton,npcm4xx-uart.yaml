@@ -1,0 +1,9 @@
+description: NUVOTON NPCM4XX FAMILY UART
+
+compatible: "nuvoton,npcm4xx-uart"
+
+include: uart-controller.yaml
+
+properties:
+    reg:
+      required: true

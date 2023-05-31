@@ -22,9 +22,9 @@
 			label = "ITIM";
 		};
 
-		uart0: serial@fff900 {
-			compatible = "nuvoton,npcm-uart";
-			reg = <0xfff900 0x100>;
+		uart0: serial@400c4000 {
+			compatible = "nuvoton,npcm4xx-uart";
+			reg = <0x400c4000 0x100>;
 			/*interrupts = <33 3>;*/
 			/*clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL1 4>;*/
 			/*pinctrl-0 = <&alta_uart1_sl1>;*/ /* PIN10.11 */

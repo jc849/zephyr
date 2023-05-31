@@ -1,0 +1,12 @@
+# Copyright (c) 2021 Nuvoton Technology Corporation.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config UART_NPCM4XX
+	bool "NUVOTON NPCM4XX serial driver"
+	select SERIAL_HAS_DRIVER
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the UART driver for Nuvoton NPCM4XX
+	  family of processors.
+	  Say y to use serial port on Nuvoton MCU.
