@@ -14,7 +14,6 @@
 #include <soc.h>
 #include <logging/log.h>
 #include "NPCM4XX.h"
-#include "reg_access.h"
 #include "syscfg_drv.h"
 
 /*------------------------------------------------------------------------*/

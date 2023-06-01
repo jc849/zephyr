@@ -1,0 +1,10 @@
+# NPCM4XX Clock controller driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config CLOCK_CONTROL_NPCM4XX
+	bool "NPCM4XX clock controller driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  Enable support for NPCM4XX clock controller driver.
