@@ -14,4 +14,9 @@
 /* Add include for DTS generated information */
 #include <devicetree.h>
 
+#include <reg/reg_access.h>
+#include <reg/reg_def.h>
+#include <soc_dt.h>
+#include <soc_clock.h>
+
 #endif /* _NUVOTON_NPCM_SOC_H_ */

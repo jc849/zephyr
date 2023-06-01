@@ -78,13 +78,13 @@
 		};
 
 		pcc: clock-controller@4000d000 {
-			compatible = "nuvoton,npcx-pcc";
+			compatible = "nuvoton,npcm4xx-pcc";
 			/* Cells for bus type, clock control reg and bit */
 			#clock-cells = <3>;
 			/* First reg region is Power Management Controller */
 			/* Second reg region is Core Domain Clock Generator */
 			reg = <0x4000d000 0x2000
-			       0x400b5000 0x2000>;
+			       0x400b5000 0x1000>;
 			reg-names = "pmc", "cdcg";
 			label = "PMC_CDCG";
 		};

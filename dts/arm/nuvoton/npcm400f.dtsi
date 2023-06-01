@@ -10,6 +10,15 @@
 
 / {
 	soc {
+
+		pcc: clock-controller@4000d000 {
+			clock-frequency = <DT_FREQ_M(48)>; /* OFMCLK runs at 48MHz */
+			core-prescaler = <1>; /* CORE_CLK runs at 48MHz */
+			apb1-prescaler = <8>; /* APB1_CLK runs at 6MHz */
+			apb2-prescaler = <4>; /* APB2_CLK runs at 12MHz */
+			apb3-prescaler = <1>; /* APB3_CLK runs at 48MHz */
+		};
+
 		/* Specific soc devices in npcx7 series */
 		itims: timer@400bc000 {
 			compatible = "nuvoton,npcx-itim-timer";
