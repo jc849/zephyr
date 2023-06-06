@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Description>
+	<Config>
+		<ToolPath>../../soc/arm/npcm4xx/common/ImageGenerator</ToolPath>
+	</Config>
+
+	<FileName>
+		<FirmwareImage>@inputfile.bin</FirmwareImage>
+		<OutputFWName>@inputfile_signed.bin</OutputFWName>
+	</FileName>
+
+	<FWImageHeader>
+		<hImageTag>%FiMg94@</hImageTag>
+		<hActiveECFwOffset>0x00</hActiveECFwOffset>			    <!-- Unit: MCP size / 256 -->
+		<hSystemECFWOffset>0x00</hSystemECFWOffset>		    	<!-- Unit: byte, align 4K -->
+		<hEcFwRegionSize>0x20</hEcFwRegionSize>					<!-- Unit: MCP size / 256 , 0: Full -->
+		<hMajorVer>0x00</hMajorVer>								<!-- ranging from 0 ~ 56 -->
+		<hMinorVer>0x0000</hMinorVer>
+		<hOEMversion>00000000</hOEMversion>
+		<hReleaseDate>0x000000</hReleaseDate>
+		<hProjectID>0x0000</hProjectID>
+	</FWImageHeader>
+
+</Description>
