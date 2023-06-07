@@ -16,9 +16,6 @@ LOG_MODULE_REGISTER(soc, CONFIG_SOC_LOG_LEVEL);
 
 void z_platform_init(void)
 {
-	/* uartA init */
-	PinSelect(Pin_H3_CR_SOUT);
-	PinSelect(Pin_H4_CR_SIN);
 }
 
 static int soc_init(const struct device *dev)

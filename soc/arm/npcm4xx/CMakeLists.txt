@@ -6,6 +6,8 @@
 add_subdirectory(common)
 add_subdirectory(${SOC_SERIES})
 
+zephyr_include_directories(.)
+
 # ImageGenerator
 set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
     COMMAND cp ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.bin ${SOC_DIR}/${ARCH}/${SOC_FAMILY}/common/ImageGenerator/Input
