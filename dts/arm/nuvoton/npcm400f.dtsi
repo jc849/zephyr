@@ -7,6 +7,7 @@
 
 /* Device tree declarations of npcm4xx soc family */
 #include "npcm4xx.dtsi"
+#include "npcm4xx/npcm4xx-pinctrl.dtsi"
 
 / {
 	soc {
@@ -36,7 +37,7 @@
 			reg = <0x400c4000 0x100>;
 			/*interrupts = <33 3>;*/
 			/*clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL1 4>;*/
-			/*pinctrl-0 = <&alta_uart1_sl1>;*/ /* PIN10.11 */
+			pinctrl-0 = <&pinctrl_uart0_default>;
 			/*uart-rx = <&wui_cr_sin1>;*/
 			status = "disabled";
 			label = "UART_0";

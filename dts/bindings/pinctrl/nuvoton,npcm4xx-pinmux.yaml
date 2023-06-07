@@ -1,0 +1,5 @@
+description: Nuvoton Pinmux
+
+compatible: "nuvoton,npcm4xx-pinmux"
+
+include: base.yaml

@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2023 Nuvoton Technology Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <devicetree.h>
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(uart0), okay) && CONFIG_UART_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_uart0_default), UARTA_CR_SIN, UARTA_CR_SOUT)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(uart1), okay) && CONFIG_UART_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_uart1_default), UARTB_CR_SIN, UARTB_CR_SOUT)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c0), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c0_default), SCL1A, SDA1A)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c1), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c1_default), SCL1B, SDA1B)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c2), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c2_default), SCL3A, SDA3A)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c3), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c3_default), SCL4A, SDA4A)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c4), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c4_default), SCL5A, SDA5A)
+#endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c5), okay) && CONFIG_I2C_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_i2c5_default), SCL6A, SDA6A)
+#endif

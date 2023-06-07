@@ -1,0 +1,16 @@
+# PINMUX configuration options for NPCM4XX SOC
+
+# Copyright (c) 2023 Nuvoton Technology Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig PINMUX_NPCM4XX
+	bool "NPCM4XX SOC pinmux driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  Enable driver for the NPCM4XX SOC pinmux driver
+
+config PINCTRL_STRING_NAME
+	bool "Debug: print pin/signal with string name"
+	depends on PINMUX_NPCM4XX
+	help
+	  Create pin/signal string table for debug
