@@ -64,6 +64,8 @@ source "drivers/interrupt_controller/Kconfig.sam0"
 
 source "drivers/interrupt_controller/Kconfig.gic"
 
+source "drivers/interrupt_controller/Kconfig.npcm4xx"
+
 source "drivers/interrupt_controller/Kconfig.npcx"
 
 source "drivers/interrupt_controller/Kconfig.intel_vtd"

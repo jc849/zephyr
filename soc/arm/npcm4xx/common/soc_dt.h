@@ -22,7 +22,7 @@
  * @return the property's enum upper token value or default_value
  */
 #define NPCM4XX_DT_PROP_ENUM_OR(node_id, prop, default_value) \
-	COND_CODE_1(DT_NODE_HAS_PROP(node_id, prop), \
+	COND_CODE_1(DT_NODE_HAS_PROP(node_id, prop),	      \
 		    (DT_ENUM_UPPER_TOKEN(node_id, prop)), (default_value))
 
 /**
@@ -33,7 +33,7 @@
  * @param default_value a fallback value to expand to
  * @return the property's enum upper token value or default_value
  */
-#define NPCM4XX_DT_INST_PROP_ENUM_OR(inst, prop, default_value) \
+#define NPCM4XX_DT_INST_PROP_ENUM_OR(inst, prop, default_value)	\
 	NPCM4XX_DT_PROP_ENUM_OR(DT_DRV_INST(inst), prop, default_value)
 
 /**
@@ -54,12 +54,12 @@
  * @param inst instance number for compatible defined in DT_DRV_COMPAT.
  * @return npcm4xx_clk_cfg item.
  */
-#define NPCM4XX_DT_CLK_CFG_ITEM(inst)                                             \
-	{                                                                      \
-	  .bus  = NPCM4XX_DT_INST_PROP_ENUM_OR(inst, clock_bus,                   \
-				DT_PHA(DT_DRV_INST(inst), clocks, bus)),       \
-	  .ctrl = DT_PHA(DT_DRV_INST(inst), clocks, ctl),                      \
-	  .bit  = DT_PHA(DT_DRV_INST(inst), clocks, bit),                      \
+#define NPCM4XX_DT_CLK_CFG_ITEM(inst)							     \
+	{										     \
+		.bus = NPCM4XX_DT_INST_PROP_ENUM_OR(inst, clock_bus,			     \
+						    DT_PHA(DT_DRV_INST(inst), clocks, bus)), \
+		.ctrl = DT_PHA(DT_DRV_INST(inst), clocks, ctl),				     \
+		.bit = DT_PHA(DT_DRV_INST(inst), clocks, bit),				     \
 	}
 
 /**
@@ -69,11 +69,11 @@
  * @param i index of clocks prop which type is 'phandle-array'
  * @return npcm4xx_clk_cfg item from 'clocks' property at index 'i'
  */
-#define NPCM4XX_DT_CLK_CFG_ITEM_BY_IDX(inst, i)                                   \
-	{                                                                      \
-	  .bus  = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, bus),            \
-	  .ctrl = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, ctl),            \
-	  .bit  = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, bit),            \
+#define NPCM4XX_DT_CLK_CFG_ITEM_BY_IDX(inst, i)				  \
+	{								  \
+		.bus = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, bus),  \
+		.ctrl = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, ctl), \
+		.bit = DT_CLOCKS_CELL_BY_IDX(DT_DRV_INST(inst), i, bit),  \
 	},
 
 /**
@@ -93,7 +93,7 @@
  * @return macro function to construct a npcm4xx_clk_cfg structure.
  */
 #define NPCM4XX_DT_CLK_CFG_ITEMS_FUNC(child, inst) \
-					NPCM4XX_DT_CLK_CFG_ITEM_BY_IDX(inst, child)
+	NPCM4XX_DT_CLK_CFG_ITEM_BY_IDX(inst, child)
 
 /**
  * @brief Macro function to construct a list of npcm4xx_clk_cfg items by
@@ -115,11 +115,11 @@
  * @param inst instance number for compatible defined in DT_DRV_COMPAT.
  * @return an array of npcm4xx_clk_cfg items.
  */
-#define NPCM4XX_DT_CLK_CFG_ITEMS_LIST(inst) {             \
-	UTIL_LISTIFY(NPCM4XX_DT_CLK_CFG_ITEMS_LEN(inst),  \
-		     NPCM4XX_DT_CLK_CFG_ITEMS_FUNC,       \
-		     inst)                             \
-	}
+#define NPCM4XX_DT_CLK_CFG_ITEMS_LIST(inst) {			 \
+		UTIL_LISTIFY(NPCM4XX_DT_CLK_CFG_ITEMS_LEN(inst), \
+			     NPCM4XX_DT_CLK_CFG_ITEMS_FUNC,	 \
+			     inst)				 \
+}
 
 /**
  * @brief Get phandle from 'pinctrl-0' prop which type is 'phandles' at index
@@ -139,11 +139,11 @@
  * @param i index of 'pinctrl-0' prop which type is 'phandles'
  * @return npcm4xx_alt item from 'pinctrl-0' property at index 'i'
  */
-#define NPCM4XX_DT_ALT_ITEM_BY_IDX(inst, i)                                       \
-	{                                                                      \
-	 .group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, group),  \
-	  .bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, bit),     \
-	  .inverted = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, inv),\
+#define NPCM4XX_DT_ALT_ITEM_BY_IDX(inst, i)						 \
+	{										 \
+		.group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, group),	 \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, bit),	 \
+		.inverted = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PINCTRL(inst, i), alts, inv), \
 	},
 
 /**
@@ -181,11 +181,11 @@
  * @param inst instance number for compatible defined in DT_DRV_COMPAT.
  * @return an array of npcm4xx_alt items.
  */
-#define NPCM4XX_DT_ALT_ITEMS_LIST(inst) {             \
-	UTIL_LISTIFY(NPCM4XX_DT_ALT_ITEMS_LEN(inst),  \
-		     NPCM4XX_DT_ALT_ITEMS_FUNC,       \
-		     inst)                         \
-	}
+#define NPCM4XX_DT_ALT_ITEMS_LIST(inst) {		     \
+		UTIL_LISTIFY(NPCM4XX_DT_ALT_ITEMS_LEN(inst), \
+			     NPCM4XX_DT_ALT_ITEMS_FUNC,	     \
+			     inst)			     \
+}
 
 /**
  * @brief Node identifier for an instance of a specific compatible
@@ -232,14 +232,14 @@
  * @param i index of 'pinctrl_0' prop which type is 'phandles'
  * @return npcm4xx_alt item from 'pinctrl-0' property at index 'i'
  */
-#define NPCM4XX_DT_IO_ALT_ITEM_BY_IDX(io_comp, inst, i)                           \
-	{                                                                      \
-	  .group = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i),   \
-								alts, group),  \
-	  .bit = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i),     \
-								alts, bit),    \
-	  .inverted = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i),\
-								alts, inv),    \
+#define NPCM4XX_DT_IO_ALT_ITEM_BY_IDX(io_comp, inst, i)					 \
+	{										 \
+		.group = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i),	 \
+				alts, group),						 \
+		.bit = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i),	 \
+			      alts, bit),						 \
+		.inverted = DT_PHA(NPCM4XX_DT_IO_PHANDLE_FROM_PINCTRL(io_comp, inst, i), \
+				   alts, inv),						 \
 	},
 
 /**
@@ -251,7 +251,7 @@
  * @return length of 'pinctrl-0' property which type is 'phandles'
  */
 #define NPCM4XX_DT_IO_ALT_ITEMS_LEN(io_comp, inst) \
-			DT_PROP_LEN(NPCM4XX_DT_COMP_INST(io_comp, inst), pinctrl_0)
+	DT_PROP_LEN(NPCM4XX_DT_COMP_INST(io_comp, inst), pinctrl_0)
 
 /**
  * @brief Macro function to construct npcm4xx_alt item with specific compatible
@@ -263,7 +263,7 @@
  * @return macro function to construct a npcm4xx_alt structure.
  */
 #define NPCM4XX_DT_IO_ALT_ITEMS_FUNC(child, inst, io_comp) \
-			NPCM4XX_DT_IO_ALT_ITEM_BY_IDX(io_comp, inst, child)
+	NPCM4XX_DT_IO_ALT_ITEM_BY_IDX(io_comp, inst, child)
 
 /**
  * @brief Macro function to construct a list of npcm4xx_alt items with specific
@@ -289,11 +289,11 @@
  * @param inst instance number for compatible defined in io_comp.
  * @return an array of npcm4xx_alt items.
  */
-#define NPCM4XX_DT_IO_ALT_ITEMS_LIST(io_comp, inst) {             \
-	UTIL_LISTIFY(NPCM4XX_DT_IO_ALT_ITEMS_LEN(io_comp, inst),  \
-		     NPCM4XX_DT_IO_ALT_ITEMS_FUNC,                \
-		     inst, io_comp)                            \
-	}
+#define NPCM4XX_DT_IO_ALT_ITEMS_LIST(io_comp, inst) {			 \
+		UTIL_LISTIFY(NPCM4XX_DT_IO_ALT_ITEMS_LEN(io_comp, inst), \
+			     NPCM4XX_DT_IO_ALT_ITEMS_FUNC,		 \
+			     inst, io_comp)				 \
+}
 
 /**
  * @brief Get phandle from "name" property which contains wui information.
@@ -312,14 +312,14 @@
  * @param name property 'name'which type is 'phandle' and contains wui info.
  * @return npcm4xx_wui item from 'name' property.
  */
-#define NPCM4XX_DT_WUI_ITEM_BY_NAME(inst, name)				       \
-	{                                                                      \
-	  .table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst,      \
-					name), miwus), index),                 \
-	  .group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst, name), miwus,    \
-					group),                                \
-	  .bit   = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst, name), miwus,    \
-					bit),                                  \
+#define NPCM4XX_DT_WUI_ITEM_BY_NAME(inst, name)							   \
+	{											   \
+		.table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst,		   \
+									     name), miwus), index),\
+		.group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst, name), miwus,		   \
+				group),								   \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_NAME(inst, name), miwus,		   \
+			      bit),								   \
 	}
 
 /**
@@ -339,13 +339,13 @@
  * @param i index of 'wui-maps' prop which type is 'phandles'
  * @return npcm4xx_wui item at index 'i'
  */
-#define NPCM4XX_DT_WUI_ITEM_BY_IDX(inst, i) \
-	{                                                                      \
-	  .table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i),  \
-					miwus), index),                        \
-	  .group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i), miwus,       \
-							group),                \
-	  .bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i), miwus, bit),   \
+#define NPCM4XX_DT_WUI_ITEM_BY_IDX(inst, i)					       \
+	{									       \
+		.table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i), \
+					    miwus), index),			       \
+		.group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i), miwus,      \
+				group),						       \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_WUI_MAPS(inst, i), miwus, bit),  \
 	},
 
 /**
@@ -390,11 +390,11 @@
  * @param inst instance number for compatible defined in DT_DRV_COMPAT.
  * @return an array of npcm4xx_wui items.
  */
-#define NPCM4XX_DT_WUI_ITEMS_LIST(inst) {             \
-	UTIL_LISTIFY(NPCM4XX_DT_WUI_ITEMS_LEN(inst),  \
-		     NPCM4XX_DT_WUI_ITEMS_FUNC,       \
-		     inst)                         \
-	}
+#define NPCM4XX_DT_WUI_ITEMS_LIST(inst) {		     \
+		UTIL_LISTIFY(NPCM4XX_DT_WUI_ITEMS_LEN(inst), \
+			     NPCM4XX_DT_WUI_ITEMS_FUNC,	     \
+			     inst)			     \
+}
 
 /**
  * @brief Get a node from path '/npcm4xx_miwus_map/map_miwu(0/1/2)_groups'
@@ -402,8 +402,8 @@
  * @param i index of npcm4xx miwu devices
  * @return node identifier with that path.
  */
-#define NPCM4XX_DT_NODE_FROM_MIWU_MAP(i)  DT_PATH(npcm4xx7_miwus_int_map, \
-						map_miwu##i##_groups)
+#define NPCM4XX_DT_NODE_FROM_MIWU_MAP(i)  DT_PATH(npcm4xx_miwus_int_map, \
+						  map_miwu##i##_groups)
 /**
  * @brief Get the index prop from parent MIWU device node.
  *
@@ -425,47 +425,47 @@
 #define NPCM4XX_DT_MIWU_IRQ_CONNECT_IMPL_CHILD_FUNC(child) \
 	NPCM4XX_DT_MIWU_IRQ_CONNECT_IMPL_CHILD_FUNC_OBJ(child);
 
-#define NPCM4XX_DT_MIWU_IRQ_CONNECT_IMPL_CHILD_FUNC_OBJ(child) \
-	do {                                                                   \
-		IRQ_CONNECT(DT_PROP(child, irq),		               \
-			DT_PROP(child, irq_prio),		               \
-			NPCM4XX_MIWU_ISR_FUNC(NPCM4XX_DT_MIWU_IRQ_TABLE_IDX(child)), \
-			DT_PROP(child, group_mask),                            \
-			0);						       \
-		irq_enable(DT_PROP(child, irq));                               \
+#define NPCM4XX_DT_MIWU_IRQ_CONNECT_IMPL_CHILD_FUNC_OBJ(child)				 \
+	do {										 \
+		IRQ_CONNECT(DT_PROP(child, irq),					 \
+			    DT_PROP(child, irq_prio),					 \
+			    NPCM4XX_MIWU_ISR_FUNC(NPCM4XX_DT_MIWU_IRQ_TABLE_IDX(child)), \
+			    DT_PROP(child, group_mask),					 \
+			    0);								 \
+		irq_enable(DT_PROP(child, irq));					 \
 	} while (0)
 
 /**
- * @brief Get a child node from path '/npcm4xx7-espi-vws-map/name'.
+ * @brief Get a child node from path '/npcm4xx-espi-vws-map/name'.
  *
- * @param name a path which name is /npcm4xx7-espi-vws-map/'name'.
+ * @param name a path which name is /npcm4xx-espi-vws-map/'name'.
  * @return child node identifier with that path.
  */
-#define NPCM4XX_DT_NODE_FROM_VWTABLE(name) DT_CHILD(DT_PATH(npcm4xx7_espi_vws_map),  \
-									name)
+#define NPCM4XX_DT_NODE_FROM_VWTABLE(name) DT_CHILD(DT_PATH(npcm4xx_espi_vws_map), \
+						    name)
 
 /**
  * @brief Get phandle from vw-wui property of child node with that path.
  *
- * @param name path which name is /npcm4xx7-espi-vws-map/'name'.
+ * @param name path which name is /npcm4xx-espi-vws-map/'name'.
  * @return phandle from "vw-wui" prop of child node with that path.
  */
-#define NPCM4XX_DT_PHANDLE_VW_WUI(name) DT_PHANDLE(NPCM4XX_DT_NODE_FROM_VWTABLE(     \
-								name), vw_wui)
+#define NPCM4XX_DT_PHANDLE_VW_WUI(name) DT_PHANDLE(NPCM4XX_DT_NODE_FROM_VWTABLE( \
+							   name), vw_wui)
 
 /**
  * @brief Construct a npcm4xx_wui structure from vw-wui property of a child node
  * with that path.
  *
- * @param name a path which name is /npcm4xx7-espi-vws-map/'name'.
+ * @param name a path which name is /npcm4xx-espi-vws-map/'name'.
  * @return npcm4xx_wui item with that path.
  */
-#define NPCM4XX_DT_VW_WUI_ITEM(name)			                       \
-	{                                                                      \
-	  .table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus),    \
-									index),\
-	  .group = DT_PHA(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus, group),         \
-	  .bit = DT_PHA(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus, bit),             \
+#define NPCM4XX_DT_VW_WUI_ITEM(name)						     \
+	{									     \
+		.table = DT_PROP(DT_PHANDLE(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus), \
+				 index),					     \
+		.group = DT_PHA(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus, group),	     \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_VW_WUI(name), miwus, bit),	     \
 	}
 
 /**
@@ -473,17 +473,17 @@
  * a child node with that path.
  *
  * @signal vw input signal name.
- * @param name a path which name is /npcm4xx7-espi-vws-map/'name'.
+ * @param name a path which name is /npcm4xx-espi-vws-map/'name'.
  * @return npcm4xx_vw_in_config item with that path.
  */
-#define NPCM4XX_DT_VW_IN_CONF(signal, name)                                       \
-	{                                                                      \
-	  .sig = signal,                                                       \
-	  .reg_idx = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg,   \
-									0),    \
-	  .bitmask = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg,   \
-									1),    \
-	  .vw_wui  = NPCM4XX_DT_VW_WUI_ITEM(name),                                \
+#define NPCM4XX_DT_VW_IN_CONF(signal, name)					      \
+	{									      \
+		.sig = signal,							      \
+		.reg_idx = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg, \
+					  0),					      \
+		.bitmask = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg, \
+					  1),					      \
+		.vw_wui = NPCM4XX_DT_VW_WUI_ITEM(name),				      \
 	}
 
 /**
@@ -491,16 +491,16 @@
  * a child node with that path.
  *
  * @signal vw output signal name.
- * @param name a path which name is /npcm4xx7-espi-vws-map/'name'.
+ * @param name a path which name is /npcm4xx-espi-vws-map/'name'.
  * @return npcm4xx_vw_in_config item with that path.
  */
-#define NPCM4XX_DT_VW_OUT_CONF(signal, name)                                      \
-	{                                                                      \
-	  .sig = signal,                                                       \
-	  .reg_idx = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg,   \
-									0),    \
-	  .bitmask = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg,   \
-									1),    \
+#define NPCM4XX_DT_VW_OUT_CONF(signal, name)					      \
+	{									      \
+		.sig = signal,							      \
+		.reg_idx = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg, \
+					  0),					      \
+		.bitmask = DT_PROP_BY_IDX(NPCM4XX_DT_NODE_FROM_VWTABLE(name), vw_reg, \
+					  1),					      \
 	}
 
 /**
@@ -518,7 +518,7 @@
  * @return length of 'lvol-io-pads' prop which type is 'phandles'
  */
 #define NPCM4XX_DT_LVOL_ITEMS_LEN DT_PROP_LEN(NPCM4XX_DT_NODE_DEF_LVOL_LIST, \
-								lvol_io_pads)
+					      lvol_io_pads)
 
 /**
  * @brief Get phandle from 'lvol-io-pads' prop which type is 'phandles' at index
@@ -527,7 +527,7 @@
  * @param i index of 'lvol-io-pads' prop which type is 'phandles'
  * @return phandle from 'lvol-io-pads' prop at index 'i'
  */
-#define NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i) \
+#define NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i)	\
 	DT_PHANDLE_BY_IDX(NPCM4XX_DT_NODE_DEF_LVOL_LIST, lvol_io_pads, i)
 
 /**
@@ -537,16 +537,16 @@
  * @param i index of 'lvol-io-pads' prop which type is 'phandles'
  * @return npcm4xx_lvol item from 'lvol-io-pads' property at index 'i'
  */
-#define NPCM4XX_DT_LVOL_ITEMS_BY_IDX(i, _)                                        \
-	{                                                                      \
-	  .io_port = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),              \
-							lvols, io_port),       \
-	  .io_bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),               \
-							lvols, io_bit),        \
-	  .ctrl = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),                 \
-							lvols, ctrl),          \
-	  .bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),                  \
-							lvols, bit),           \
+#define NPCM4XX_DT_LVOL_ITEMS_BY_IDX(i, _)				   \
+	{								   \
+		.io_port = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i), \
+				  lvols, io_port),			   \
+		.io_bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),  \
+				 lvols, io_bit),			   \
+		.ctrl = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),	   \
+			       lvols, ctrl),				   \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_LVOL_IO_PADS(i),	   \
+			      lvols, bit),				   \
 	},
 
 /**
@@ -567,10 +567,10 @@
  *
  * @return an array of npcm4xx_lvol items which configure low-voltage support
  */
-#define NPCM4XX_DT_IO_LVOL_ITEMS_DEF_LIST {                \
-		UTIL_LISTIFY(NPCM4XX_DT_LVOL_ITEMS_LEN,    \
-			NPCM4XX_DT_LVOL_ITEMS_BY_IDX, _)   \
-	}
+#define NPCM4XX_DT_IO_LVOL_ITEMS_DEF_LIST {		      \
+		UTIL_LISTIFY(NPCM4XX_DT_LVOL_ITEMS_LEN,	      \
+			     NPCM4XX_DT_LVOL_ITEMS_BY_IDX, _) \
+}
 
 /**
  * @brief Get a node from path '/vsby-psl-in-list' which has a property
@@ -587,7 +587,7 @@
  * @return length of 'psl-in-pads' prop which type is 'phandles'
  */
 #define NPCM4XX_DT_PSL_IN_ITEMS_LEN DT_PROP_LEN(NPCM4XX_DT_NODE_PSL_IN_LIST, \
-								psl_in_pads)
+						psl_in_pads)
 
 /**
  * @brief Get phandle from 'psl-in-pads' prop which type is 'phandles' at index
@@ -626,11 +626,11 @@
  * @param i index of 'psl-in-pads' prop which type is 'phandles'
  * @return npcm4xx_alt item from 'pinctrl-0' property at index 'i'
  */
-#define NPCM4XX_DT_PSL_IN_ALT_CONF_BY_IDX(i)                                         \
-	{                                                                         \
-	  .group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, group),  \
-	  .bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, bit),      \
-	  .inverted = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, inv), \
+#define NPCM4XX_DT_PSL_IN_ALT_CONF_BY_IDX(i)						   \
+	{										   \
+		.group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, group),  \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, bit),	   \
+		.inverted = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_PINMUX_NODE(i), alts, inv), \
 	},
 
 /**
@@ -640,10 +640,10 @@
  * @param i index of 'psl-in-pads' prop which type is 'phandles'
  * @return npcm4xx_alt item from 'pinctrl-0' property at index 'i'
  */
-#define NPCM4XX_DT_PSL_IN_POL_CONF_BY_IDX(i)                                                 \
-	{                                                                                 \
+#define NPCM4XX_DT_PSL_IN_POL_CONF_BY_IDX(i)						     \
+	{										     \
 		.group = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_POLARITY_NODE(i), alts, group),  \
-		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_POLARITY_NODE(i), alts, bit),      \
+		.bit = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_POLARITY_NODE(i), alts, bit),	     \
 		.inverted = DT_PHA(NPCM4XX_DT_PHANDLE_FROM_PSL_POLARITY_NODE(i), alts, inv), \
 	},
 
@@ -654,12 +654,12 @@
  * @param i index of 'psl-in-pads' prop which type is 'phandles'
  * @return npcm4xx_psl_in item from 'psl-in-pads' property at index 'i'
  */
-#define NPCM4XX_DT_PSL_IN_ITEMS_BY_IDX(i, _)                                      \
-	{                                                                      \
-		.flag = DT_PROP(NPCM4XX_DT_PHANDLE_FROM_PSL_IN_NODE(i), flag),    \
-		.offset = DT_PROP(NPCM4XX_DT_PHANDLE_FROM_PSL_IN_NODE(i), offset),\
-		.pinctrl = NPCM4XX_DT_PSL_IN_ALT_CONF_BY_IDX(i)                   \
-		.polarity = NPCM4XX_DT_PSL_IN_POL_CONF_BY_IDX(i)                  \
+#define NPCM4XX_DT_PSL_IN_ITEMS_BY_IDX(i, _)					   \
+	{									   \
+		.flag = DT_PROP(NPCM4XX_DT_PHANDLE_FROM_PSL_IN_NODE(i), flag),	   \
+		.offset = DT_PROP(NPCM4XX_DT_PHANDLE_FROM_PSL_IN_NODE(i), offset), \
+		.pinctrl = NPCM4XX_DT_PSL_IN_ALT_CONF_BY_IDX(i)			   \
+		.polarity = NPCM4XX_DT_PSL_IN_POL_CONF_BY_IDX(i)		   \
 	},
 
 /**
@@ -681,10 +681,10 @@
  *
  * @return an array of npcm4xx_psl_in items which configures PSL input pads
  */
-#define NPCM4XX_DT_PSL_IN_ITEMS_LIST {                       \
-		UTIL_LISTIFY(NPCM4XX_DT_PSL_IN_ITEMS_LEN,    \
-			NPCM4XX_DT_PSL_IN_ITEMS_BY_IDX, _)   \
-	}
+#define NPCM4XX_DT_PSL_IN_ITEMS_LIST {				\
+		UTIL_LISTIFY(NPCM4XX_DT_PSL_IN_ITEMS_LEN,	\
+			     NPCM4XX_DT_PSL_IN_ITEMS_BY_IDX, _)	\
+}
 
 /**
  * @brief Get base address of corresponding GPIO controller for enabling PSL
@@ -693,8 +693,9 @@
  * @param @param inst number for devices with compatible 'nuvoton_npcm4xx_psl_out'.
  * @return base address of corresponding GPIO controller
  */
-#define NPCM4XX_DT_PSL_OUT_CONTROLLER(inst) DT_REG_ADDR_BY_IDX(DT_PHANDLE_BY_IDX( \
-		DT_INST(inst, nuvoton_npcm4xx_psl_out), controller, 0), 0)
+#define NPCM4XX_DT_PSL_OUT_CONTROLLER(inst) \
+		DT_REG_ADDR_BY_IDX(DT_PHANDLE_BY_IDX( \
+				DT_INST(inst, nuvoton_npcm4xx_psl_out), controller, 0), 0)
 
 /**
  * @brief Get pin of corresponding GPIO controller for enabling PSL output.
@@ -703,6 +704,6 @@
  * @return pin of corresponding GPIO controller.
  */
 #define NPCM4XX_DT_PSL_OUT_PIN(inst) DT_PROP(DT_INST(inst, nuvoton_npcm4xx_psl_out), \
-							pin)
+					     pin)
 
 #endif /* _NUVOTON_NPCM4XX_SOC_DT_H_ */
