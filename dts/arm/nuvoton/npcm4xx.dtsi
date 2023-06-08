@@ -7,7 +7,7 @@
 #include <arm/armv7-m.dtsi>
 
 /* Macros for device tree declarations of npcx soc family */
-#include <dt-bindings/clock/npcx_clock.h>
+#include <dt-bindings/clock/npcm4xx_clock.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/i2c/i2c.h>
 #include <dt-bindings/pwm/pwm.h>
@@ -106,7 +106,7 @@
 			#io-channel-cells = <1>;
 			reg = <0x400d1000 0x2000>;
 			interrupts = <10 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB1 NPCX_PWDWN_CTL4 4>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB1 NPCM4XX_PWDWN_CTL4 4>;
 			status = "disabled";
 			label = "ADC_0";
 		};
@@ -116,7 +116,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x40009000 0x1000>;
 			interrupts = <13 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 0>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
 			pinctrl-0 = <&pinctrl_i2c0_default>;
 			label = "I2CCTRL_0";
 			status = "disabled";
@@ -126,7 +126,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x4000b000 0x1000>;
 			interrupts = <14 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 1>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 1>; /* may not correct */
 			pinctrl-0 = <&pinctrl_i2c1_default>;
 			label = "I2CCTRL_1";
 			status = "disabled";
@@ -136,7 +136,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x400c0000 0x1000>;
 			interrupts = <36 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL3 2>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL3 2>;
 			pinctrl-0 = <&pinctrl_i2c2_default>;
 			label = "I2CCTRL_2";
 			status = "disabled";
@@ -146,7 +146,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x400c2000 0x1000>;
 			interrupts = <37 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL3 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL3 3>;
 			pinctrl-0 = <&pinctrl_i2c3_default>;
 			label = "I2CCTRL_3";
 			status = "disabled";
@@ -156,7 +156,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x40008000 0x1000>;
 			interrupts = <19 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 4>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 4>;
 			pinctrl-0 = <&pinctrl_i2c4_default>;
 			label = "I2CCTRL_4";
 			status = "disabled";
@@ -166,7 +166,7 @@
 			compatible = "nuvoton,npcx-i2c-ctrl";
 			reg = <0x40017000 0x1000>;
 			interrupts = <20 3>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL7 0>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 5>;
 			pinctrl-0 = <&pinctrl_i2c5_default>;
 			label = "I2CCTRL_5";
 			status = "disabled";
@@ -175,7 +175,7 @@
 		tach1: tach@400e1000 {
 			compatible = "nuvoton,npcx-tach";
 			reg = <0x400e1000 0x2000>;
-			clocks = <&pcc NPCX_CLOCK_BUS_LFCLK NPCX_PWDWN_CTL1 5>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL1 5>;
 			label = "TACH_1";
 			status = "disabled";
 		};
@@ -183,7 +183,7 @@
 		tach2: tach@400e3000 {
 			compatible = "nuvoton,npcx-tach";
 			reg = <0x400e3000 0x2000>;
-			clocks = <&pcc NPCX_CLOCK_BUS_LFCLK NPCX_PWDWN_CTL1 6>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL1 6>;
 			label = "TACH_2";
 			status = "disabled";
 		};
@@ -195,7 +195,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x40020000 0x2000>;
-			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL1 2>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL1 2>;
 			label = "SPI_FIU";
 		};
 	};

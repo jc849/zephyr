@@ -26,8 +26,8 @@
 			reg = <0x400bc000 0x2000
 			       0x400be000 0x2000>;
 			reg-names = "evt_itim", "sys_itim";
-			clocks = <&pcc NPCX_CLOCK_BUS_LFCLK NPCX_PWDWN_CTL4 3
-				  &pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL7 5>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL4 3
+				  &pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL7 5>;
 			interrupts = <46 2>; /* Event timer interrupt */
 			label = "ITIM";
 		};
@@ -36,7 +36,7 @@
 			compatible = "nuvoton,npcm4xx-uart";
 			reg = <0x400c4000 0x100>;
 			/*interrupts = <33 3>;*/
-			/*clocks = <&pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL1 4>;*/
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL1 4>;
 			pinctrl-0 = <&pinctrl_uart0_default>;
 			/*uart-rx = <&wui_cr_sin1>;*/
 			status = "disabled";

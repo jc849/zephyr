@@ -7,3 +7,5 @@ include: ["uart-controller.yaml", "nuvoton-pinctrl.yaml"]
 properties:
     reg:
         required: true
+    clocks:
+        required: true
