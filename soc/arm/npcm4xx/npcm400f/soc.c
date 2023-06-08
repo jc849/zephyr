@@ -9,8 +9,6 @@
 #include <init.h>
 #include <soc.h>
 #include <logging/log.h>
-#include "NPCM4XX.h"
-#include "syscfg_drv.h"
 
 LOG_MODULE_REGISTER(soc, CONFIG_SOC_LOG_LEVEL);
 

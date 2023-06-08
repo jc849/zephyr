@@ -14,7 +14,6 @@
 #include <pm/device.h>
 #include <soc.h>
 #include "NPCM4XX.h"
-#include "system_NPCM4XX.h"
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(uart_npcm4xx, LOG_LEVEL_ERR);
@@ -22,6 +21,8 @@ LOG_MODULE_REGISTER(uart_npcm4xx, LOG_LEVEL_ERR);
 /* Driver config */
 struct uart_npcm4xx_config {
 	struct uart_device_config uconf;
+	/* clock configuration */
+	struct npcm4xx_clk_cfg clk_cfg;
 };
 
 /* Driver data */
@@ -297,14 +298,38 @@ static int uart_npcm4xx_init(const struct device *dev)
 {
 	uint32_t div, opt_dev, min_deviation, clk, calc_baudrate, deviation;
 	uint8_t prescalar, opt_prescalar, i;
+	const struct uart_npcm4xx_config *const config = DRV_CONFIG(dev);
 	struct uart_npcm4xx_data *const data = DRV_DATA(dev);
+	const struct device *const clk_dev =
+					device_get_binding(NPCM4XX_CLK_CTRL_NAME);
+	uint32_t uart_rate;
+	int ret;
 
 	/* Calculated UART baudrate , clock source from APB2 */
 	opt_prescalar = opt_dev = 0;
 	prescalar = 10;
 	min_deviation = 0xFFFFFFFF;
 
-	clk = SOURCE_CLK_CR_UART;
+	/* Turn on device clock first and get source clock freq. */
+	ret = clock_control_on(clk_dev, (clock_control_subsys_t *)
+							&config->clk_cfg);
+	if (ret < 0) {
+		LOG_ERR("Turn on UART clock fail %d", ret);
+		return ret;
+	}
+
+	/*
+	 * If apb2's clock is not 15MHz, we need to find the other optimized
+	 * values of UPSR and UBAUD for baud rate 115200.
+	 */
+	ret = clock_control_get_rate(clk_dev, (clock_control_subsys_t *)
+		&config->clk_cfg, &uart_rate);
+	if (ret < 0) {
+		LOG_ERR("Get UART clock rate error %d", ret);
+		return ret;
+	}
+
+	clk = uart_rate;
 
 	for (i = 1; i <= 31; i++) {
 		div = (clk * 10) / (16 * data->ucfg.baudrate * prescalar);
@@ -423,9 +448,10 @@ static int uart_npcx_pm_control(const struct device *dev, uint32_t ctrl_command,
 												   \
 	static const struct uart_npcm4xx_config uart_npcm4xx_cfg_##inst = {                        \
 		.uconf =                                                                           \
-			{                                                                          \
-				.base = (uint8_t *)DT_INST_REG_ADDR(inst),                         \
-			},                                                                         \
+		{                                                                                  \
+			.base = (uint8_t *)DT_INST_REG_ADDR(inst),                                 \
+		},                                                                                 \
+		.clk_cfg = NPCM4XX_DT_CLK_CFG_ITEM(inst),                                          \
 	};                                                                                         \
 												   \
 	static struct uart_npcm4xx_data uart_npcm4xx_data_##inst = {                               \
