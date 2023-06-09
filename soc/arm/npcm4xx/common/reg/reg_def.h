@@ -154,27 +154,23 @@ struct scfg_reg {
 	volatile uint8_t reserved2[9];
 	/* 0x010 - 1F: Device Alternate Function 0 - F */
 	volatile uint8_t DEVALT0[16];
-	volatile uint8_t reserved3[6];
-	/* 0x026: Low-Voltage GPIO Pins Control 5 */
-	volatile uint8_t LV_GPIO_CTL5[1];
-	volatile uint8_t reserved4;
-	/* 0x028: Pull-Up/Pull-Down Enable 0 */
-	volatile uint8_t PUPD_EN0;
-	/* 0x029: Pull-Up/Pull-Down Enable 1 */
-	volatile uint8_t PUPD_EN1;
-	/* 0x02A - 2E: Low-Voltage GPIO Pins Control 0 - 4 */
-	volatile uint8_t LV_GPIO_CTL0[5];
+	volatile uint8_t reserved3[4];
+	/* 0x024: DEVALTCX */
+	volatile uint8_t DEVALTCX;
+	volatile uint8_t reserved4[3];
+	/* 0x028: Device Pull-Up Enable 0 */
+	volatile uint8_t DEVPU0;
+	/* 0x029: Device Pull-Down Enable 1 */
+	volatile uint8_t DEVPD1;
+	volatile uint8_t reserved5;
+	/* 0x02B: Low-Voltage Pins Control 1 */
+	volatile uint8_t LV_CTL1;
 };
 
 /* SCFG multi-registers */
 #define NPCM4XX_DEVALT_OFFSET(n) (0x010 + (n))
 #define NPCM4XX_DEVALT(base, n) (*(volatile uint8_t *)(base + \
 						NPCM4XX_DEVALT_OFFSET(n)))
-
-#define NPCM4XX_LV_GPIO_CTL_OFFSET(n) (((n) < 5) ? (0x02A + (n)) \
-						: (0x026 + (n - 5)))
-#define NPCM4XX_LV_GPIO_CTL(base, n) (*(volatile uint8_t *)(base + \
-						NPCM4XX_LV_GPIO_CTL_OFFSET(n)))
 
 /* SCFG register fields */
 #define NPCM4XX_DEVCNT_F_SPI_TRIS                6
@@ -201,7 +197,7 @@ struct scfg_reg {
 #define NPCM4XX_DEVPU0_I2C2_0_PUE                4
 #define NPCM4XX_DEVPU0_I2C3_0_PUE                6
 #define NPCM4XX_DEVPU1_F_SPI_PUD_EN              7
-
+#define NPCM4XX_DEVALTCX_GPIO_PULL_EN            7
 
 /*
  * System Glue (GLUE) device registers
@@ -351,8 +347,6 @@ struct gpio_reg {
 	volatile uint8_t PENVDD;
 	/* 0x006: Port GPIOx Output Type */
 	volatile uint8_t PTYPE;
-	/* 0x007: Port GPIOx Lock Control */
-	volatile uint8_t PLOCK_CTL;
 };
 
 /*
