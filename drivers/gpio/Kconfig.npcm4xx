@@ -1,0 +1,12 @@
+# NPCM4XX GPIO driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config GPIO_NPCM4XX
+	bool "Nuvoton NPCM4XX gpio driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the GPIO driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use GPIO on NPCM4XX MCU.

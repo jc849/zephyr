@@ -90,11 +90,9 @@ static void intc_miwu_dispatch_gpio_isr(uint8_t wui_table,
 			 * Execute GPIO callback and the other callback might
 			 * match the same wui item.
 			 */
-			/* implemented by the gpio driver
-			 * cb->handler(npcm4xx_get_gpio_dev(cb->params.gpio_port),
-			 *		(struct gpio_callback *)cb,
-			 *		cb->params.pin_mask);
-			 */
+			cb->handler(npcm4xx_get_gpio_dev(cb->params.gpio_port),
+					(struct gpio_callback *)cb,
+					cb->params.pin_mask);
 		}
 	}
 }
