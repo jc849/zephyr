@@ -258,7 +258,7 @@ struct uart_reg {
 	volatile uint8_t UPSR;
 	volatile uint8_t reserved8[7];
 	/* 0x016: FIFO Control */
-	volatile uint8_t UFRCTL;
+	volatile uint8_t UFCTRL;
 	volatile uint8_t reserved9;
 	/* 0x018: TX FIFO Current Level */
 	volatile uint8_t UTXFLV;
@@ -286,8 +286,10 @@ struct uart_reg {
 #define NPCM4XX_UFRS_XB9                         3
 #define NPCM4XX_UFRS_PSEL_FIELD                  FIELD(4, 2)
 #define NPCM4XX_UFRS_PEN                         6
+#define NPCM4XX_UFCTRL_FIFOEN                    0
 //#define NPCM4XX_UMDSL_FIFO_MD                    0
-//#define NPCM4XX_UFTSTS_TEMPTY_LVL                FIELD(0, 5)
+#define NPCM4XX_UTXFLV_TFL                       FIELD(0, 5)
+#define NPCM4XX_URXFLV_RFL                       FIELD(0, 5)
 //#define NPCM4XX_UFTSTS_TEMPTY_LVL_STS            5
 //#define NPCM4XX_UFTSTS_TFIFO_EMPTY_STS           6
 //#define NPCM4XX_UFTSTS_NXMIP                     7
