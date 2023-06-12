@@ -5,6 +5,7 @@
 config UART_NPCM4XX
 	bool "NUVOTON NPCM4XX serial driver"
 	select SERIAL_HAS_DRIVER
+	select SERIAL_SUPPORT_INTERRUPT
 	depends on SOC_FAMILY_NPCM4XX
 	help
 	  This option enables the UART driver for Nuvoton NPCM4XX

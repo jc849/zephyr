@@ -35,10 +35,10 @@
 		uart0: serial@400c4000 {
 			compatible = "nuvoton,npcm4xx-uart";
 			reg = <0x400c4000 0x100>;
-			/*interrupts = <33 3>;*/
+			interrupts = <23 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL1 4>;
 			pinctrl-0 = <&pinctrl_uart0_default>;
-			/*uart-rx = <&wui_cr_sin1>;*/
+			/* uart-rx = <&wui_cr_sin1>;*/
 			status = "disabled";
 			label = "UART_0";
 		};
