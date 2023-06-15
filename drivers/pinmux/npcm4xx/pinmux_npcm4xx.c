@@ -90,7 +90,7 @@ const struct npcm4xx_fun_desc *npcm4xx_fun_desc_table[] = {
 #undef FUN_DEFINE
 
 #define DEP_ORD_ARRAY(node_id)								    \
-	static const uint8_t CONCAT(dep_ord_array_, node_id)[] __attribute__ ((unused)) = { \
+	static const uint32_t CONCAT(dep_ord_array_, node_id)[] __attribute__ ((unused)) = { \
 		DT_SUPPORTS_DEP_ORDS(node_id)						    \
 	};
 DT_FOREACH_CHILD(DT_DRV_INST(0), DEP_ORD_ARRAY)

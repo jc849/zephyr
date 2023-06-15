@@ -19,6 +19,7 @@ config PECI_SHELL
 
 source "drivers/peci/Kconfig.xec"
 source "drivers/peci/Kconfig.aspeed"
+source "drivers/peci/Kconfig.npcm4xx"
 
 module = PECI
 module-str = peci
