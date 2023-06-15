@@ -1,0 +1,12 @@
+# Copyright (c) 2022 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nuvoton NPCM4XX PECI node
+
+compatible: "nuvoton,npcm4xx-peci"
+
+include: [peci.yaml, nuvoton-pinctrl.yaml]
+
+properties:
+  pinctrl-0:
+    required: true

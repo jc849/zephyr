@@ -1,0 +1,12 @@
+# NPCM4XX PECI driver configuration options
+
+# Copyright (c) 2022 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config PECI_NPCM4XX
+	bool "NPCM4XX PECI driver"
+	default y
+	depends on SOC_FAMILY_NPCM4XX
+	select PECI_INTERRUPT_DRIVEN
+	help
+	  Enable the NPCM4XX PECI IO driver.
