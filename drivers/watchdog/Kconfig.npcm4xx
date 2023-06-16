@@ -1,0 +1,22 @@
+# NPCM4XX WDT driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config WDT_NPCM4XX
+	bool "Nuvoton NPCM4XX Watchdog Timer driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the Watchdog Timer driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use watchdog on NPCM4XX MCU.
+
+config WDT_NPCM4XX_DELAY_CYCLES
+	int "Number of delay cycles before generating watchdog event/signal"
+	depends on WDT_NPCM4XX
+	range 1 255
+	default 10
+	help
+	  This option defines the window in which a watchdog event must be
+	  handled, in units of 31ms. After this time window, the watchdog reset
+	  triggers immediately.

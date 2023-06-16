@@ -451,46 +451,48 @@ struct adc_reg {
  * Timer Watchdog (TWD) device registers
  */
 struct twd_reg {
-	/* 0x000: Timer and Watchdog Configuration */
-	volatile uint8_t TWCFG;
-	volatile uint8_t reserved1;
-	/* 0x002: Timer and Watchdog Clock Prescaler */
-	volatile uint8_t TWCP;
-	volatile uint8_t reserved2;
-	/* 0x004: TWD Timer 0 */
+	/* [0x00] Timer and Watchdog Configuration */
+	volatile uint8_t CFG;
+	volatile uint8_t reserved1[1];
+	/* [0x02] Timer and Watchdog Clock Prescaler */
+	volatile uint8_t CP;
+	volatile uint8_t reserved2[1];
+	/* [0x04] TWD Timer 0 Counter Preset */
 	volatile uint16_t TWDT0;
-	/* 0x006: TWDT0 Control and Status */
+	/* [0x06] TWDT0 Control and Status */
 	volatile uint8_t T0CSR;
-	volatile uint8_t reserved3;
-	/* 0x008: Watchdog Count */
+	volatile uint8_t reserved3[1];
+	/* [0x08] Watchdog Count */
 	volatile uint8_t WDCNT;
-	volatile uint8_t reserved4;
-	/* 0x00A: Watchdog Service Data Match */
+	volatile uint8_t reserved4[1];
+	/* [0x0A] Watchdog Service Data Match */
 	volatile uint8_t WDSDM;
-	volatile uint8_t reserved5;
-	/* 0x00C: TWD Timer 0 Counter */
-	volatile uint16_t TWMT0;
-	/* 0x00E: Watchdog Counter */
-	volatile uint8_t TWMWD;
-	volatile uint8_t reserved6;
-	/* 0x010: Watchdog Clock Prescaler */
+	volatile uint8_t reserved5[1];
+	/* [0x0C] TWD Timer 0 Counter */
+	volatile uint16_t MT0;
+	/* [0x0E] Watchdog Counter */
+	volatile uint8_t MWD;
+	volatile uint8_t reserved6[1];
+	/* [0x10] Watchdog Clock Prescaler */
 	volatile uint8_t WDCP;
-	volatile uint8_t reserved7;
 };
 
 /* TWD register fields */
-#define NPCM4XX_TWCFG_LTWCFG                      0
-#define NPCM4XX_TWCFG_LTWCP                       1
-#define NPCM4XX_TWCFG_LTWDT0                      2
-#define NPCM4XX_TWCFG_LWDCNT                      3
-#define NPCM4XX_TWCFG_WDCT0I                      4
-#define NPCM4XX_TWCFG_WDSDME                      5
-#define NPCM4XX_T0CSR_RST                         0
-#define NPCM4XX_T0CSR_TC                          1
-#define NPCM4XX_T0CSR_WDLTD                       3
-#define NPCM4XX_T0CSR_WDRST_STS                   4
-#define NPCM4XX_T0CSR_WD_RUN                      5
-#define NPCM4XX_T0CSR_TESDIS                      7
+#define TWD_CFG_LTWD_CFG                (0)
+#define TWD_CFG_LTWCP                   (1)
+#define TWD_CFG_LTWDT0                  (2)
+#define TWD_CFG_LWDCNT                  (3)
+#define TWD_CFG_WDCT0I                  (4)
+#define TWD_CFG_WDSDME                  (5)
+#define TWD_CP_MDIV                     (0)
+#define TWD_T0CSR_RST                   (0)
+#define TWD_T0CSR_TC                    (1)
+#define TWD_T0CSR_WDLTD                 (3)
+#define TWD_T0CSR_WDRST_STS             (4)
+#define TWD_T0CSR_WD_RUN                (5)
+#define TWD_T0CSR_T0EN                  (6)
+#define TWD_T0CSR_TESDIS                (7)
+#define TWD_WDCP_WDIV                   (0)
 
 /*
  * Enhanced Serial Peripheral Interface (eSPI) device registers
