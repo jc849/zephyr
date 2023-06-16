@@ -42,6 +42,13 @@
 			status = "disabled";
 			label = "UART_0";
 		};
+
+		twd0: watchdog@400d8000 {
+			compatible = "nuvoton,npcm4xx-watchdog";
+			reg = <0x400d8000 0x1000>;
+			interrupts = <12 3>;
+			label = "TWD_0";
+		};
 	};
 
 	soc-id {
