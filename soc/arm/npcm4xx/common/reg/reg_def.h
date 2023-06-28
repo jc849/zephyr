@@ -1129,43 +1129,29 @@ struct smb_fifo_reg {
 #define NPCM4XX_SMBRXF_CTL_LAST             7
 
 /*
- * Internal 32-bit Timer (ITIM32) device registers
+ * INTERNAL 8-BIT/16-BIT/32-BIT TIMER (ITIM32) device registers
  */
+
 struct itim32_reg {
-	volatile uint8_t reserved1;
-	/* 0x001: Internal 32-bit Timer Prescaler */
-	volatile uint8_t ITPRE32;
-	volatile uint8_t reserved2[2];
-	/* 0x004: Internal 32-bit Timer Control and Status */
-	volatile uint8_t ITCTS32;
-	volatile uint8_t reserved3[3];
-	/* 0x008: Internal 32-Bit Timer Counter */
-	volatile uint32_t ITCNT32;
+	/* [0x00] Internal 8-Bit Timer Counter */
+	volatile uint8_t CNT;
+	/* [0x01] Internal Timer Prescaler */
+	volatile uint8_t PRE;
+	/* [0x02] Internal 16-Bit Timer Counter */
+	volatile uint16_t CNT16;
+	/* [0x04] Internal Timer Control and Status */
+	volatile uint8_t CTS;
+	volatile uint8_t RESERVED1[3];
+	/* [0x08] Internal 32-Bit Timer Counter */
+	volatile uint32_t CNT32;
 };
 
-/*
- * Internal 64-bit Timer (ITIM54) device registers
- */
-struct itim64_reg {
-	volatile uint8_t reserved1;
-	/* 0x001: Internal 64-bit Timer Prescaler */
-	volatile uint8_t ITPRE64;
-	volatile uint8_t reserved2[2];
-	/* 0x004: Internal 64-bit Timer Control and Status */
-	volatile uint8_t ITCTS64;
-	volatile uint8_t reserved3[3];
-	/* 0x008: Internal 32-Bit Timer Counter */
-	volatile uint32_t ITCNT64L;
-	/* 0x00C: Internal 32-Bit Timer Counter */
-	volatile uint32_t ITCNT64H;
-};
-
-/* ITIM register fields */
-#define NPCM4XX_ITCTSXX_TO_STS              0
-#define NPCM4XX_ITCTSXX_TO_IE               2
-#define NPCM4XX_ITCTSXX_TO_WUE              3
-#define NPCM4XX_ITCTSXX_CKSEL               4
-#define NPCM4XX_ITCTSXX_ITEN                7
+/* ITIM32 register fields */
+#define ITIM32_CTS_ITEN                         (7)
+#define ITIM32_CTS_CKSEL                        (4)
+#define ITIM32_CTS_TO_WUE                       (3)
+#define ITIM32_CTS_TO_IE                        (2)
+#define ITIM32_CTS_TO_STS                       (0)
 
 /*
  * Tachometer (TACH) Sensor device registers

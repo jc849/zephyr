@@ -20,15 +20,13 @@
 			apb3-prescaler = <1>; /* APB3_CLK runs at 48MHz */
 		};
 
-		/* Specific soc devices in npcx7 series */
-		itims: timer@400bc000 {
-			compatible = "nuvoton,npcx-itim-timer";
-			reg = <0x400bc000 0x2000
-			       0x400be000 0x2000>;
-			reg-names = "evt_itim", "sys_itim";
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL4 3
-				  &pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL7 5>;
-			interrupts = <46 2>; /* Event timer interrupt */
+		/* Specific soc devices in npcm400f series */
+		itims: timer@400b0000 {
+			compatible = "nuvoton,npcm4xx-itim-timer";
+			reg = <0x400b0000 0x2000>;
+			reg-names = "itim1";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL4 0>;
+			interrupts = <29 3>;
 			label = "ITIM";
 		};
 
