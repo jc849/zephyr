@@ -340,9 +340,6 @@ int gpio_npcm4xx_init(const struct device *dev)
 
 	data->pinmux = DEVICE_DT_GET(DT_NODELABEL(pinmux));
 
-	printk("dev offset = %d, base = 0x%x\n", DRV_CONFIG(dev)->pin_offset, DRV_CONFIG(dev)->base);
-	printk("dev wui size = %d port = 0x%x\n", DRV_CONFIG(dev)->wui_size, DRV_CONFIG(dev)->port);
-
 	return 0;
 }
 
