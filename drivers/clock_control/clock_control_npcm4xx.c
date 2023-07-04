@@ -174,7 +174,6 @@ BUILD_ASSERT(APBSRC_CLK / (APB4DIV_VAL + 1) <= MHZ(100) &&
 static int npcm4xx_clock_control_init(const struct device *dev)
 {
 	struct cdcg_reg *const inst_cdcg = HAL_CDCG_INST(dev);
-	const uint32_t pmc_base = DRV_CONFIG(dev)->base_pmc;
 
 	/*
 	 * Resetting the OSC_CLK (even to the same value) will make the clock
@@ -203,19 +202,6 @@ static int npcm4xx_clock_control_init(const struct device *dev)
 	inst_cdcg->HFCBCD = (APB1DIV_VAL | (APB2DIV_VAL << 4));
 	inst_cdcg->HFCBCD1  = (FIUDIV_VAL << 4);
 	inst_cdcg->HFCBCD2 = APB3DIV_VAL;
-#if 0
-	/*
-	 * Power-down (turn off clock) the modules initially for better
-	 * power consumption.
-	 */
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL1) = 0xF9; /* No SDP_PD/FIU_PD */
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL2) = 0xFF;
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL3) = 0x1F; /* No GDMA_PD */
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL4) = 0xFF;
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL5) = 0xFA;
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL6) = 0xFF;
-	NPCM4XX_PWDWN_CTL(pmc_base, NPCM4XX_PWDWN_CTL7) = 0xE7;
-#endif
 
 	return 0;
 }
