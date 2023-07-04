@@ -27,9 +27,15 @@
 #define FLASH_DEV_NAME ""
 #endif
 
+#if defined(CONFIG_SPI_NPCM4XX_FIU)
+static uint8_t test_arr[TEST_ARR_SIZE];
+static uint8_t read_back_arr[TEST_ARR_SIZE];
+static uint8_t op_arr[TEST_ARR_SIZE];
+#else
 static uint8_t test_arr[TEST_ARR_SIZE] NON_CACHED_BSS_ALIGN16;
 static uint8_t read_back_arr[TEST_ARR_SIZE] NON_CACHED_BSS_ALIGN16;
 static uint8_t op_arr[TEST_ARR_SIZE] NON_CACHED_BSS_ALIGN16;
+#endif
 
 static int parse_helper(const struct shell *shell, size_t *argc,
 		char **argv[], const struct device * *flash_dev,
