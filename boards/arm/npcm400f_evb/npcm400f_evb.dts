@@ -49,3 +49,14 @@
 	status = "okay";
 	pinctrl-0 = <&pinctrl_peci0_default>;
 };
+
+&spi_fiu0 {
+	status = "okay";
+};
+
+&spi_fiu0_cs1 {
+	/* 256 => 32M */
+	size = <DT_SIZE_M(256)>;
+	write-block-size = <4096>;
+	status = "okay";
+};
