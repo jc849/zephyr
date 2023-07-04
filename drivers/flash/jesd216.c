@@ -404,4 +404,3 @@ int jesd216_bfp_decode_dw16(const struct jesd216_param_header *php,
 
 	return 0;
 }
-

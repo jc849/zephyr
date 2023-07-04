@@ -33,6 +33,7 @@
 #define SPI_NOR_CMD_WRSR2           0x31    /* Write status register2 (winbond) */
 #define SPI_NOR_CMD_RDSR            0x05    /* Read status register */
 #define SPI_NOR_CMD_RDSR2           0x35    /* Read status register2 (winbond) */
+#define SPI_NOR_CMD_RDSR3           0x15    /* Read status register3 (winbond) */
 #define SPI_NOR_CMD_READ            0x03    /* Read data */
 #define SPI_NOR_CMD_READ_FAST       0x0B    /* Read data with high SPI clock */
 #define SPI_NOR_CMD_READ_1_1_2      0x3B    /* Read data with dual output */
@@ -69,6 +70,9 @@
 #define SPI_NOR_CMD_RDSFDP          0x5A    /* Read SFDP */
 #define SPI_NOR_CMD_SRSTEN          0x66    /* reset enabled */
 #define SPI_NOR_CMD_SRST            0x99    /* trigger reset */
+#define SPI_NOR_CMD_DISABLE_QSPI    0xFF
+#define SPI_NOR_CMD_ENABLE_QSPI     0x38
+
 
 /* Page, sector, and block size are standard, not configurable. */
 #define SPI_NOR_PAGE_SIZE    0x0100U

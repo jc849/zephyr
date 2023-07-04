@@ -198,9 +198,9 @@ static int npcm4xx_clock_control_init(const struct device *dev)
 	}
 
 	/* Set all clock prescalers of core and peripherals. */
-	inst_cdcg->HFCGP   = ((FPRED_VAL << 4) | AHB6DIV_VAL);
+	inst_cdcg->HFCGP = ((FPRED_VAL << 4) | AHB6DIV_VAL);
 	inst_cdcg->HFCBCD = (APB1DIV_VAL | (APB2DIV_VAL << 4));
-	inst_cdcg->HFCBCD1  = (FIUDIV_VAL << 4);
+	inst_cdcg->HFCBCD1 = FIUDIV_VAL;
 	inst_cdcg->HFCBCD2 = APB3DIV_VAL;
 
 	return 0;

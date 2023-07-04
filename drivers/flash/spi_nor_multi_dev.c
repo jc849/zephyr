@@ -803,6 +803,19 @@ static int spi_nor_qe_config(const struct device *dev, uint32_t qer)
 	return ret;
 }
 
+static int winbond_w25q20cl_fixup(const struct device *dev)
+{
+        int ret = 0;
+        struct spi_nor_data *data = dev->data;
+
+	/* 20cl not support quad mode */
+        if (data->cap_mask & SPI_NOR_MODE_1_4_4_CAP) {
+                spi_nor_assign_read_cmd(data, JESD216_MODE_111, SPI_NOR_CMD_READ, 0);
+	}
+
+        return ret;
+}
+
 static int winbond_w25q80dv_fixup(const struct device *dev)
 {
 	int ret = 0;
@@ -981,7 +994,7 @@ static int spi_nor_write(const struct device *dev, off_t addr,
 		}
 	}
 
-	int ret2 = spi_nor_write_protection_set(dev, false);
+	int ret2 = spi_nor_write_protection_set(dev, true);
 
 	if (!ret) {
 		ret = ret2;
@@ -1565,6 +1578,11 @@ static int sfdp_post_fixup(const struct device *dev)
 
 		if (SPI_NOR_GET_JESDID(data->jedec_id) == 0x7022) {
 			data->fixup_read = winbond_w25q02g_read_fixup;
+
+		if (SPI_NOR_GET_JESDID(data->jedec_id) == 0x4012) {
+			ret = winbond_w25q20cl_fixup(dev);
+			if (ret != 0)
+				goto end;
 		}
 		break;
 	case SPI_NOR_MFR_ID_MXIC:
@@ -1709,6 +1727,9 @@ static int spi_nor_configure(const struct device *dev)
 			LOG_ERR("JEDEC ID read failed: %d", rc);
 			ret = -ENODEV;
 			goto end;
+		} else {
+			LOG_DBG("flash node info %02x %02x %02x\n",
+				data->jedec_id[0], data->jedec_id[1], data->jedec_id[2]);
 		}
 	}
 
@@ -1902,4 +1923,3 @@ static const struct flash_driver_api spi_nor_api = {
 			 &spi_nor_api);
 
 DT_INST_FOREACH_STATUS_OKAY(SPI_NOR_MULTI_INIT)
-

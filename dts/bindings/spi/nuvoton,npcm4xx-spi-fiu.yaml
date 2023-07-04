@@ -1,0 +1,42 @@
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nuvoton, NPCM4XX-SPI-FIU controller node
+
+compatible: "nuvoton,npcm4xx-spi-fiu"
+
+include: ["spi-controller.yaml", "nuvoton-pinctrl.yaml"]
+
+properties:
+  reg:
+    required: true
+  clocks:
+    required: true
+  ctrl-type:
+    type: string
+    required: true
+    description: |
+      Distinguish the controller auxiliary type.
+
+      There are two types for a Nuvoton controller:
+      host(master/host) SPI flash controller (hspi),
+      and normal(slave/core) SPI flash controller (nspi).
+
+    enum:
+      - "hspi"
+      - "nspi"
+
+  spi-ctrl-caps-mask:
+    type: int
+    required: false
+    description: |
+      SPI flash controller mode/protocol capability configuration.
+
+      bit 0 : disable 1-1-1
+      bit 1 : disable 1-1-1 (fast read)
+      bit 8 : disable 1-1-2
+      bit 9 : disable 1-2-2
+      bit 10: disable 2-2-2
+      bit 16: disable 1-1-4
+      bit 17: disable 1-4-4
+      bit 18: disable 4-4-4

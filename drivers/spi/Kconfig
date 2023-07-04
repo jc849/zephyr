@@ -79,4 +79,6 @@ source "drivers/spi/Kconfig.aspeed"
 
 source "drivers/spi/Kconfig.spi_monitor_aspeed"
 
+source "drivers/spi/Kconfig.npcm4xx_fiu"
+
 endif # SPI
