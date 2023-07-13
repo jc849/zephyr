@@ -319,6 +319,29 @@ static int gpio_npcm4xx_manage_callback(const struct device *dev,
 	return npcm4xx_miwu_manage_gpio_callback(miwu_cb, set);
 }
 
+#ifdef CONFIG_GPIO_GET_DIRECTION
+static int gpio_npcm4xx_port_get_dir(const struct device *dev, gpio_port_pins_t map,
+				gpio_port_pins_t *inputs, gpio_port_pins_t *outputs)
+{
+	struct gpio_reg *const inst = HAL_INSTANCE(dev);
+	const struct gpio_npcm4xx_config *const config = DRV_CONFIG(dev);
+	uint8_t dir_val = 0;
+
+	map &= config->common.port_pin_mask;
+	dir_val = inst->PDIR;
+
+	if (inputs != NULL) {
+		*inputs = (map & (~dir_val));
+	}
+
+	if (outputs != NULL) {
+		*outputs = map & dir_val;
+	}
+
+	return 0;
+}
+#endif
+
 /* GPIO driver registration */
 static const struct gpio_driver_api gpio_npcm4xx_driver = {
 	.pin_configure = gpio_npcm4xx_config,
@@ -329,6 +352,9 @@ static const struct gpio_driver_api gpio_npcm4xx_driver = {
 	.port_toggle_bits = gpio_npcm4xx_port_toggle_bits,
 	.pin_interrupt_configure = gpio_npcm4xx_pin_interrupt_configure,
 	.manage_callback = gpio_npcm4xx_manage_callback,
+#ifdef CONFIG_GPIO_GET_DIRECTION
+	.port_get_direction = gpio_npcm4xx_port_get_dir,
+#endif /* CONFIG_GPIO_GET_DIRECTION */
 };
 
 int gpio_npcm4xx_init(const struct device *dev)
