@@ -681,8 +681,7 @@ struct fiu_reg {
  * Enhanced Serial Peripheral Interface (eSPI) device registers
  */
 struct espi_reg {
-	/* 0x000: eSPI Identification */
-	volatile uint32_t ESPIID;
+	volatile uint8_t reserved0[4];
 	/* 0x004: eSPI Configuration */
 	volatile uint32_t ESPICFG;
 	/* 0x008: eSPI Status */
@@ -705,46 +704,66 @@ struct espi_reg {
 	volatile uint32_t FLASHRXRDHEAD;
 	/* 0x02C: Flash Transmit Buffer Write Head */
 	volatile uint32_t FLASHTXWRHEAD;
-	volatile uint32_t reserved1;
+	volatile uint8_t reserved1[4];
 	/* 0x034: Flash Channel Configuration */
 	volatile uint32_t FLASHCFG;
 	/* 0x038: Flash Channel Control */
 	volatile uint32_t FLASHCTL;
 	/* 0x03C: eSPI Error Status */
 	volatile uint32_t ESPIERR;
-	/* 0x040: Peripheral Bus Master Receive Buffer Read Head */
-	volatile uint32_t PBMRXRDHEAD;
-	/* 0x044: Peripheral Bus Master Transmit Buffer Write Head */
-	volatile uint32_t PBMTXWRHEAD;
-	/* 0x048: Peripheral Channel Configuration */
-	volatile uint32_t PERCFG;
-	/* 0x04C: Peripheral Channel Control */
-	volatile uint32_t PERCTL;
-	volatile uint32_t reserved2[44];
-	/* 0x100 - 127: Virtual Wire Event Slave-to-Master 0 - 9 */
+	volatile uint8_t reserved2[16];
+	/* 0x0050 Status Image Register(Host-side) */
+	volatile uint16_t STATUS_IMG;
+	volatile uint8_t  reserved3[174];
+	/* 0x0100 Virtual Wire Event Slave-to-Master 0-9 */
 	volatile uint32_t VWEVSM[10];
-	volatile uint32_t reserved3[6];
-	/* 0x140 - 16F: Virtual Wire Event Master-to-Slave 0 - 11 */
+	volatile uint8_t reserved4[24];
+	/* 0x0140 Virtual Wire Event Master-to-Slave 0-11 */
 	volatile uint32_t VWEVMS[12];
-	volatile uint32_t reserved4[99];
-	/* 0x2FC: Virtual Wire Channel Control */
+	volatile uint8_t  reserved5[144];
+	/* 0x0200 Virtual Wire Event Master-toSlave Status */
+	volatile uint32_t VWEVMS_STS;
+	volatile uint8_t  reserved6[4];
+	/* 0x0208 Virtual Wire Event Slave-to-Master Type */
+	volatile uint32_t VWEVSMTYPE;
+	volatile uint8_t  reserved7[240];
+	/* 0x02FC Virtual Wire Channel Control */
 	volatile uint32_t VWCTL;
-	/* 0x300 - 34F: OOB Receive Buffer 0 - 19 */
+	/* 0x0300 OOB Receive Buffer */
 	volatile uint32_t OOBRXBUF[20];
-	volatile uint32_t reserved5[12];
-	/* 0x380 - 3CF: OOB Transmit Buffer 0-19 */
+	volatile uint8_t  reserved8[48];
+	/* 0x0380 OOB Transmit Buffer */
 	volatile uint32_t OOBTXBUF[20];
-	volatile uint32_t reserved6[11];
-	/* 0x3FC: OOB Channel Control used in 'direct' mode */
-	volatile uint32_t OOBCTL_DIRECT;
-	/* 0x400 - 443: Flash Receive Buffer 0-16 */
-	volatile uint32_t FLASHRXBUF[17];
-	volatile uint32_t reserved7[15];
-	/* 0x480 - 497: Flash Transmit Buffer 0-5 */
-	volatile uint32_t FLASHTXBUF[6];
-	volatile uint32_t reserved8[25];
-	/* 0x4FC: Flash Channel Control used in 'direct' mode */
-	volatile uint32_t FLASHCTL_DIRECT;
+	volatile uint8_t  reserved9[44];
+	/* 0x03FC OOB Channel Control (Option) */
+	volatile uint32_t OOBCTL_OPT;
+	/* 0x0400 Flash Receive Buffer */
+	volatile uint32_t FLASHRXBUF[18];
+	volatile uint8_t  reserved10[56];
+	/* 0x0480 Flash Transmit Buffer */
+	volatile uint32_t FLASHTXBUF[18];
+	volatile uint8_t  reserved11[24];
+	/* 0x04E0 Flash Channel Configuration 2 */
+	volatile uint32_t FLASHCFG2;
+	/* 0x04E4 Flash Channel Configuration 3 */
+	volatile uint32_t FLASHCFG3;
+	/* 0x04E8 Flash Channel Configuration 4 */
+	volatile uint32_t FLASHCFG4;
+	volatile uint8_t  reserved12[4];
+	/* 0x04F0 Flash Base */
+	volatile uint32_t FLASHBASE;
+	volatile uint8_t  reserved13[4];
+	/* 0x04F8 Flash Channel Configuration (Option) */
+	volatile uint32_t FLASHCFG_OPT;
+	/* 0x04FC Flash Channel Control (Option) */
+	volatile uint32_t FLASHCTL_OPT;
+	volatile uint8_t  reserved14[256];
+	/* 0x0600 Flash Protection Range Base Address Register */
+	volatile uint32_t FLASH_PRTR_BADDR[16];
+	/* 0x0640 Flash Protection Range High Address Register */
+	volatile uint32_t FLASH_PRTR_HADDR[16];
+	/* 0x0680 Flash Region TAG Override Register */
+	volatile uint32_t FLASH_RGN_TAG_OVR[8];
 };
 
 /* eSPI register fields */
@@ -758,8 +777,10 @@ struct espi_reg {
 #define NPCM4XX_ESPICFG_HFLASHCHANEN        7
 #define NPCM4XX_ESPICFG_CHANS_FIELD         FIELD(0, 4)
 #define NPCM4XX_ESPICFG_HCHANS_FIELD        FIELD(4, 4)
-#define NPCM4XX_ESPICFG_IOMODE_FIELD        FIELD(8, 9)
-#define NPCM4XX_ESPICFG_MAXFREQ_FIELD       FIELD(10, 12)
+#define NPCM4XX_ESPICFG_IOMODE_FIELD        FIELD(8, 2)
+#define NPCM4XX_ESPICFG_MAXFREQ_FIELD       FIELD(10, 3)
+#define NPCM4XX_ESPICFG_VWMS_VALID_EN       13
+#define NPCM4XX_ESPICFG_VWSM_VALID_EN       14
 #define NPCM4XX_ESPICFG_PCCHN_SUPP          24
 #define NPCM4XX_ESPICFG_VWCHN_SUPP          25
 #define NPCM4XX_ESPICFG_OOBCHN_SUPP         26
@@ -798,20 +819,19 @@ struct espi_reg {
 #define NPCM4XX_ESPISTS_BERR                2
 #define NPCM4XX_ESPISTS_OOBRX               3
 #define NPCM4XX_ESPISTS_FLASHRX             4
+#define NPCM4XX_ESPISTS_SFLASHRD            5
 #define NPCM4XX_ESPISTS_PERACC              6
 #define NPCM4XX_ESPISTS_DFRD                7
 #define NPCM4XX_ESPISTS_VWUPD               8
 #define NPCM4XX_ESPISTS_ESPIRST             9
 #define NPCM4XX_ESPISTS_PLTRST              10
-#define NPCM4XX_ESPISTS_AMERR               15
-#define NPCM4XX_ESPISTS_AMDONE              16
-#define NPCM4XX_ESPISTS_VWUPDW              17
-#define NPCM4XX_ESPISTS_BMTXDONE            19
-#define NPCM4XX_ESPISTS_PBMRX               20
-#define NPCM4XX_ESPISTS_PMSGRX              21
-#define NPCM4XX_ESPISTS_BMBURSTERR          22
-#define NPCM4XX_ESPISTS_BMBURSTDONE         23
-#define NPCM4XX_ESPISTS_ESPIRST_LVL         24
+#define NPCM4XX_ESPISTS_ESPIRST_DEASSERT    17
+#define NPCM4XX_ESPISTS_PLTRST_DEASSERT     18
+#define NPCM4XX_ESPISTS_FLASHPRTERR         25
+#define NPCM4XX_ESPISTS_FLASHAUTORDREQ      26
+#define NPCM4XX_ESPISTS_VWUPDW              27
+#define NPCM4XX_ESPISTS_GB_RST              28
+#define NPCM4XX_ESPISTS_DNX_RST             29
 #define NPCM4XX_VWEVMS_WIRE                 FIELD(0, 4)
 #define NPCM4XX_VWEVMS_VALID                FIELD(4, 4)
 #define NPCM4XX_VWEVMS_IE                   18
@@ -836,6 +856,10 @@ struct espi_reg {
 #define NPCM4XX_FLASHCTL_CRCEN              14
 #define NPCM4XX_FLASHCTL_CHKSUMSEL          15
 #define NPCM4XX_FLASHCTL_AMTEN              16
+#define NPCM4XX_ESPIHINDP_AUTO_PCRDY        0
+#define NPCM4XX_ESPIHINDP_AUTO_VWCRDY       1
+#define NPCM4XX_ESPIHINDP_AUTO_OOBCRDY      2
+#define NPCM4XX_ESPIHINDP_AUTO_FCARDY       3
 
 /*
  * Mobile System Wake-Up Control (MSWC) device registers

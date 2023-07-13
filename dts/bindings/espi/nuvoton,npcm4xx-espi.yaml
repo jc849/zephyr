@@ -1,0 +1,26 @@
+# Copyright (c) 2020 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nuvoton, NPCM4XX-eSPI node
+
+compatible: "nuvoton,npcm4xx-espi"
+
+include: [espi-controller.yaml, nuvoton-pinctrl.yaml]
+
+properties:
+    reg:
+      description: mmio register space
+      required: true
+
+    clocks:
+        required: true
+        description: configurations of device source clock controller
+
+    espi-rst-wui:
+        type: phandle
+        required: true
+        description: |
+            Mapping table between Wake-Up Input (WUI) and ESPI_RST signal.
+
+            For example the WUI mapping on NPCM4XX would be
+               espi-rst-wui = <&wui_espi_rst>;

@@ -11,6 +11,18 @@ config SOC_SERIES
 config NUM_IRQS
 	default 64
 
+config ESPI_NPCM4XX
+	default y
+	depends on ESPI
+	help
+	  Enable support for NPCM4XX ESPI driver. The Intel Enhanced Serial
+	  Peripheral Interface (eSPI) provides a path for migrating host
+	  sub-devices via LPC to a lower pin count, higher bandwidth bus.
+	  So far, this driver supports all of functionalities beside flash
+	  channel support. It will be supported in the future. Please refer
+	  https://www.intel.com/content/www/us/en/support/articles/000020952/
+	  software/chipset-software.html for more detail.
+
 source "soc/arm/npcm4xx/npcm400f/Kconfig.defconfig.npcm400f*"
 
 endif # SOC_SERIES_NPCM400F
