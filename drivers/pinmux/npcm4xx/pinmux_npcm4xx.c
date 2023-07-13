@@ -171,18 +171,18 @@ static int pinmux_npcm4xx_set(const struct device *dev, uint32_t pin,
 		sig_desc = npcm4xx_sig_desc_table[func];
 		if (sig_desc == NULL) {
 #ifdef CONFIG_PINCTRL_STRING_NAME
-			printk("function %s empty\n", npcm4xx_sig_name[func]);
+			LOG_ERR("function %s empty", npcm4xx_sig_name[func]);
 #else
-			printk("function %d empty\n", func);
+			LOG_ERR("function %d empty", func);
 #endif
 			return -EINVAL;
 		}
 
 		if (pin != sig_desc->pin) {
 #ifdef CONFIG_PINCTRL_STRING_NAME
-			printk("pin %s have no function on %s\n", npcm4xx_pin_name[pin], npcm4xx_sig_name[func]);
+			LOG_ERR("pin %s have no function on %s", npcm4xx_pin_name[pin], npcm4xx_sig_name[func]);
 #else
-			printk("pin %d have no function on %d\n", pin, func);
+			LOG_ERR("pin %d have no function on %d", pin, func);
 #endif
 			return -EINVAL;
 		}
@@ -194,18 +194,18 @@ static int pinmux_npcm4xx_set(const struct device *dev, uint32_t pin,
 		npcm4xx_pin_desc_table[pin] = func;
 #ifdef CONFIG_PINCTRL_STRING_NAME
 		if ((func & 0xffff) == SIG_GPIO) {
-			printk("registered pin %s on GPIO%X\n",
+			LOG_INF("registered pin %s on GPIO%X",
 				npcm4xx_pin_name[pin], func >> 16);
 		} else {
-			printk("registered pin %s on %s\n",
+			LOG_INF("registered pin %s on %s",
 				npcm4xx_pin_name[pin], npcm4xx_sig_name[func]);
 		}
 #else
 		if ((func & 0xffff) == SIG_GPIO) {
-			printk("registered pin %d on GPIO%x\n", pin,
+			LOG_INF("registered pin %d on GPIO%x", pin,
 				func >> 16);
 		} else {
-			printk("registered pin %d on %d\n", pin, func);
+			LOG_INF("registered pin %d on %d", pin, func);
 		}
 #endif
 		sig_en_number = sig_desc->nsig_en;
@@ -227,21 +227,21 @@ static int pinmux_npcm4xx_set(const struct device *dev, uint32_t pin,
 	} else {
 #ifdef CONFIG_PINCTRL_STRING_NAME
 		if ((ret_sig_id & 0xffff) == SIG_GPIO) {
-			printk("pin %s already occupied by GPIO%X\n",
+			LOG_ERR("pin %s already occupied by GPIO%X",
 				npcm4xx_pin_name[pin],
 				ret_sig_id >> 16);
 		} else {
-			printk("pin %s already occupied by signal %s\n",
+			LOG_ERR("pin %s already occupied by signal %s",
 				npcm4xx_pin_name[pin],
 				npcm4xx_sig_name[ret_sig_id]);
 		}
 #else
 		if ((ret_sig_id & 0xffff) == SIG_GPIO) {
-			printk("pin %d already occupied by GPIO%x\n",
+			LOG_ERR("pin %d already occupied by GPIO%x",
 				pin,
 				ret_sig_id >> 16);
 		} else {
-			printk("pin %d already occupied by %d\n",
+			LOG_ERR("pin %d already occupied by %d",
 				pin,
 				ret_sig_id);
 		}
@@ -279,7 +279,7 @@ static int npcm4xx_pinctrl_fn_group_request(const struct device *dev, uint32_t f
 
 	fun_desc = npcm4xx_fun_desc_table[fun_id];
 	if (fun_desc == NULL) {
-		printk("Invalid argument %d", fun_id);
+		LOG_ERR("Invalid argument %d", fun_id);
 		return -EINVAL;
 	}
 
