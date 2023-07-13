@@ -894,31 +894,32 @@ struct mswc_reg {
 	volatile uint8_t reserved9;
 	/* 0x016: SCI Pulse Length */
 	volatile uint8_t SCIP_LEN;
-	volatile uint8_t reserved10[5];
+	volatile uint8_t reserved10;
+	/* 0x018: LPC event control register */
+	volatile uint8_t LPC_EVENT;
+	volatile uint8_t reserved11;
+	/* 0x01A: LPC status register */
+	volatile uint8_t LPC_STS;
+	volatile uint8_t reserved12;
 	/* 0x01C: SRID Core Access */
 	volatile uint8_t SRID_CR;
-	volatile uint8_t reserved11[3];
+	volatile uint8_t reserved13[3];
 	/* 0x020: SID Core Access */
 	volatile uint8_t SID_CR;
-	volatile uint8_t reserved12;
+	volatile uint8_t reserved14;
 	/* 0x022: DEVICE_ID Core Access */
 	volatile uint8_t DEVICE_ID_CR;
-	volatile uint8_t reserved13[5];
-	/* 0x028: Chip Revision Core Access */
-	volatile uint8_t CHPREV_CR;
-	volatile uint8_t reserved14[5];
+	volatile uint8_t reserved15[11];
 	/* 0x02E: Virtual Wire Sleep States */
-	volatile uint8_t VW_SLPST1;
-	volatile uint8_t reserved15;
+	volatile uint8_t VW_SLPST;
 };
 
 /* MSWC register fields */
 #define NPCM4XX_MSWCTL1_HRSTOB              0
-#define NPCS_MSWCTL1_HWPRON              1
+#define NPCM4XX_MSWCTL1_HWPRON		    1
 #define NPCM4XX_MSWCTL1_PLTRST_ACT          2
 #define NPCM4XX_MSWCTL1_VHCFGA              3
 #define NPCM4XX_MSWCTL1_HCFGLK              4
-#define NPCM4XX_MSWCTL1_PWROFFB             6
 #define NPCM4XX_MSWCTL1_A20MB               7
 
 /*
@@ -961,34 +962,104 @@ struct shm_reg {
 	/* 0x017: Indirect Memory Access Read Protect */
 	volatile uint8_t IMA_RD_PROT;
 	volatile uint8_t reserved6[8];
-	/* 0x020: Shared Access Window 1 Base */
+	/* 0x020: RAM Window 1 Base */
 	volatile uint32_t WIN_BASE1;
-	/* 0x024: Shared Access Window 2 Base */
+	/* 0x024: RAM Window 2 Base */
 	volatile uint32_t WIN_BASE2;
-	volatile uint32_t reserved7;
-	/* 0x02C: Indirect Memory Access Base */
+	volatile uint8_t reserved7[4];
+	/* 0x02C: Immediate Memory Access Base */
 	volatile uint32_t IMA_BASE;
 	volatile uint8_t reserved8[10];
 	/* 0x03A: Reset Configuration */
 	volatile uint8_t RST_CFG;
-	volatile uint8_t reserved9[5];
+	volatile uint8_t reserved9;
+	/* 0x03C: Debug Port 80 Buffered Data 1 */
+	volatile uint32_t DP80BUF1;
 	/* 0x040: Debug Port 80 Buffered Data */
 	volatile uint16_t DP80BUF;
 	/* 0x042: Debug Port 80 Status */
 	volatile uint8_t DP80STS;
-	volatile uint8_t reserved10;
+	/* 0x043: Debug Port 80 Interrupt Enable */
+	volatile uint8_t DP80IE;
 	/* 0x044: Debug Port 80 Control */
 	volatile uint8_t DP80CTL;
-	volatile uint8_t reserved11[3];
-	/* 0x048: Host_Offset in Windows 1, 2 Status */
+	volatile uint8_t reserved10[3];
+	/* 0x048: Host_Offset in Windows 1,2,3,4 Status */
 	volatile uint8_t HOFS_STS;
-	/* 0x049: Host_Offset in Windows 1, 2 Control */
+	/* 0x049: Host_Offset in Windows 1,2,3,4 Control */
 	volatile uint8_t HOFS_CTL;
 	/* 0x04A: Core_Offset in Window 2 Address */
 	volatile uint16_t COFS2;
 	/* 0x04C: Core_Offset in Window 1 Address */
 	volatile uint16_t COFS1;
-	volatile uint16_t reserved12;
+	/* 0x4E Shared Memory Core Control 2 */
+	volatile uint8_t SMC_CTL2;
+	volatile uint8_t reserved11;
+	/* 0x50 Host Offset in windows 2 address */
+	volatile uint16_t IHOFS2;
+	/* 0x52 Host Offset in windows 1 address */
+	volatile uint16_t IHOFS1;
+	/* 0x54 Shared Access Window 3, Semaphore */
+	volatile uint8_t SHAW3_SEM;
+	/* 0x55 Shared Access Window 4, Semaphore */
+	volatile uint8_t SHAW4_SEM;
+	/* 0x56 Shared Memory Window 3 Write Protect */
+	volatile uint8_t WIN3_WR_PROT;
+	/* 0x57 Shared Memory Window 3 Read Protect */
+	volatile uint8_t WIN3_RD_PROT;
+	/* 0x58 Shared Memory Window 4 Write Protect */
+	volatile uint8_t WIN4_WR_PROT;
+	/* 0x59 Shared Memory Window 4 Read Protect */
+	volatile uint8_t WIN4_RD_PROT;
+	/* 0x5A RAM Windows Size 2 */
+	volatile uint8_t WIN_SIZE2;
+	volatile uint8_t reserved12;
+	/* 0x5C RAM Window 3 Base */
+	volatile uint32_t WIN_BASE3;
+	/* 0x60 RAM Window 4 Base */
+	volatile uint32_t WIN_BASE4;
+	/* 0x64 Core_Offset in Window 3 Address */
+	volatile uint16_t COFS3;
+	/* 0x66 Core_Offset in Window 4 Address */
+	volatile uint16_t COFS4;
+	/* 0x68 Host Offset in windows 3 address */
+	volatile uint16_t IHOFS3;
+	/* 0x6A Host Offset in windows 4 address */
+	volatile uint16_t IHOFS4;
+	/* 0x6C Shared Memory Core Status 2 */
+	volatile uint8_t SMC_STS2;
+	/* 0x6D Indirect Memory Access 2, Semaphore */
+	volatile uint8_t IMA2_SEM;
+	/* 0x6E Indirect Memory Access 2 Write Protect */
+	volatile uint8_t IMA2_WR_PROT;
+	/* 0x6F Indirect Memory Access 2 Read Protect */
+	volatile uint8_t IMA2_RD_PROT;
+	/* 0x70 Immediate Memory Access Base 2 */
+	volatile uint32_t IMA2_BASE;
+	/* 0x74 Additional Indirect Memory Access, Semaphore */
+	volatile uint8_t AIMA_SEM;
+	/* 0x75 Host_Offset in Window 5 Status */
+	volatile uint8_t HOFS_STS2;
+	/* 0x76 Host_Offset in Window 5 Control */
+	volatile uint8_t HOFS_CTL2;
+	volatile uint8_t reserved13;
+	/* 0x78 Additional Immediate Memory Access Base([31:8]) */
+	volatile uint32_t AIMA_BASE;
+	/* 0x7C Core_Offset in Window 5 Address */
+	volatile uint16_t COFS5;
+	/* 0x7E Host Offset in windows 5 address */
+	volatile uint16_t IHOFS5;
+	/* 0x80 Shared Memory Window 5 Write Protect */
+	volatile uint8_t WIN5_WR_PROT;
+	/* 0x81 Shared Memory Window 5 Read Protect */
+	volatile uint8_t WIN5_RD_PROT;
+	/* 0x82 Shared Access Window 5, Semaphore */
+	volatile uint8_t SHAW5_SEM;
+	/* 0x83 RAM Windows Size 3 */
+	volatile uint8_t WIN_SIZE3;
+	/* 0x84 RAM Window 5 Base */
+	volatile uint32_t WIN_BASE5;
+
 };
 
 /* SHM register fields */
@@ -1001,7 +1072,7 @@ struct shm_reg {
 #define NPCM4XX_SMC_CTL_HSEM1_IE            3
 #define NPCM4XX_SMC_CTL_HSEM2_IE            4
 #define NPCM4XX_SMC_CTL_ACC_IE              5
-#define NPCM4XX_SMC_CTL_PREF_EN             6
+#define NPCM4XX_SMC_CTL_HSEM_IMA_IE         6
 #define NPCM4XX_SMC_CTL_HOSTWAIT            7
 #define NPCM4XX_FLASH_SIZE_STALL_HOST       6
 #define NPCM4XX_FLASH_SIZE_RD_BURST         7
@@ -1027,8 +1098,6 @@ struct shm_reg {
 #define NPCM4XX_DP80CTL_ADV                 2
 #define NPCM4XX_DP80CTL_RAA                 3
 #define NPCM4XX_DP80CTL_RFIFO               4
-#define NPCM4XX_DP80CTL_CIEN                5
-#define NPCM4XX_DP80CTL_DP80_HF_CFG         7
 
 /*
  * Keyboard and Mouse Controller (KBC) device registers
@@ -1106,7 +1175,6 @@ struct pmch_reg {
 	volatile uint8_t reserved6;
 	/* 0x010: Host Interface PM Interrupt Enable */
 	volatile uint8_t HIPMIE;
-	volatile uint8_t reserved7;
 };
 
 /* PMCH register field */
@@ -1122,6 +1190,7 @@ struct pmch_reg {
 #define NPCM4XX_HIPMST_ST0                  4
 #define NPCM4XX_HIPMST_ST1                  5
 #define NPCM4XX_HIPMST_ST2                  6
+#define NPCM4XX_HIPMST_ST3                  7
 #define NPCM4XX_HIPMIC_SMIB                 1
 #define NPCM4XX_HIPMIC_SCIB                 2
 #define NPCM4XX_HIPMIC_SMIPOL               6
@@ -1143,7 +1212,14 @@ struct c2h_reg {
 	volatile uint16_t CRSMAE;
 	/* 0x00A: Module Control */
 	volatile uint8_t SIBCTRL;
-	volatile uint8_t reserved3;
+	volatile uint8_t reserved2;
+	/* 0x00C: Lock Host Access 2 */
+	volatile uint16_t LKSIOHA2;
+	/* 0x00E: Access Lock Violation 2 */
+	volatile uint16_t SIOLV2;
+	volatile uint8_t reserved3[14];
+	/* 0x01E: Core to Host Access Version */
+	volatile uint8_t C2H_VER;
 };
 
 /* C2H register fields */

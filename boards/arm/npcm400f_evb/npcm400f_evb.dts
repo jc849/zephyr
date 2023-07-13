@@ -64,3 +64,7 @@
 &espi0 {
 	status = "okay";
 };
+
+&host_sub {
+	status = "okay";
+};
