@@ -8,6 +8,7 @@
 
 /* Macros for device tree declarations of npcm4xx soc family */
 #include <dt-bindings/clock/npcm4xx_clock.h>
+#include <dt-bindings/espi/npcm4xx_espi.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/i2c/i2c.h>
 #include <dt-bindings/pwm/pwm.h>
@@ -18,6 +19,9 @@
 #include "npcm4xx/npcm4xx-miwus-wui-map.dtsi"
 /* NPCM4XX series mapping table between MIWU groups and interrupts */
 #include "npcm4xx/npcm4xx-miwus-int-map.dtsi"
+/* NPCM4XX series eSPI VW mapping table */
+#include "npcm4xx/npcm4xx-espi-vws-map.dtsi"
+
 
 / {
 	cpus {

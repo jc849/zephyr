@@ -60,3 +60,7 @@
 	write-block-size = <4096>;
 	status = "okay";
 };
+
+&espi0 {
+	status = "okay";
+};

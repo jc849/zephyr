@@ -1,0 +1,28 @@
+# NPCM4XX eSPI driver configuration options
+
+# Copyright (c) 2020 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config ESPI_NPCM4XX
+	bool "Nuvoton NPCM4XX ESPI driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the Intel Enhanced Serial Peripheral Interface
+	  (eSPI) for NPCM4XX family of processors.
+
+# The default value 'y' for the existing options if ESPI_NPCM4XX is selected.
+if ESPI_NPCM4XX
+
+config ESPI_OOB_CHANNEL
+	default  y
+
+config ESPI_PERIPHERAL_8042_KBC
+	default n
+
+config ESPI_PERIPHERAL_HOST_IO
+	default y
+
+config ESPI_PERIPHERAL_DEBUG_PORT_80
+	default n
+
+endif #ESPI_NPCM4XX

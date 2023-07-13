@@ -307,8 +307,8 @@
 		wui_host_acc: wui1-4-6 {
 			miwus = <&miwu1 3 6>; /* HOST_ACC */
 		};
-		wui_plt_rst: wui1-4-7 {
-			miwus = <&miwu1 3 7>; /* PLT_RST */
+		wui_espi_rst: wui1-4-7 {
+			miwus = <&miwu1 3 7>; /* PLT_RST/ESPI_RST */
 		};
 
 		/* MIWU group E */

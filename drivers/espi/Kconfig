@@ -14,6 +14,8 @@ source "drivers/espi/Kconfig.xec"
 
 source "drivers/espi/Kconfig.npcx"
 
+source "drivers/espi/Kconfig.npcm4xx"
+
 source "drivers/espi/Kconfig.espi_emul"
 
 source "drivers/espi/Kconfig.aspeed"
