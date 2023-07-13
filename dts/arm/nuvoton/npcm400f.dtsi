@@ -73,6 +73,37 @@
 			#vw-cells = <3>;
 			status = "disabled";
 		};
+
+		host_sub: lpc@400c1000 {
+			compatible = "nuvoton,npcm4xx-host-sub";
+			/* host sub-module register address & size */
+			reg = <0x400c1000 0x2000
+			       0x40010000 0x2000
+			       0x4000e000 0x2000
+			       0x400c9000 0x2000
+			       0x400cb000 0x2000
+			       0x400cd000 0x2000
+			       0x400cf000 0x1000>;
+			reg-names = "mswc", "shm", "c2h", "pm_acpi",
+				    "pm_hcmd", "pmch3", "pmch4";
+
+			/* host sub-module IRQ and priority */
+			interrupts = <4 3>, /* PMCH Input-Buf-Full (IBF) */
+				     <3 3>,  /* PMCH Output-Buf-Empty (OBE) */
+				     <6 3>;  /* Port80 FIFO Not Empty */
+			interrupt-names = "pmch_ibf", "pmch_obe", "p80_fifo";
+
+			/* WUI map for accessing host sub-modules */
+			host-acc-wui = <&wui_host_acc>;
+
+			/* clocks for host sub-modules */
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 3>,
+				 <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 4>,
+				 <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 5>,
+				 <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 6>,
+				 <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 7>;
+			label = "HOST_SUBS";
+		};
 	};
 
 	soc-id {

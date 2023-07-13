@@ -14,6 +14,7 @@
 #include <kernel.h>
 #include <soc.h>
 #include "espi_utils.h"
+#include "soc_host.h"
 #include "soc_miwu.h"
 
 #include <logging/log.h>
@@ -390,6 +391,8 @@ static void espi_vw_notify_plt_rst(const struct device *dev)
 	if (wire) {
 		/* Set Peripheral Channel ready when PLTRST is de-asserted */
 		inst->ESPICFG |= BIT(NPCM4XX_ESPICFG_PCHANEN);
+		/* Configure all host sub-modules in host doamin */
+		npcm4xx_host_init_subs_host_domain();
 	}
 
 	/* PLT_RST will be received several times */
@@ -639,7 +642,7 @@ static int espi_npcm4xx_read_lpc_request(const struct device *dev,
 {
 	ARG_UNUSED(dev);
 
-	return 0;
+	return npcm4xx_host_periph_read_request(op, data);
 }
 
 static int espi_npcm4xx_write_lpc_request(const struct device *dev,
@@ -648,7 +651,7 @@ static int espi_npcm4xx_write_lpc_request(const struct device *dev,
 {
 	ARG_UNUSED(dev);
 
-	return 0;
+	return npcm4xx_host_periph_write_request(op, data);
 }
 
 #if defined(CONFIG_ESPI_OOB_CHANNEL)
@@ -780,6 +783,7 @@ static int espi_npcm4xx_receive_oob(const struct device *dev,
 	/* Read remaining bytes of package */
 	if (sz_oob_rx % 4) {
 		int i;
+
 		oob_data = inst->OOBRXBUF[idx_rx_buf + 1];
 		for (i = 0; i < sz_oob_rx % 4; i++)
 			*(oob_buf++) = (oob_data >> (8 * i)) & 0xFF;
@@ -910,6 +914,8 @@ static int espi_npcm4xx_init(const struct device *dev)
 				&config->espi_rst_wui, espi_vw_espi_rst_isr);
 
 	espi_npcm4xx_configure(dev, &cfg);
+	/* Configure host sub-modules which HW blocks belong to core domain */
+	npcm4xx_host_init_subs_core_domain(dev, &data->callbacks);
 
 	/* eSPI Bus interrupt installation */
 	IRQ_CONNECT(DT_INST_IRQN(0),
