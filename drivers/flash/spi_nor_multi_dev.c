@@ -1219,7 +1219,7 @@ static int spi_nor_process_bfp(const struct device *dev,
 	data->page_size = jesd216_bfp_page_size(php, bfp);
 	data->flash_size = flash_size;
 
-	printk("Page size %u bytes\n", data->page_size);
+	LOG_DBG("Page size %u bytes", data->page_size);
 
 	/* If 4-byte addressing is supported, switch to it. */
 	if (jesd216_bfp_addrbytes(bfp) != JESD216_SFDP_BFP_DW1_ADDRBYTES_VAL_3B) {
@@ -1581,7 +1581,7 @@ static int spi_nor_configure(const struct device *dev)
 	 */
 	memset(data->jedec_id, 0x0, SPI_NOR_MAX_ID_LEN);
 	if (cfg->jedec_id[0] != 0) {
-		printk("Using pseudo flash node info %02x %02x %02x\n",
+		LOG_INF("Using pseudo flash node info %02x %02x %02x",
 			cfg->jedec_id[0], cfg->jedec_id[1], cfg->jedec_id[2]);
 		memcpy(data->jedec_id, cfg->jedec_id, SPI_NOR_MAX_ID_LEN);
 	} else {
@@ -1591,7 +1591,7 @@ static int spi_nor_configure(const struct device *dev)
 			ret = -ENODEV;
 			goto end;
 		} else {
-			printk("flash node info %02x %02x %02x\n",
+			LOG_INF("flash node info %02x %02x %02x",
 				data->jedec_id[0], data->jedec_id[1], data->jedec_id[2]);
 		}
 	}
@@ -1685,11 +1685,11 @@ static int spi_nor_configure(const struct device *dev)
 		}
 	}
 
-	printk("%s: %d KB flash\n", dev->name, dev_flash_size(dev) >> 10);
-	printk("bus_width: %d, cap: %08x\n", cfg->spi_max_buswidth, data->cap_mask);
-	printk("read: %08x, write: %08x, erase: %08x\n",
+	LOG_DBG("%s: %d KB flash", dev->name, dev_flash_size(dev) >> 10);
+	LOG_DBG("bus_width: %d, cap: %08x", cfg->spi_max_buswidth, data->cap_mask);
+	LOG_DBG("read: %08x, write: %08x, erase: %08x",
 		data->cmd_info.read_mode, data->cmd_info.pp_mode, data->cmd_info.se_mode);
-	printk("read op: %02xh (%d), write op: %02xh, erase op: %02xh(%dKB)\n",
+	LOG_DBG("read op: %02xh (%d), write op: %02xh, erase op: %02xh(%dKB)",
 		data->cmd_info.read_opcode, data->cmd_info.read_dummy,
 		data->cmd_info.pp_opcode, data->cmd_info.se_opcode, data->sector_size / 1024);
 

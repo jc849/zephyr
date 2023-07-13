@@ -596,7 +596,7 @@ static void spi_nor_npcm4xx_fiu_uma_transceive(const struct device *dev,
 
 	/* only support single dummy byte */
 	if ((uma_op_info->dummy_cycle % NPCM4XX_FIU_SINGLE_DUMMY_BYTE) != 0) {
-		printk("UMA dummy must multi by %d\n",
+		LOG_ERR("UMA dummy must multi by %d",
 				NPCM4XX_FIU_SINGLE_DUMMY_BYTE);
 		return;
 	}
