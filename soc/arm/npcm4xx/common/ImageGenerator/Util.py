@@ -53,7 +53,11 @@ class CNGError(BaseException):
 def SetPath(path=None):
     global Path_Current, Path_Input, Path_Key, Path_Output, Path_Xml
     if(path is not None):
-        Path_Current = os.path.join(Path_Current, path)
+        if (os.path.isabs(path)):
+            Path_Current = path
+        else:
+            Path_Current = os.path.join(Path_Current, path)
+
         Path_Input = os.path.join(Path_Current, 'Input')
         Path_Xml = os.path.join(Path_Current, 'Xml')
         Path_Key = os.path.join(Path_Current, 'Key')

@@ -2,7 +2,7 @@
 
 <Description>
 	<Config>
-		<ToolPath>@zephyrbase/soc/arm/npcm4xx/common/ImageGenerator</ToolPath>
+		<ToolPath></ToolPath>
 	</Config>
 
 	<FileName>

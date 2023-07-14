@@ -1661,6 +1661,8 @@ def ParseXml(XmlTree):
     if ('ToolPath' in Dict_Config):
         if(Dict_Config['ToolPath'] is not None):
             Util.SetPath(Dict_Config['ToolPath'])
+        else:
+            Util.SetPath(os.path.dirname(os.path.abspath(__file__)))
 
     # Custom Config Field
     # if not Util.internal:
