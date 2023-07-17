@@ -104,6 +104,50 @@
 				 <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL5 7>;
 			label = "HOST_SUBS";
 		};
+
+		kcs1: kcs@400c9000 {
+			compatible = "nuvoton,npcm4xx-kcs";
+			/* KCS1/PMCH1 register address & size */
+			reg = <0x400c9000 0x2000>;
+			reg-names = "kcs1";
+			addr = <0x62>;
+			chan = <1>;
+			label = "KCS1";
+			status = "disabled";
+		};
+
+		kcs2: kcs@400cb000 {
+			compatible = "nuvoton,npcm4xx-kcs";
+			/* KCS1/PMCH1 register address & size */
+			reg = <0x400cb000 0x2000>;
+			reg-names = "kcs2";
+			addr = <0x68>;
+			chan = <2>;
+			label = "KCS2";
+			status = "disabled";
+		};
+
+		kcs3: kcs@400cd000 {
+			compatible = "nuvoton,npcm4xx-kcs";
+			/* KCS1/PMCH1 register address & size */
+			reg = <0x400cd000 0x2000>;
+			reg-names = "kcs3";
+			addr = <0x6A>;
+			chan = <3>;
+			label = "KCS3";
+			status = "disabled";
+		};
+
+		kcs4: kcs@400cf000 {
+			compatible = "nuvoton,npcm4xx-kcs";
+			/* KCS1/PMCH1 register address & size */
+			reg = <0x400cf000 0x1000>;
+			reg-names = "kcs4";
+			addr = <0x6B>;
+			chan = <4>;
+			label = "KCS4";
+			status = "disabled";
+		};
 	};
 
 	soc-id {

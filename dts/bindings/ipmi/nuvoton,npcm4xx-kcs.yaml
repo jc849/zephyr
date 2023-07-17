@@ -1,0 +1,19 @@
+# Copyright (c) 2021, Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nuvoton NPCM4XX IPMI KCS
+
+compatible: "nuvoton,npcm4xx-kcs"
+
+include: ipmi-controller.yaml
+
+properties:
+    chan:
+      type: int
+      required: true
+      description: KCS channel number
+
+    addr:
+      type: int
+      required: true
+      description: KCS I/O port address
