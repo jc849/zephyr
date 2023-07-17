@@ -68,3 +68,19 @@
 &host_sub {
 	status = "okay";
 };
+
+&kcs1 {
+	status = "okay";
+};
+
+&kcs2 {
+	status = "okay";
+};
+
+&kcs3 {
+	status = "okay";
+};
+
+&kcs4 {
+	status = "okay";
+};

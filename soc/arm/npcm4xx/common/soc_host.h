@@ -11,6 +11,12 @@
 extern "C" {
 #endif
 
+
+#define NPCM4XX_KCS1_CTRL_NAME DT_LABEL(DT_NODELABEL(kcs1))
+#define NPCM4XX_KCS2_CTRL_NAME DT_LABEL(DT_NODELABEL(kcs2))
+#define NPCM4XX_KCS3_CTRL_NAME DT_LABEL(DT_NODELABEL(kcs3))
+#define NPCM4XX_KCS4_CTRL_NAME DT_LABEL(DT_NODELABEL(kcs4))
+
 /**
  * @brief Initializes all host sub-modules in Core domain.
  *

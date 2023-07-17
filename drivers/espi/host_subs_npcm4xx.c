@@ -191,6 +191,8 @@ struct host_sub_npcm4xx_data host_sub_data;
 #define EC_CFG_IDX_SHM_WND2_ADDR_2 0xFA
 #define EC_CFG_IDX_SHM_WND2_ADDR_3 0xFB
 
+extern void kcs_npcm4xx_isr(const struct device *dev);
+
 /* Host sub-device local inline functions */
 static inline uint8_t host_shd_mem_wnd_size_sl(uint32_t size)
 {
@@ -213,6 +215,7 @@ static inline uint8_t host_shd_mem_wnd_size_sl(uint32_t size)
 
 /* Host ACPI sub-device local functions */
 #if defined(CONFIG_ESPI_PERIPHERAL_HOST_IO)
+#if !defined(CONFIG_IPMI_KCS_NPCM4XX)
 static void host_acpi_process_input_data(uint8_t data)
 {
 	struct pmch_reg *const inst_acpi = host_sub_cfg.inst_pm_acpi;
@@ -234,6 +237,7 @@ static void host_acpi_process_input_data(uint8_t data)
 	espi_send_callbacks(host_sub_data.callbacks, host_sub_data.host_bus_dev,
 							evt);
 }
+#endif
 
 static void host_acpi_init(void)
 {
@@ -263,6 +267,7 @@ static void host_acpi_init(void)
 #endif
 
 #if defined(CONFIG_ESPI_PERIPHERAL_PMCH3)
+#if !defined(CONFIG_IPMI_KCS_NPCM4XX)
 static void host_pmch3_process_input_data(uint8_t data)
 {
 	struct pmch_reg *const inst_pmch3 = host_sub_cfg.inst_pmch3;
@@ -284,6 +289,7 @@ static void host_pmch3_process_input_data(uint8_t data)
 	espi_send_callbacks(host_sub_data.callbacks, host_sub_data.host_bus_dev,
 							evt);
 }
+#endif
 
 static void host_pmch3_init(void)
 {
@@ -313,6 +319,7 @@ static void host_pmch3_init(void)
 #endif
 
 #if defined(CONFIG_ESPI_PERIPHERAL_PMCH4)
+#if !defined(CONFIG_IPMI_KCS_NPCM4XX)
 static void host_pmch4_process_input_data(uint8_t data)
 {
 	struct pmch_reg *const inst_pmch4 = host_sub_cfg.inst_pmch4;
@@ -334,6 +341,7 @@ static void host_pmch4_process_input_data(uint8_t data)
 	espi_send_callbacks(host_sub_data.callbacks, host_sub_data.host_bus_dev,
 							evt);
 }
+#endif
 
 static void host_pmch4_init(void)
 {
@@ -367,6 +375,7 @@ static void host_pmch4_init(void)
 static uint8_t	shm_host_cmd[CONFIG_ESPI_NPCM4XX_PERIPHERAL_HOST_CMD_PARAM_SIZE]
 	__aligned(8);
 /* Host command sub-device local functions */
+#if !defined(CONFIG_IPMI_KCS_NPCM4XX)
 static void host_hcmd_process_input_data(uint8_t data)
 {
 	struct espi_event evt = { ESPI_BUS_PERIPHERAL_NOTIFICATION,
@@ -378,6 +387,7 @@ static void host_hcmd_process_input_data(uint8_t data)
 	espi_send_callbacks(host_sub_data.callbacks, host_sub_data.host_bus_dev,
 							evt);
 }
+#endif
 
 static void host_hcmd_init(void)
 {
@@ -453,6 +463,33 @@ static void host_pmch_ibf_isr(void *arg)
 	struct pmch_reg *const inst_hcmd = host_sub_cfg.inst_pm_hcmd;
 	struct pmch_reg *const inst_pmch3 = host_sub_cfg.inst_pmch3;
 	struct pmch_reg *const inst_pmch4 = host_sub_cfg.inst_pmch4;
+#if defined(CONFIG_IPMI_KCS_NPCM4XX)
+	if (IS_BIT_SET(inst_acpi->HIPMST, NPCM4XX_HIPMST_IBF)) {
+		const struct device *kcs_dev = device_get_binding(NPCM4XX_KCS1_CTRL_NAME);
+
+		kcs_npcm4xx_isr(kcs_dev);
+	}
+
+
+	if (IS_BIT_SET(inst_hcmd->HIPMST, NPCM4XX_HIPMST_IBF)) {
+		const struct device *kcs_dev = device_get_binding(NPCM4XX_KCS2_CTRL_NAME);
+
+		kcs_npcm4xx_isr(kcs_dev);
+	}
+
+	if (IS_BIT_SET(inst_pmch3->HIPMST, NPCM4XX_HIPMST_IBF)) {
+		const struct device *kcs_dev = device_get_binding(NPCM4XX_KCS3_CTRL_NAME);
+
+		kcs_npcm4xx_isr(kcs_dev);
+	}
+
+
+	if (IS_BIT_SET(inst_pmch4->HIPMST, NPCM4XX_HIPMST_IBF)) {
+		const struct device *kcs_dev = device_get_binding(NPCM4XX_KCS4_CTRL_NAME);
+
+		kcs_npcm4xx_isr(kcs_dev);
+	}
+#else
 	uint8_t in_data;
 
 	/* Host put data on input buffer of ACPI channel */
@@ -498,6 +535,7 @@ static void host_pmch_ibf_isr(void *arg)
 		host_pmch4_process_input_data(in_data);
 #endif
 	}
+#endif
 }
 #endif
 
@@ -851,16 +889,49 @@ void npcm4xx_host_init_subs_host_domain(void)
 	inst_c2h->SIBCTRL |= BIT(NPCM4XX_SIBCTRL_CSAE);
 
 	if (IS_ENABLED(CONFIG_ESPI_PERIPHERAL_HOST_IO)) {
+#if defined(CONFIG_IPMI_KCS_NPCM4XX)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(kcs1), okay)
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_ACPI);
+		/* Configure IO address of Data port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_H,
+		 (DT_PROP(DT_NODELABEL(kcs1), addr) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_L,
+		 DT_PROP(DT_NODELABEL(kcs1), addr) & 0xff);
+		/* Configure IO address of CMD port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_H,
+		 ((DT_PROP(DT_NODELABEL(kcs1), addr) + 4) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_L,
+		 (DT_PROP(DT_NODELABEL(kcs1), addr) + 4) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
+#else
 		/*
 		 * Select ACPI bank which LDN are 0x11 (PM Channel 1) and enable
 		 * module by setting bit 0 in its Control (index is 0x30) reg.
 		 */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_ACPI);
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
 	}
 
 	if (IS_ENABLED(CONFIG_ESPI_PERIPHERAL_EC_HOST_CMD) ||
 	    IS_ENABLED(CONFIG_ESPI_PERIPHERAL_ACPI_SHM_REGION)) {
+#if defined(CONFIG_IPMI_KCS_NPCM4XX)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(kcs2), okay)
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_HCMD);
+		/* Configure IO address of Data port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_H,
+		 (DT_PROP(DT_NODELABEL(kcs2), addr) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_L,
+		 DT_PROP(DT_NODELABEL(kcs2), addr) & 0xff);
+		/* Configure IO address of CMD port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_H,
+		 ((DT_PROP(DT_NODELABEL(kcs2), addr) + 4) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_L,
+		 (DT_PROP(DT_NODELABEL(kcs2), addr) + 4) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
+#else
 		/* Select 'Host Command' bank which LDN are 0x12 (PM chan 2) */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_HCMD);
 #if defined(CONFIG_ESPI_PERIPHERAL_HOST_CMD_DATA_PORT_NUM)
@@ -900,20 +971,55 @@ void npcm4xx_host_init_subs_host_domain(void)
 #endif
 	/* Enable SHM direct memory access */
 	host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
 	}
 
 	if (IS_ENABLED(CONFIG_ESPI_PERIPHERAL_PMCH3)) {
+#if defined(CONFIG_IPMI_KCS_NPCM4XX)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(kcs3), okay)
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_PMCH3);
+		/* Configure IO address of Data port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_H,
+		 (DT_PROP(DT_NODELABEL(kcs3), addr) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_L,
+		 DT_PROP(DT_NODELABEL(kcs3), addr) & 0xff);
+		/* Configure IO address of CMD port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_H,
+		 ((DT_PROP(DT_NODELABEL(kcs3), addr) + 4) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_L,
+		 (DT_PROP(DT_NODELABEL(kcs3), addr) + 4) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
+#else
 		/* Select 'Host Command' bank which LDN are 0x17 (KCS3/PM chan 3) */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_PMCH3);
 		/* Enable 'Host Command' io port (KCS3/PM Channel 3) */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
 	}
 
 	if (IS_ENABLED(CONFIG_ESPI_PERIPHERAL_PMCH4)) {
+#if defined(CONFIG_IPMI_KCS_NPCM4XX)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(kcs4), okay)
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_PMCH4);
+		/* Configure IO address of Data port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_H,
+		 (DT_PROP(DT_NODELABEL(kcs4), addr) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_L,
+		 DT_PROP(DT_NODELABEL(kcs4), addr) & 0xff);
+		/* Configure IO address of CMD port */
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_H,
+		 ((DT_PROP(DT_NODELABEL(kcs4), addr) + 4) >> 8) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_L,
+		 (DT_PROP(DT_NODELABEL(kcs4), addr) + 4) & 0xff);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
+#else
 		/* Select 'Host Command' bank which LDN are 0x1E (KCS4/PM chan 4) */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_PMCH4);
 		/* Enable 'Host Command' io port (KCS4/PM Channel 4) */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, 0x01);
+#endif
 	}
 
 	LOG_DBG("Hos sub-modules configurations are done!");
