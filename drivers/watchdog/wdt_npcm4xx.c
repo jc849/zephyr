@@ -13,16 +13,16 @@
 LOG_MODULE_REGISTER(wdt_npcm4xx, CONFIG_WDT_LOG_LEVEL);
 
 /* Watchdog operating frequency is fixed to LFCLK (32.768) kHz */
-#define NPCM4XX_WDT_CLK	LFCLK
+#define NPCM4XX_WDT_CLK LFCLK
 
 /*
  * Maximum watchdog window time. Since the watchdog counter is 8-bits, maximum
- * time supported by npcm4xx watchdog is 256 * (32 * 32) / 32768 = 8 sec.
+ * time supported by npcm4xx watchdog is 256 * (1024 * 32768) / 32768 = 262144 sec.
  */
-#define NPCM4XX_WDT_MAX_WND_TIME    8000UL
+#define NPCM4XX_WDT_MAX_WND_TIME    250000000UL
 
 /* Timeout for reloading and restarting Timer 0. (Unit:ms) */
-#define NPCM4XX_T0CSR_RST_TIMEOUT   5
+#define NPCM4XX_T0CSR_RST_TIMEOUT   50
 
 /* Timeout for stopping watchdog. (Unit:ms) */
 #define NPCM4XX_WATCHDOG_STOP_TIMEOUT 1
@@ -30,7 +30,7 @@ LOG_MODULE_REGISTER(wdt_npcm4xx, CONFIG_WDT_LOG_LEVEL);
 
 /* Device config */
 struct wdt_npcm4xx_config {
-	uintptr_t base;	/* wdt controller base address */
+	uintptr_t base; /* wdt controller base address */
 };
 
 /* Driver data */
@@ -49,7 +49,7 @@ struct wdt_npcm4xx_data {
 #define HAL_INSTANCE(dev) (struct twd_reg *)(DRV_CONFIG(dev)->base)
 
 /* WDT local inline functions */
-static int wdt_t0out_reload(const struct device *dev)
+static inline int wdt_t0out_reload(const struct device *dev)
 {
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
 	uint64_t st;
@@ -71,7 +71,7 @@ static int wdt_t0out_reload(const struct device *dev)
 	return 0;
 }
 
-static int wdt_wait_stopped(const struct device *dev)
+static inline int wdt_wait_stopped(const struct device *dev)
 {
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
 	uint64_t st;
@@ -91,13 +91,120 @@ static int wdt_wait_stopped(const struct device *dev)
 	return 0;
 }
 
+static inline int wdt_convert_timeout(const struct device *dev)
+{
+	struct twd_reg *const inst = HAL_INSTANCE(dev);
+	struct wdt_npcm4xx_data *const data = DRV_DATA(dev);
+	uint32_t twd_div;
+	uint32_t wdt_div;
+	uint32_t twdt0;
+	uint32_t wdcnt;
+	int32_t rv;
+
+	if (data->timeout < 1000) {
+		/*
+		 * Milliseconds
+		 * - T0 Timer freq is LFCLK/32 Hz
+		 * - Watchdog freq is LFCLK/32*32 Hz (ie. LFCLK/1024 Hz)
+		 */
+		inst->TWCP = 0x05;      /* Prescaler is 32 in T0 Timer */
+		inst->WDCP = 0x05;      /* Prescaler is 32 in Watchdog Timer */
+
+		/*
+		 * One clock period of T0 timer is 32/32768 Hz = 0.976 ms.
+		 * One clock period of watchdog is 32*32/32768 Hz = 31.25 ms.
+		 */
+		twd_div = (1 << inst->TWCP);
+		wdt_div = (1 << inst->WDCP);
+		twdt0 = MAX(ceiling_fraction((data->timeout * NPCM4XX_WDT_CLK),
+				(twd_div * 1000)), 1);
+		wdcnt = MIN(ceiling_fraction((data->timeout * NPCM4XX_WDT_CLK),
+					     (twd_div * wdt_div * 1000)) +
+			    CONFIG_WDT_NPCM4XX_DELAY_CYCLES, 0xFF);
+	} else if ((data->timeout >= 1000) && (data->timeout < 60000)) {
+		/*
+		 * Seconds
+		 * - T0 Timer freq is LFCLK/256 Hz
+		 * - Watchdog freq is T0CLK/32 Hz (ie. LFCLK/8192 Hz)
+		 */
+		inst->TWCP = 0x08;      /* Prescaler is 256 in T0 Timer */
+		inst->WDCP = 0x05;      /* Prescaler is 32 in Watchdog Timer */
+		/*
+		 * One clock period of T0 timer is 256/32768 Hz = 7.8125 ms.
+		 * One clock period of watchdog is 256*32/32768 Hz = 250 ms.
+		 */
+		twd_div = (1 << inst->TWCP);
+		wdt_div = (1 << inst->WDCP);
+		twdt0 = MAX(ceiling_fraction((data->timeout * NPCM4XX_WDT_CLK),
+				(twd_div * 1000)), 1);
+		wdcnt = MIN(ceiling_fraction((data->timeout * NPCM4XX_WDT_CLK),
+				(twd_div * wdt_div * 1000)) + CONFIG_WDT_NPCM4XX_DELAY_CYCLES,
+				0xFF);
+	} else if ((data->timeout >= 60000) && (data->timeout < 1800000)) {
+		/*
+		 * Minutes
+		 * - T0 Timer freq is LFCLK/1024 Hz
+		 * - Watchdog freq is T0CLK/256 Hz (ie. LFCLK/262144 Hz)
+		 */
+		inst->TWCP = 0x0A;      /* Prescaler is 1024 in T0 Timer */
+		inst->WDCP = 0x08;      /* Prescaler is 256 in Watchdog Timer */
+		/*
+		 * One clock period of T0 timer is 1024/32768 Hz = 31.25 ms.
+		 * One clock period of watchdog is 1024*256/32768 Hz = 8 sec.
+		 */
+		twd_div = (1 << inst->TWCP);
+		wdt_div = (1 << inst->WDCP);
+		twdt0 = MIN(ceiling_fraction(data->timeout, 1000) *
+			    ceiling_fraction(NPCM4XX_WDT_CLK, twd_div), 0xFFFF);
+		wdcnt = MIN(ceiling_fraction(data->timeout,
+				ceiling_fraction(twd_div * wdt_div * 1000, NPCM4XX_WDT_CLK)) +
+			    CONFIG_WDT_NPCM4XX_DELAY_CYCLES, 0xFF);
+	} else if ((data->timeout >= 1800000) && (data->timeout < NPCM4XX_WDT_MAX_WND_TIME)) {
+		/*
+		 * Half hour
+		 * - T0 Timer freq is LFCLK/1024 Hz
+		 * - Watchdog freq is T0CLK/32768 Hz (ie. LFCLK/33554432 Hz)
+		 */
+		inst->TWCP = 0x0A;      /* Prescaler is 1024 in T0 Timer */
+		inst->WDCP = 0x0F;      /* Prescaler is 32768 in Watchdog Timer */
+		/*
+		 * One clock period of T0 timer is 1024/32768 Hz = 31.25 ms.
+		 * One clock period of watchdog is 1024*32768/32768 Hz = 1024 sec.
+		 */
+		twd_div = (1 << inst->TWCP);
+		wdt_div = (1 << inst->WDCP);
+		twdt0 = MIN(ceiling_fraction(data->timeout, 1000) *
+			    ceiling_fraction(NPCM4XX_WDT_CLK, twd_div), 0xFFFF);
+		wdcnt = MIN(ceiling_fraction(data->timeout, twd_div * 1000), 0xFF);
+	} else {
+		/* should not be here */
+		LOG_ERR("WDT timeout value is invalid!");
+		return -EOVERFLOW;
+	}
+
+	/* Configure 16-bit timer0 counter */
+	inst->TWDT0 = twdt0;
+	/* Reload and restart T0 timer */
+	rv = wdt_t0out_reload(dev);
+	if (rv != 0) {
+		return -ETIMEDOUT;
+	}
+
+	/* Configure 8-bit watchdog counter */
+	inst->WDCNT = wdcnt;
+
+	LOG_DBG("WDT setup: TWDT0, WDCNT are %d, %d", inst->TWDT0, inst->WDCNT);
+
+	return 0;
+}
+
 /* WDT local functions */
 static void wdt_t0out_isr(const struct device *dev)
 {
 	struct wdt_npcm4xx_data *const data = DRV_DATA(dev);
 
 	LOG_DBG("WDT reset will issue after %d delay cycle!",
-			CONFIG_WDT_NPCM4XX_DELAY_CYCLES);
+		CONFIG_WDT_NPCM4XX_DELAY_CYCLES);
 
 	/* Handle watchdog event here. */
 	if (data->cb) {
@@ -115,7 +222,7 @@ static int wdt_npcm4xx_setup(const struct device *dev, uint8_t options)
 	/* Disable irq of t0-out expired event first */
 	irq_disable(DT_INST_IRQN(0));
 
-	if (!data->timeout_installed) {
+	if (data->timeout_installed == false) {
 		LOG_ERR("No valid WDT timeout installed");
 		return -EINVAL;
 	}
@@ -135,21 +242,11 @@ static int wdt_npcm4xx_setup(const struct device *dev, uint8_t options)
 		return -ENOTSUP;
 	}
 
-	/*
-	 * One clock period of T0 timer is 32/32.768 KHz = 0.976 ms.
-	 * Then the counter value is timeout/0.976 - 1.
-	 */
-	inst->TWDT0 = MAX(ceiling_fraction(
-			data->timeout * NPCM4XX_WDT_CLK, 32 * 1000) - 1, 1);
-
-	/* Configure 8-bit watchdog counter */
-	inst->WDCNT = MIN(ceiling_fraction(data->timeout, 32) +
-			CONFIG_WDT_NPCM4XX_DELAY_CYCLES, 0xff);
-
-	LOG_DBG("WDT setup: TWDT0, WDCNT are %d, %d", inst->TWDT0, inst->WDCNT);
-
-	/* Reload and restart T0 timer */
-	rv = wdt_t0out_reload(dev);
+	/* Convert timeout */
+	rv = wdt_convert_timeout(dev);
+	if (rv != 0) {
+		return -ETIMEDOUT;
+	}
 
 	/* Configure t0 timer interrupt and its isr. */
 	/* Configure twd ISR */
@@ -186,7 +283,7 @@ static int wdt_npcm4xx_disable(const struct device *dev)
 }
 
 static int wdt_npcm4xx_install_timeout(const struct device *dev,
-		const struct wdt_timeout_cfg *cfg)
+				       const struct wdt_timeout_cfg *cfg)
 {
 	struct wdt_npcm4xx_data *const data = DRV_DATA(dev);
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
@@ -243,18 +340,9 @@ static int wdt_npcm4xx_init(const struct device *dev)
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
 
 	/* Feed watchdog by writing 5Ch, Select T0IN as clock */
-	inst->CFG |= BIT(TWD_CFG_WDSDME) | BIT(TWD_CFG_WDCT0I);
+	inst->TWCFG |= BIT(TWD_TWCFG_WDSDME) | BIT(TWD_TWCFG_WDCT0I);
 	/* Disable early touch functionality */
 	inst->T0CSR |= BIT(TWD_T0CSR_TESDIS) | BIT(TWD_T0CSR_WDRST_STS);
-	/*
-	 * Plan clock frequency of T0 timer and watchdog timer as below:
-	 * - T0 Timer freq is LFCLK Hz
-	 * - Watchdog freq is T0CLK/32 Hz (ie. LFCLK/32 Hz)
-	 */
-	/* Prescaler is 32 in Watchdog Timer */
-	inst->WDCP = 0x05;
-	/* Prescaler is 32 in T0 Timer */
-	inst->CP = 0x05;
 
 	return 0;
 }

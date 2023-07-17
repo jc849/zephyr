@@ -15,8 +15,10 @@ config WDT_NPCM4XX_DELAY_CYCLES
 	int "Number of delay cycles before generating watchdog event/signal"
 	depends on WDT_NPCM4XX
 	range 1 255
-	default 10
+	default 5
 	help
-	  This option defines the window in which a watchdog event must be
-	  handled, in units of 31ms. After this time window, the watchdog reset
-	  triggers immediately.
+	  This option defines the window in which a watchdog event must be handled.
+	  If the watchdog timeout value is under 1 second, the WDT_NPCM4XX_DELAY_CYCLES unit is 31 ms.
+	  If the watchdog timeout value is under 1 minute, the WDT_NPCM4XX_DELAY_CYCLES unit is 250 ms.
+	  Otherwise, the WDT_NPCM4XX_DELAY_CYCLES unit is 8 second.
+	  After this time window, the watchdog reset triggers immediately.
