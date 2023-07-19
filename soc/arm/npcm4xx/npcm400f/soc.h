@@ -18,5 +18,6 @@
 #include <reg/reg_def.h>
 #include <soc_dt.h>
 #include <soc_clock.h>
+#include "gdma.h"
 
 #endif /* _NUVOTON_NPCM_SOC_H_ */
