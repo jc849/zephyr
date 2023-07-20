@@ -1442,11 +1442,11 @@ struct itim32_reg {
 };
 
 /* ITIM32 register fields */
-#define ITIM32_CTS_ITEN                         (7)
-#define ITIM32_CTS_CKSEL                        (4)
-#define ITIM32_CTS_TO_WUE                       (3)
-#define ITIM32_CTS_TO_IE                        (2)
-#define ITIM32_CTS_TO_STS                       (0)
+#define NPCM4XX_CTS_ITEN                         (7)
+#define NPCM4XX_CTS_CKSEL                        (4)
+#define NPCM4XX_CTS_TO_WUE                       (3)
+#define NPCM4XX_CTS_TO_IE                        (2)
+#define NPCM4XX_CTS_TO_STS                       (0)
 
 /*
  * Tachometer (TACH) Sensor device registers
