@@ -1234,182 +1234,194 @@ struct c2h_reg {
 #define NPCM4XX_SIBCTRL_CSWR                2
 
 /*
- * SMBUS (SMB) device registers
+ * i2c device registers
  */
-struct smb_reg {
-	/* 0x000: SMB Serial Data */
-	volatile uint8_t SMBSDA;
-	volatile uint8_t reserved1;
-	/* 0x002: SMB Status */
-	volatile uint8_t SMBST;
-	volatile uint8_t reserved2;
-	/* 0x004: SMB Control Status */
-	volatile uint8_t SMBCST;
-	volatile uint8_t reserved3;
-	/* 0x006: SMB Control 1 */
-	volatile uint8_t SMBCTL1;
-	volatile uint8_t reserved4;
-	/* 0x008: SMB Own Address */
-	volatile uint8_t SMBADDR1;
-	volatile uint8_t reserved5;
-	/* 0x00A: SMB Control 2 */
-	volatile uint8_t SMBCTL2;
-	volatile uint8_t reserved6;
-	/* 0x00C: SMB Own Address */
-	volatile uint8_t SMBADDR2;
-	volatile uint8_t reserved7;
-	/* 0x00E: SMB Control 3 */
-	volatile uint8_t SMBCTL3;
-	/* 0x00F: SMB Bus Timeout */
-	volatile uint8_t SMBT_OUT;
-	/* 0x010: SMB Own Address 3 */
-	volatile uint8_t SMBADDR3;
-	/* 0x011: SMB Own Address 7 */
-	volatile uint8_t SMBADDR7;
-	/* 0x012: SMB Own Address 4 */
-	volatile uint8_t SMBADDR4;
-	/* 0x013: SMB Own Address 8 */
-	volatile uint8_t SMBADDR8;
-	/* 0x014: SMB Own Address 5 */
-	volatile uint8_t SMBADDR5;
-	volatile uint8_t reserved8;
-	/* 0x016: SMB Own Address 6 */
-	volatile uint8_t SMBADDR6;
-	volatile uint8_t reserved9;
-	/* 0x018: SMB Control Status 2 */
-	volatile uint8_t SMBCST2;
-	/* 0x019: SMB Control Status 3 */
-	volatile uint8_t SMBCST3;
-	/* 0x01A: SMB Control 4 */
-	volatile uint8_t SMBCTL4;
-	volatile uint8_t reserved10;
-	/* 0x01C: SMB SCL Low Time */
-	volatile uint8_t SMBSCLLT;
-	/* 0x01D: SMB FIFO Control */
-	volatile uint8_t SMBFIF_CTL;
-	/* 0x01E: SMB SCL High Time */
-	volatile uint8_t SMBSCLHT;
-	volatile uint8_t reserved11;
+struct i2c_reg {
+	/* [0x00] I2C Serial Data */
+	volatile uint8_t SMBnSDA;
+	volatile uint8_t RESERVE0[1];
+	/* [0x02] I2C Status */
+	volatile uint8_t SMBnST;
+	volatile uint8_t RESERVE1[1];
+	/* [0x04] I2C Control Status */
+	volatile uint8_t SMBnCST;
+	volatile uint8_t RESERVE2[1];
+    /* [0x06] I2C Control 1 */
+	volatile uint8_t SMBnCTL1;
+	volatile uint8_t RESERVE3[1];
+    /* [0x08] I2C Own Address 1 */
+	volatile uint8_t SMBnADDR1;
+    /* [0x09] Timeout Status */
+	volatile uint8_t TIMEOUT_ST;
+    /* [0x0A] I2C Control 2 */
+	volatile uint8_t SMBnCTL2;
+    /* [0x0B] Timeout Enable */
+	volatile uint8_t TIMEOUT_EN;
+    /* [0x0C] I2C Own Address 2 */
+	volatile uint8_t SMBnADDR2;
+	volatile uint8_t RESERVE4[1];
+    /* [0x0E] I2C Control 3 */
+	volatile uint8_t SMBnCTL3;
+    /* [0x0F] DMA Control */
+	volatile uint8_t DMA_CTRL;
+    /* [0x10] I2C Own Address 3 */
+	volatile uint8_t SMBnADDR3;
+    /* [0x11] I2C Own Address 7 */
+	volatile uint8_t SMBnADDR7;
+    /* [0x12] I2C Own Address 4 */
+	volatile uint8_t SMBnADDR4;
+    /* [0x13] I2C Own Address 8 */
+	volatile uint8_t SMBnADDR8;
+    /* [0x14] I2C Own Address 5 */
+	volatile uint8_t SMBnADDR5;
+    /* [0x15] I2C Own Address 9 */
+	volatile uint8_t SMBnADDR9;
+    /* [0x16] I2C Own Address 6 */
+	volatile uint8_t SMBnADDR6;
+    /* [0x17] I2C Own Address 10 */
+	volatile uint8_t SMBnADDR10;
+    /* [0x18] I2C Control Status 2 */
+	volatile uint8_t SMBnCST2;
+    /* [0x19] I2C Control Status 3 */
+	volatile uint8_t SMBnCST3;
+    /* [0x1A] I2C Control 4 */
+	volatile uint8_t SMBnCTL4;
+    /* [0x1B] I2C Control 5 */
+	volatile uint8_t SMBnCTL5;
+    /* [0x1C] I2C SCL Low Time (Fast Mode) */
+	volatile uint8_t SMBnSCLLT;
+    /* [0x1D] I2C Address Match Status */
+	volatile uint8_t ADDMTCH_ST;
+    /* [0x1E] I2C SCL High Time (Fast Mode) */
+	volatile uint8_t SMBnSCLHT;
+    /* [0x1F] I2C Version */
+	volatile uint8_t SMBn_VER;
+    /* [0x20] DMA Address Byte 1 */
+	volatile uint8_t DMA_ADDR1;
+    /* [0x21] DMA Address Byte 2 */
+	volatile uint8_t DMA_ADDR2;
+    /* [0x22] DMA Address Byte 3 */
+	volatile uint8_t DMA_ADDR3;
+    /* [0x23] DMA Address Byte 4 */
+	volatile uint8_t DMA_ADDR4;
+    /* [0x24] Data Length Byte 1 */
+	volatile uint8_t DATA_LEN1;
+    /* [0x25] Data Length Byte 2 */
+	volatile uint8_t DATA_LEN2;
+    /* [0x26] Data Counter Byte 1 */
+	volatile uint8_t DATA_CNT1;
+    /* [0x27] Data Counter Byte 2 */
+	volatile uint8_t DATA_CNT2;
+	volatile uint8_t RESERVE7[1];
+    /* [0x29] Timeout Control 1 */
+	volatile uint8_t TIMEOUT_CTL1;
+    /* [0x2A] Timeout Control 2 */
+	volatile uint8_t TIMEOUT_CTL2;
+    /* [0x2B] I2C PEC Data */
+	volatile uint8_t SMBnPEC;
 };
 
-/*
- * SMBUS (SMB) FIFO device registers
- */
-struct smb_fifo_reg {
-	/* 0x000: SMB Serial Data */
-	volatile uint8_t SMBSDA;
-	volatile uint8_t reserved1;
-	/* 0x002: SMB Status */
-	volatile uint8_t SMBST;
-	volatile uint8_t reserved2;
-	/* 0x004: SMB Control Status */
-	volatile uint8_t SMBCST;
-	volatile uint8_t reserved3;
-	/* 0x006: SMB Control 1 */
-	volatile uint8_t SMBCTL1;
-	volatile uint8_t reserved4;
-	/* 0x008: SMB Own Address */
-	volatile uint8_t SMBADDR1;
-	volatile uint8_t reserved5;
-	/* 0x00A: SMB Control 2 */
-	volatile uint8_t SMBCTL2;
-	volatile uint8_t reserved6;
-	/* 0x00C: SMB Own Address */
-	volatile uint8_t SMBADDR2;
-	volatile uint8_t reserved7;
-	/* 0x00E: SMB Control 3 */
-	volatile uint8_t SMBCTL3;
-	/* 0x00F: SMB Bus Timeout */
-	volatile uint8_t SMBT_OUT;
-	/* 0x010: SMB FIFO Control */
-	volatile uint8_t SMBFIF_CTS;
-	volatile uint8_t reserved8;
-	/* 0x012: SMB Tx-FIFO Control */
-	volatile uint8_t SMBTXF_CTL;
-	volatile uint8_t reserved9;
-	/* 0x014: SMB Bus Timeout */
-	volatile uint8_t SMB_T_OUT;
-	volatile uint8_t reserved10[3];
-	/* 0x018: SMB Control Status 2 */
-	volatile uint8_t SMBCST2;
-	/* 0x019: SMB Control Status 3 */
-	volatile uint8_t SMBCST3;
-	/* 0x01A: SMB Tx-FIFO Status */
-	volatile uint8_t SMBTXF_STS;
-	volatile uint8_t reserved11;
-	/* 0x01C: SMB Rx-FIFO Status */
-	volatile uint8_t SMBRXF_STS;
-	volatile uint8_t reserved12;
-	/* 0x01E: SMB Rx-FIFO Contro */
-	volatile uint8_t SMBRXF_CTL;
-	volatile uint8_t reserved13;
-};
+/* I2C register fields */
+/*--------------------------*/
+/*     SMBnST fields        */
+/*--------------------------*/
+#define NPCM4XX_SMBnST_XMIT                  0
+#define NPCM4XX_SMBnST_MASTER                1
+#define NPCM4XX_SMBnST_NMATCH                2
+#define NPCM4XX_SMBnST_STASTR                3
+#define NPCM4XX_SMBnST_NEGACK                4
+#define NPCM4XX_SMBnST_BER                   5
+#define NPCM4XX_SMBnST_SDAST                 6
+#define NPCM4XX_SMBnST_SLVSTP                7
 
-/* SMB register fields */
-#define NPCM4XX_SMBST_XMIT                  0
-#define NPCM4XX_SMBST_MASTER                1
-#define NPCM4XX_SMBST_NMATCH                2
-#define NPCM4XX_SMBST_STASTR                3
-#define NPCM4XX_SMBST_NEGACK                4
-#define NPCM4XX_SMBST_BER                   5
-#define NPCM4XX_SMBST_SDAST                 6
-#define NPCM4XX_SMBST_SLVSTP                7
-#define NPCM4XX_SMBCST_BUSY                 0
-#define NPCM4XX_SMBCST_BB                   1
-#define NPCM4XX_SMBCST_MATCH                2
-#define NPCM4XX_SMBCST_GCMATCH              3
-#define NPCM4XX_SMBCST_TSDA                 4
-#define NPCM4XX_SMBCST_TGSCL                5
-#define NPCM4XX_SMBCST_MATCHAF              6
-#define NPCM4XX_SMBCST_ARPMATCH             7
-#define NPCM4XX_SMBCST2_MATCHA1F            0
-#define NPCM4XX_SMBCST2_MATCHA2F            1
-#define NPCM4XX_SMBCST2_MATCHA3F            2
-#define NPCM4XX_SMBCST2_MATCHA4F            3
-#define NPCM4XX_SMBCST2_MATCHA5F            4
-#define NPCM4XX_SMBCST2_MATCHA6F            5
-#define NPCM4XX_SMBCST2_MATCHA7F            6
-#define NPCM4XX_SMBCST2_INTSTS              7
-#define NPCM4XX_SMBCST3_MATCHA8F            0
-#define NPCM4XX_SMBCST3_MATCHA9F            1
-#define NPCM4XX_SMBCST3_MATCHA10F           2
-#define NPCM4XX_SMBCTL1_START               0
-#define NPCM4XX_SMBCTL1_STOP                1
-#define NPCM4XX_SMBCTL1_INTEN               2
-#define NPCM4XX_SMBCTL1_ACK                 4
-#define NPCM4XX_SMBCTL1_GCMEN               5
-#define NPCM4XX_SMBCTL1_NMINTE              6
-#define NPCM4XX_SMBCTL1_STASTRE             7
-#define NPCM4XX_SMBCTL2_ENABLE              0
-#define NPCM4XX_SMBCTL2_SCLFRQ0_6_FIELD     FIELD(1, 7)
-#define NPCM4XX_SMBCTL3_ARPMEN              2
-#define NPCM4XX_SMBCTL3_SCLFRQ7_8_FIELD     FIELD(0, 2)
-#define NPCM4XX_SMBCTL3_IDL_START           3
-#define NPCM4XX_SMBCTL3_400K                4
-#define NPCM4XX_SMBCTL3_BNK_SEL             5
-#define NPCM4XX_SMBCTL3_SDA_LVL             6
-#define NPCM4XX_SMBCTL3_SCL_LVL             7
-#define NPCM4XX_SMBCTL4_HLDT_FIELD          FIELD(0, 6)
-#define NPCM4XX_SMBCTL4_LVL_WE              7
-#define NPCM4XX_SMBADDR1_SAEN               7
-#define NPCM4XX_SMBADDR2_SAEN               7
-#define NPCM4XX_SMBADDR3_SAEN               7
-#define NPCM4XX_SMBADDR4_SAEN               7
-#define NPCM4XX_SMBADDR5_SAEN               7
-#define NPCM4XX_SMBADDR6_SAEN               7
-#define NPCM4XX_SMBADDR7_SAEN               7
-#define NPCM4XX_SMBADDR8_SAEN               7
-#define NPCM4XX_SMBSEL_SMB4SEL              4
-#define NPCM4XX_SMBSEL_SMB5SEL              5
-#define NPCM4XX_SMBSEL_SMB6SEL              6
-#define NPCM4XX_SMBFIF_CTS_RXF_TXE          1
-#define NPCM4XX_SMBFIF_CTS_CLR_FIFO         6
-#define NPCM4XX_SMBFIF_CTL_FIFO_EN          4
-#define NPCM4XX_SMBRXF_STS_RX_THST          6
+/*--------------------------*/
+/*     SMBnCST fields       */
+/*--------------------------*/
+#define NPCM4XX_SMBnCST_BUSY                 0
+#define NPCM4XX_SMBnCST_BB                   1
+#define NPCM4XX_SMBnCST_MATCH                2
+#define NPCM4XX_SMBnCST_GCMATCH              3
+#define NPCM4XX_SMBnCST_TSDA                 4
+#define NPCM4XX_SMBnCST_TGSCL                5
+#define NPCM4XX_SMBnCST_MATCHAF              6
+#define NPCM4XX_SMBnCST_ARPMATCH             7
 
-/* RX FIFO threshold */
-#define NPCM4XX_SMBRXF_CTL_RX_THR           FIELD(0, 6)
-#define NPCM4XX_SMBRXF_CTL_LAST             7
+/*--------------------------*/
+/*     SMBnCTL1 fields      */
+/*--------------------------*/
+#define NPCM4XX_SMBnCTL1_START               0
+#define NPCM4XX_SMBnCTL1_STOP                1
+#define NPCM4XX_SMBnCTL1_INTEN               2
+#define NPCM4XX_SMBnCTL1_EOBINTE             3
+#define NPCM4XX_SMBnCTL1_ACK                 4
+#define NPCM4XX_SMBnCTL1_GCMEN               5
+#define NPCM4XX_SMBnCTL1_NMINTE              6
+#define NPCM4XX_SMBnCTL1_STASTRE             7
+
+/*--------------------------*/
+/*     SMBnADDR1-10 fields  */
+/*--------------------------*/
+#define NPCM4XX_SMBnADDR_ADDR                0
+#define NPCM4XX_SMBnADDR_SAEN                7
+
+/*--------------------------*/
+/*    TIMEOUT_ST fields     */
+/*--------------------------*/
+#define NPCM4XX_TIMEOUT_ST_T_OUTST1          0
+#define NPCM4XX_TIMEOUT_ST_T_OUTST2          1
+#define NPCM4XX_TIMEOUT_ST_T_OUTST1_EN       6
+#define NPCM4XX_TIMEOUT_ST_T_OUTST2_EN       7
+
+/*--------------------------*/
+/*     SMBnCTL2 fields      */
+/*--------------------------*/
+#define NPCM4XX_SMBnCTL2_ENABLE              0
+#define NPCM4XX_SMBnCTL2_SCLFRQ60_FIELD      FIELD(1, 7)
+
+/*--------------------------*/
+/*     TIMEOUT_EN fields    */
+/*--------------------------*/
+#define NPCM4XX_TIMEOUT_EN_TIMEOUT_EN        0
+#define NPCM4XX_TIMEOUT_EN_TO_CKDIV          2
+
+/*--------------------------*/
+/*     SMBnCTL3 fields      */
+/*--------------------------*/
+#define NPCM4XX_SMBnCTL3_SCLFRQ87_FIELD      FIELD(0, 2)
+#define NPCM4XX_SMBnCTL3_ARPMEN              2
+#define NPCM4XX_SMBnCTL3_SLP_START           3
+#define NPCM4XX_SMBnCTL3_400K_MODE           4
+#define NPCM4XX_SMBnCTL3_SDA_LVL             6
+#define NPCM4XX_SMBnCTL3_SCL_LVL             7
+
+/*--------------------------*/
+/*      DMA_CTRL fields     */
+/*--------------------------*/
+#define NPCM4XX_DMA_CTRL_DMA_INT_CLR         0
+#define NPCM4XX_DMA_CTRL_DMA_EN              1
+#define NPCM4XX_DMA_CTRL_LAST_PEC            2
+#define NPCM4XX_DMA_CTRL_DMA_STALL           3
+#define NPCM4XX_DMA_CTRL_DMA_IRQ             7
+
+/*--------------------------*/
+/*     SMBnCST2 fields      */
+/*--------------------------*/
+#define NPCM4XX_SMBnCST2_MATCHA1F            0
+#define NPCM4XX_SMBnCST2_MATCHA2F            1
+#define NPCM4XX_SMBnCST2_MATCHA3F            2
+#define NPCM4XX_SMBnCST2_MATCHA4F            3
+#define NPCM4XX_SMBnCST2_MATCHA5F            4
+#define NPCM4XX_SMBnCST2_MATCHA6F            5
+#define NPCM4XX_SMBnCST2_MATCHA7F            6
+#define NPCM4XX_SMBnCST2_INTSTS              7
+
+/*--------------------------*/
+/*     SMBnCST3 fields      */
+/*--------------------------*/
+#define NPCM4XX_SMBnCST3_MATCHA8F            0
+#define NPCM4XX_SMBnCST3_MATCHA9F            1
+#define NPCM4XX_SMBnCST3_MATCHA10F           2
+#define NPCM4XX_SMBnCST3_EO_BUSY             7
 
 /*
  * INTERNAL 8-BIT/16-BIT/32-BIT TIMER (ITIM32) device registers

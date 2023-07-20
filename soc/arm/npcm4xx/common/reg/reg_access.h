@@ -60,6 +60,10 @@
 #define BIT30 (0x40000000) /* < Bit 30 mask of an 32 bit integer */
 #define BIT31 (0x80000000) /* < Bit 31 mask of an 32 bit integer */
 
+#define M8(addr)  (*((volatile unsigned char  *) (addr)))
+#define M16(addr) (*((volatile unsigned short *) (addr)))
+#define M32(addr) (*((volatile unsigned long *) (addr)))
+
 /* Register bit operation macros */
 #define MaskBit(bit_nb) ((uint32_t)0x1 << (bit_nb))
 #define IsRegBitSet(Reg, BitMsk, BitMskVal)                                                        \
