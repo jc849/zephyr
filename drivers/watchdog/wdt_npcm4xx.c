@@ -55,13 +55,13 @@ static inline int wdt_t0out_reload(const struct device *dev)
 	uint64_t st;
 
 	/* Reload and restart T0 timer */
-	inst->T0CSR |= BIT(TWD_T0CSR_WDRST_STS) | BIT(TWD_T0CSR_RST);
+	inst->T0CSR |= BIT(NPCM4XX_T0CSR_WDRST_STS) | BIT(NPCM4XX_T0CSR_RST);
 	/* Wait for timer is loaded and restart */
 	st = k_uptime_get();
-	while (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_RST)) {
+	while (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_RST)) {
 		if (k_uptime_get() - st > NPCM4XX_T0CSR_RST_TIMEOUT) {
 			/* RST bit is still set? */
-			if (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_RST)) {
+			if (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_RST)) {
 				LOG_ERR("Timeout: reload T0 timer!");
 				return -ETIMEDOUT;
 			}
@@ -78,10 +78,10 @@ static inline int wdt_wait_stopped(const struct device *dev)
 
 	st = k_uptime_get();
 	/* If watchdog is still running? */
-	while (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_WD_RUN)) {
+	while (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_WD_RUN)) {
 		if (k_uptime_get() - st > NPCM4XX_WATCHDOG_STOP_TIMEOUT) {
 			/* WD_RUN bit is still set? */
-			if (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_WD_RUN)) {
+			if (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_WD_RUN)) {
 				LOG_ERR("Timeout: stop watchdog timer!");
 				return -ETIMEDOUT;
 			}
@@ -227,7 +227,7 @@ static int wdt_npcm4xx_setup(const struct device *dev, uint8_t options)
 		return -EINVAL;
 	}
 
-	if (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_WD_RUN)) {
+	if (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_WD_RUN)) {
 		LOG_ERR("WDT timer is busy");
 		return -EBUSY;
 	}
@@ -256,7 +256,7 @@ static int wdt_npcm4xx_setup(const struct device *dev, uint8_t options)
 	irq_enable(DT_INST_IRQN(0));
 
 	/* Enable TWD */
-	inst->T0CSR |= BIT(TWD_T0CSR_T0EN);
+	inst->T0CSR |= BIT(NPCM4XX_T0CSR_T0EN);
 
 	return 0;
 }
@@ -289,7 +289,7 @@ static int wdt_npcm4xx_install_timeout(const struct device *dev,
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
 
 	/* If watchdog is already running */
-	if (IS_BIT_SET(inst->T0CSR, TWD_T0CSR_WD_RUN)) {
+	if (IS_BIT_SET(inst->T0CSR, NPCM4XX_T0CSR_WD_RUN)) {
 		return -EBUSY;
 	}
 
@@ -301,9 +301,8 @@ static int wdt_npcm4xx_install_timeout(const struct device *dev,
 
 	/*
 	 * Since the watchdog counter in npcx series is 8-bits, maximum time
-	 * supported by it is 256 * (32 * 32) / 32768 = 8 sec. This makes the
-	 * allowed range of 1-8000 in milliseconds. Check if the provided value
-	 * is within this range.
+	 * supported by it is 256 * (1024 * 32768) / 32768 = 262144 sec.
+	 * Check if the provided value is within this range.
 	 */
 	if (cfg->window.max > NPCM4XX_WDT_MAX_WND_TIME || cfg->window.max == 0) {
 		data->timeout_installed = false;
@@ -340,9 +339,9 @@ static int wdt_npcm4xx_init(const struct device *dev)
 	struct twd_reg *const inst = HAL_INSTANCE(dev);
 
 	/* Feed watchdog by writing 5Ch, Select T0IN as clock */
-	inst->TWCFG |= BIT(TWD_TWCFG_WDSDME) | BIT(TWD_TWCFG_WDCT0I);
+	inst->TWCFG |= BIT(NPCM4XX_TWCFG_WDSDME) | BIT(NPCM4XX_TWCFG_WDCT0I);
 	/* Disable early touch functionality */
-	inst->T0CSR |= BIT(TWD_T0CSR_TESDIS) | BIT(TWD_T0CSR_WDRST_STS);
+	inst->T0CSR |= BIT(NPCM4XX_T0CSR_TESDIS) | BIT(NPCM4XX_T0CSR_WDRST_STS);
 
 	return 0;
 }

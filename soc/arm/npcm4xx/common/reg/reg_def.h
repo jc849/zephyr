@@ -478,21 +478,21 @@ struct twd_reg {
 };
 
 /* TWD register fields */
-#define TWD_TWCFG_LTWD_CFG              (0)
-#define TWD_TWCFG_LTWCP                 (1)
-#define TWD_TWCFG_LTWDT0                (2)
-#define TWD_TWCFG_LWDCNT                (3)
-#define TWD_TWCFG_WDCT0I                (4)
-#define TWD_TWCFG_WDSDME                (5)
-#define TWD_TWCP_MDIV                   (0)
-#define TWD_T0CSR_RST                   (0)
-#define TWD_T0CSR_TC                    (1)
-#define TWD_T0CSR_WDLTD                 (3)
-#define TWD_T0CSR_WDRST_STS             (4)
-#define TWD_T0CSR_WD_RUN                (5)
-#define TWD_T0CSR_T0EN                  (6)
-#define TWD_T0CSR_TESDIS                (7)
-#define TWD_WDCP_WDIV                   (0)
+#define NPCM4XX_TWCFG_LTWD_CFG              (0)
+#define NPCM4XX_TWCFG_LTWCP                 (1)
+#define NPCM4XX_TWCFG_LTWDT0                (2)
+#define NPCM4XX_TWCFG_LWDCNT                (3)
+#define NPCM4XX_TWCFG_WDCT0I                (4)
+#define NPCM4XX_TWCFG_WDSDME                (5)
+#define NPCM4XX_TWCP_MDIV                   (0)
+#define NPCM4XX_T0CSR_RST                   (0)
+#define NPCM4XX_T0CSR_TC                    (1)
+#define NPCM4XX_T0CSR_WDLTD                 (3)
+#define NPCM4XX_T0CSR_WDRST_STS             (4)
+#define NPCM4XX_T0CSR_WD_RUN                (5)
+#define NPCM4XX_T0CSR_T0EN                  (6)
+#define NPCM4XX_T0CSR_TESDIS                (7)
+#define NPCM4XX_WDCP_WDIV                   (0)
 
 /* Flash Interface Unit (FIU) device registers */
 struct fiu_reg {
