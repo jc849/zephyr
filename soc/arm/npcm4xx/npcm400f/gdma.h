@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2020 Nuvoton Technology Corporation.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef __GDMA_H__
 #define __GDMA_H__

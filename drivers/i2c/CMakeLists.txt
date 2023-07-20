@@ -31,6 +31,7 @@ zephyr_library_sources_ifdef(CONFIG_I2C_SAM0		i2c_sam0.c)
 zephyr_library_sources_ifdef(CONFIG_I2C_LITEX		i2c_litex.c)
 zephyr_library_sources_ifdef(CONFIG_I2C_NPCX		i2c_npcx_controller.c)
 zephyr_library_sources_ifdef(CONFIG_I2C_NPCX		i2c_npcx_port.c)
+zephyr_library_sources_ifdef(CONFIG_I2C_NPCM4XX		i2c_npcm4xx.c)
 zephyr_library_sources_ifdef(CONFIG_I2C_DW		i2c_dw.c)
 
 zephyr_library_sources_ifdef(CONFIG_I2C_STM32_V1

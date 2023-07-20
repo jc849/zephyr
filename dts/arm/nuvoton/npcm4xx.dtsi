@@ -311,64 +311,75 @@
 			label = "ADC_0";
 		};
 
-		/* I2c Controllers - Do not use them as i2c node directly */
-		i2c_ctrl0: i2c@40009000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x40009000 0x1000>;
-			interrupts = <13 3>;
+		i2c1a: i2c_a@40003000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40003000 0x1000>;
+			interrupts = <35 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
-			pinctrl-0 = <&pinctrl_i2c0_default>;
-			label = "I2CCTRL_0";
+			pinctrl-0 = <&pinctrl_i2c1a_default>;
+			label = "I2C_1A";
 			status = "disabled";
 		};
 
-		i2c_ctrl1: i2c@4000b000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x4000b000 0x1000>;
-			interrupts = <14 3>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 1>; /* may not correct */
-			pinctrl-0 = <&pinctrl_i2c1_default>;
-			label = "I2CCTRL_1";
-			status = "disabled";
-		};
-
-		i2c_ctrl2: i2c@400c0000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x400c0000 0x1000>;
-			interrupts = <36 3>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL3 2>;
-			pinctrl-0 = <&pinctrl_i2c2_default>;
-			label = "I2CCTRL_2";
-			status = "disabled";
-		};
-
-		i2c_ctrl3: i2c@400c2000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x400c2000 0x1000>;
+		i2c3a: i2c_a@40005000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40005000 0x1000>;
 			interrupts = <37 3>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL3 3>;
-			pinctrl-0 = <&pinctrl_i2c3_default>;
-			label = "I2CCTRL_3";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 2>;
+			pinctrl-0 = <&pinctrl_i2c3a_default>;
+			label = "I2C_3A";
 			status = "disabled";
 		};
 
-		i2c_ctrl4: i2c@40008000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x40008000 0x1000>;
-			interrupts = <19 3>;
+		i2c4a: i2c_a@40006000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40006000 0x1000>;
+			interrupts = <38 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 3>;
+			pinctrl-0 = <&pinctrl_i2c4a_default>;
+			label = "I2C_4A";
+			status = "disabled";
+		};
+
+		i2c5a: i2c_a@40007000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40007000 0x1000>;
+			interrupts = <39 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 4>;
-			pinctrl-0 = <&pinctrl_i2c4_default>;
-			label = "I2CCTRL_4";
+			pinctrl-0 = <&pinctrl_i2c5a_default>;
+			label = "I2C_5A";
 			status = "disabled";
 		};
 
-		i2c_ctrl5: i2c@40017000 {
-			compatible = "nuvoton,npcx-i2c-ctrl";
-			reg = <0x40017000 0x1000>;
+		i2c6a: i2c_a@40008000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40008000 0x1000>;
 			interrupts = <20 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 5>;
-			pinctrl-0 = <&pinctrl_i2c5_default>;
-			label = "I2CCTRL_5";
+			pinctrl-0 = <&pinctrl_i2c6a_default>;
+			label = "I2C_6A";
+			status = "disabled";
+		};
+
+		i2c1b: i2c_b@40003000 {
+			compatible = "nuvoton,npcm4xx-i2c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40003000 0x1000>;
+			interrupts = <35 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
+			pinctrl-0 = <&pinctrl_i2c1b_default>;
+			label = "I2C_1B";
 			status = "disabled";
 		};
 
