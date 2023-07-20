@@ -93,6 +93,7 @@ struct cdcg_reg {
 	volatile uint8_t  reserved11;
 };
 
+
 /* CDCG register fields */
 #define NPCM4XX_HFCGCTRL_LOAD                    0
 #define NPCM4XX_HFCGCTRL_LOCK                    2
@@ -581,7 +582,7 @@ struct fiu_reg {
 
 /* FIU register fields */
 /* 0x001: BURST CFG */
-#define NPCM4XX_BURST_CFG_R_BURST               FIELD(0, 1)
+#define NPCM4XX_BURST_CFG_R_BURST               FIELD(0, 2)
 #define NPCM4XX_BURST_CFG_SLAVE                 2
 #define NPCM4XX_BURST_CFG_UNLIM_BURST           3
 #define NPCM4XX_BURST_CFG_SPI_WR_EN             7
@@ -590,13 +591,13 @@ struct fiu_reg {
 #define NCPM4XX_RESP_CFG_QUAD_EN                3
 
 /* 0x014: SPI FL CFG */
-#define NPCM4XX_SPI_FL_CFG_RD_MODE              FIELD(6, 7)
+#define NPCM4XX_SPI_FL_CFG_RD_MODE              FIELD(6, 2)
 #define NPCM4XX_SPI_FL_CFG_RD_MODE_NORMAL       0
 #define NPCM4XX_SPI_FL_CFG_RD_MODE_FAST         1
 #define NPCM4XX_SPI_FL_CFG_RD_MODE_FAST_DUAL    3
 
 /* 0x01E: UMA CTS */
-#define NPCM4XX_UMA_CTS_D_SIZE                  FIELD(0, 2)
+#define NPCM4XX_UMA_CTS_D_SIZE                  FIELD(0, 3)
 #define NPCM4XX_UMA_CTS_A_SIZE                  3
 #define NPCM4XX_UMA_CTS_C_SIZE                  4
 #define NPCM4XX_UMA_CTS_RD_WR                   5
@@ -608,7 +609,7 @@ struct fiu_reg {
 #define NPCM4XX_UMA_ECTS_SW_CS1                 1
 #define NPCM4XX_UMA_ECTS_SW_CS2                 2
 #define NPCM4XX_UMA_ECTS_DEV_NUM_BACK           3
-#define NPCM4XX_UMA_ECTS_UMA_ADDR_SIZE          FIELD(4, 6)
+#define NPCM4XX_UMA_ECTS_UMA_ADDR_SIZE          FIELD(4, 3)
 
 /* 0x026: CRC Control Register */
 #define NPCM4XX_CRCCON_CALCEN                   0
@@ -638,7 +639,7 @@ struct fiu_reg {
 #define NPCM4XX_Q_P_EN_QUAD_P_EN                0
 
 /* 0x048: Extended data byte configurartion */
-#define NPCM4XX_EXT_DB_CFG_D_SIZE_DB            FIELD(0, 4)
+#define NPCM4XX_EXT_DB_CFG_D_SIZE_DB            FIELD(0, 5)
 #define NPCM4XX_EXT_DB_CFG_EXT_DB_EN            5
 
 /* 0x049: Direct write configuration */
