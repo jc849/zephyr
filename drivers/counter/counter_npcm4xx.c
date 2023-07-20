@@ -51,17 +51,6 @@ struct counter_npcm4xx_data {
 	uint32_t npcm4xx_tick;
 };
 
-/*-------------------------------------------------------------------------------*/
-/**
- * @brief               Set PRE and CNT registers by milliseconds
- * @param [in]          itim32			The timer module (1 ~ 6)
- * @param [in]          clock			The timer source clock (32K or APB2)
- * @param [in]          millisec		Millisecond unit
- * @return							The timer return code (OK or FAIL)
- **
- * @details					    static function called by ITIM32_StartTimer
- */
-/*-------------------------------------------------------------------------------*/
 enum ITIM32_RET ITIM32_SetRegsByMicroSec(enum ITIM32_SOURCE_CLOCK clock, uint32_t microsec)
 {
 	uint32_t time_base, cnt, pre, timer_apb2;
@@ -102,44 +91,30 @@ enum ITIM32_RET ITIM32_SetRegsByMicroSec(enum ITIM32_SOURCE_CLOCK clock, uint32_
 	return ITIM32_RET_OK;
 }
 
-/*----------------------------------------------------------*/
-/**
- * @brief                                                       Timer starts running
- * @param [in]          itim32			The timer module (1 ~ 6)
- * @return							none
- */
-/*----------------------------------------------------------*/
 static int counter_TimerRun(const struct device *dev)
 {
 	ARG_UNUSED(dev);
 	/* Enable interrupt */
-	ITIM32_1->CTS |= MaskBit(ITIM32_CTS_TO_IE);
+	ITIM32_1->CTS |= MaskBit(NPCM4XX_CTS_TO_IE);
 
 	/* Enable the module */
-	ITIM32_1->CTS |= MaskBit(ITIM32_CTS_ITEN);
+	ITIM32_1->CTS |= MaskBit(NPCM4XX_CTS_ITEN);
 
 	return ITIM32_RET_OK;
 }
 
-/*-----------------------------------------------------------------------*/
-/**
- * @brief                                                       Stop the timer module
- * @param [in]          itim32			The timer module (1 ~ 6)
- * @return							The timer return code (OK or FAIL)
- */
-/*-----------------------------------------------------------------------*/
 static int counter_StopTimer(const struct device *dev)
 {
 	ARG_UNUSED(dev);
 	/* Disable the module */
-	ITIM32_1->CTS &= ~(MaskBit(ITIM32_CTS_ITEN));
+	ITIM32_1->CTS &= ~(MaskBit(NPCM4XX_CTS_ITEN));
 
 	/* Waiting until the module is disabled (can take several clocks) */
-	while (IsRegBitSet(ITIM32_1->CTS, MaskBit(ITIM32_CTS_ITEN), MaskBit(ITIM32_CTS_ITEN))) {
+	while (IsRegBitSet(ITIM32_1->CTS, MaskBit(NPCM4XX_CTS_ITEN), MaskBit(NPCM4XX_CTS_ITEN))) {
 	}
 
 	/* Disable interrupt */
-	ITIM32_1->CTS &= ~(MaskBit(ITIM32_CTS_TO_IE));
+	ITIM32_1->CTS &= ~(MaskBit(NPCM4XX_CTS_TO_IE));
 
 	return ITIM32_RET_OK;
 }
@@ -197,28 +172,19 @@ static uint32_t counter_gettopvalue(const struct device *dev)
 	return DEV_DATA(dev)->top_tick;
 }
 
-/*-----------------------------------------------------------------------*/
-/**
- * @brief                                                       Configure the timer module
- * @param [in]          itim32			The timer module (1 ~ 6)
- * @param [in]          clock			The timer source clock (32K or APB2)
- * @param [in]          millisec		Millisecond unit
- * @param [in]          callback_func	The callback function
- * @return							The timer return code (OK or FAIL)
- */
-/*-----------------------------------------------------------------------*/
-enum ITIM32_RET ITIM32_TimerConfig(enum ITIM32_SOURCE_CLOCK clock, uint32_t microsec)
+enum ITIM32_RET ITIM32_TimerConfig(const struct device *dev,
+				   enum ITIM32_SOURCE_CLOCK clock, uint32_t microsec)
 {
 	/* Stop timer first */
-	if (counter_StopTimer(ITIM32_1) != ITIM32_RET_OK) {
+	if (counter_StopTimer(dev) != ITIM32_RET_OK) {
 		return ITIM32_RET_FAIL;
 	}
 
 	/* Select source clock */
 	if (clock == ITIM32_SOURCE_CLOCK_APB2) {
-		RegClrBit(ITIM32_1->CTS, MaskBit(ITIM32_CTS_CKSEL));
+		RegClrBit(ITIM32_1->CTS, MaskBit(NPCM4XX_CTS_CKSEL));
 	} else if (clock == ITIM32_SOURCE_CLOCK_32K) {
-		RegSetBit(ITIM32_1->CTS, MaskBit(ITIM32_CTS_CKSEL));
+		RegSetBit(ITIM32_1->CTS, MaskBit(NPCM4XX_CTS_CKSEL));
 	}
 
 	/* Set PRE and CNT registers */
@@ -235,7 +201,7 @@ static void NPCM4XX_itim_isr(const struct device *dev)
 						   DT_INST_REG_ADDR_BY_NAME(0, itim1);
 
 	/* clear sts */
-	RegSetBit(ITIM32_1->CTS, MaskBit(ITIM32_CTS_TO_STS));
+	RegSetBit(ITIM32_1->CTS, MaskBit(NPCM4XX_CTS_TO_STS));
 
 	DEV_DATA(dev)->npcm4xx_tick++;
 
@@ -265,9 +231,9 @@ static int Timer_Init(const struct device *dev)
 	DEV_DATA(dev)->npcm4xx_tick = 0;
 
 	/* Create Timer 10ms */
-	ITIM32_TimerConfig(ITIM32_SOURCE_CLOCK_APB2, 10000);
+	ITIM32_TimerConfig(dev, ITIM32_SOURCE_CLOCK_APB2, 10000);
 	/* Enable timeout wake-up */
-	RegSetBit(ITIM32_1->CTS, MaskBit(ITIM32_CTS_TO_WUE));
+	RegSetBit(ITIM32_1->CTS, MaskBit(NPCM4XX_CTS_TO_WUE));
 
 	IRQ_CONNECT(DT_INST_IRQN(0), DT_INST_IRQ(0, priority),
 		    NPCM4XX_itim_isr, DEVICE_DT_INST_GET(0), 0);
