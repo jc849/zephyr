@@ -1,0 +1,12 @@
+# NPCM4XX ADC driver configuration options
+
+# Copyright (c) 2020 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config ADC_NPCM4XX
+	bool "Nuvoton NPCM4XX ADC driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the ADC driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use ADC channels on NPCM4XX MCU.

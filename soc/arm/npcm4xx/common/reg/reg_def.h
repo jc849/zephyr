@@ -381,72 +381,80 @@ struct pwm_reg {
  * Analog-To-Digital Converter (ADC) device registers
  */
 struct adc_reg {
-	/* 0x000: ADC Status */
-	volatile uint16_t ADCSTS;
-	/* 0x002: ADC Configuration */
-	volatile uint16_t ADCCNF;
-	/* 0x004: ADC Timing Control */
-	volatile uint16_t ATCTL;
-	/* 0x006: ADC Single Channel Address */
-	volatile uint16_t ASCADD;
-	/* 0x008: ADC Scan Channels Select */
-	volatile uint16_t ADCCS;
-	volatile uint8_t reserved1[10];
-	/* 0x014: Threshold Control 1 */
-	volatile uint16_t THRCTL1;
-	/* 0x016: Threshold Control 2 */
-	volatile uint16_t THRCTL2;
-	/* 0x018: Threshold Control 3 */
-	volatile uint16_t THRCTL3;
-	/* 0x01A:  Threshold Status */
-	volatile uint16_t THRCTS;
-	volatile uint8_t reserved2[4];
-	/* 0x020: Internal register 1 for ADC Speed */
-	volatile uint16_t ADCCNF2;
-	/* 0x022: Internal register 2 for ADC Speed */
-	volatile uint16_t GENDLY;
-	volatile uint8_t reserved3[2];
-	/* 0x026: Internal register 3 for ADC Speed */
-	volatile uint16_t MEAST;
-	volatile uint8_t reserved4[18];
-	/* 0x03A: Deassertion Threshold Control 1 Word */
-	volatile uint16_t THR_DCTL1;
-	/* 0x03C: Deassertion Threshold Control 2 Word */
-	volatile uint16_t THR_DCTL2;
-	/* 0x03E: Deassertion Threshold Control 3 Word */
-	volatile uint16_t THR_DCTL3;
-	/* 0x040 - 52: Data Buffer of Channel 0 - 9 */
-	volatile uint16_t CHNDAT[10];
+	volatile uint16_t RESERVED0;
+	/* 0x02: DSADC control register0 */
+	volatile uint8_t  DSADCCTRL0;
+	volatile uint8_t  RESERVED1[11];
+	/* 0x0E: Operation Mode select */
+	volatile uint16_t ADCTM;
+	volatile uint16_t RESERVED2;
+  /* 0x12: Offset setting for tdp */
+	volatile uint16_t ADCTDPO[3];
+	volatile uint16_t RESERVED3[4];
+  /* 0x20: DSADC Analog Control register 1 */
+	volatile uint8_t  ADCACTRL1;
+	volatile uint8_t  RESERVED4;
+  /* 0x22: DSADC Analog Power Down Control */
+	volatile uint16_t ADCACTRL2;
+	volatile uint8_t  RESERVED5[2];
+  /* 0x26: Voltage / Thermister mode select */
+	volatile uint8_t  DSADCCTRL6;
+	volatile uint8_t  RESERVED6;
+  /* 0x28: Voltage / Thermister mode select */
+	volatile uint8_t  DSADCCTRL7;
+	volatile uint8_t  RESERVED7[3];
+  /* 0x2C: Voltage / Thermister mode select */
+	volatile uint16_t DSADCCTRL8;
+	volatile uint8_t  RESERVED8[74];
+  /* 0x78: DSADC Configuration */
+	volatile uint16_t DSADCCFG;
+  /* 0x7A: DSADC Channel select */
+	volatile uint8_t  DSADCCS;
+	volatile uint8_t  RESERVED9;
+  /* 0x7C: DSADC global status */
+	volatile uint16_t DSADCSTS;
+	volatile uint16_t RESERVED10;
+  /* 0x80: Temperature Channel Data */
+	volatile uint16_t TCHNDAT;
 };
 
 /* ADC register fields */
-#define NPCM4XX_ATCTL_SCLKDIV_FIELD              FIELD(0, 6)
-#define NPCM4XX_ATCTL_DLY_FIELD                  FIELD(8, 3)
-#define NPCM4XX_ASCADD_SADDR_FIELD               FIELD(0, 5)
-#define NPCM4XX_ADCSTS_EOCEV                     0
-#define NPCM4XX_ADCSTS_EOCCEV                    1
-#define NPCM4XX_ADCCNF_ADCMD_FIELD               FIELD(1, 2)
-#define NPCM4XX_ADCCNF_ADCRPTC                   3
-#define NPCM4XX_ADCCNF_INTECEN                   6
-#define NPCM4XX_ADCCNF_START                     4
-#define NPCM4XX_ADCCNF_ADCEN                     0
-#define NPCM4XX_ADCCNF_STOP                      11
-#define NPCM4XX_CHNDAT_CHDAT_FIELD               FIELD(0, 10)
-#define NPCM4XX_CHNDAT_NEW                       15
-#define NPCM4XX_THRCTL_THEN                      15
-#define NPCM4XX_THRCTL_L_H                       14
-#define NPCM4XX_THRCTL_CHNSEL                    FIELD(10, 4)
-#define NPCM4XX_THRCTL_THRVAL                    FIELD(0, 10)
-#define NPCM4XX_THRCTS_ADC_WKEN                  15
-#define NPCM4XX_THRCTS_THR3_IEN                  10
-#define NPCM4XX_THRCTS_THR2_IEN                  9
-#define NPCM4XX_THRCTS_THR1_IEN                  8
-#define NPCM4XX_THRCTS_ADC_EVENT                 7
-#define NPCM4XX_THRCTS_THR3_STS                  2
-#define NPCM4XX_THRCTS_THR2_STS                  1
-#define NPCM4XX_THRCTS_THR1_STS                  0
-#define NPCM4XX_THR_DCTL_THRD_EN                 15
-#define NPCM4XX_THR_DCTL_THR_DVAL                FIELD(0, 10)
+#define NPCM4XX_CTRL0_VNT                         (5)
+#define NPCM4XX_CTRL0_CH_SEL                      (0)
+#define NPCM4XX_TM_T_MODE5                        (8)
+#define NPCM4XX_TM_T_MODE4                        (6)
+#define NPCM4XX_TM_T_MODE3                        (4)
+#define NPCM4XX_TM_T_MODE2                        (2)
+#define NPCM4XX_TM_T_MODE1                        (0)
+#define NPCM4XX_TD_POST_OFFSET                    (8)
+#define NPCM4XX_ACTRL1_PWCTRL                     (1)
+#define NPCM4XX_ACTRL2_PD_VPP_PG                  (10)
+#define NPCM4XX_ACTRL2_PD_PM                      (9)
+#define NPCM4XX_ACTRL2_PD_ATX_5VSB                (8)
+#define NPCM4XX_ACTRL2_PD_ANA                     (7)
+#define NPCM4XX_ACTRL2_PD_BG                      (6)
+#define NPCM4XX_ACTRL2_PD_DSM                     (5)
+#define NPCM4XX_ACTRL2_PD_DVBE                    (4)
+#define NPCM4XX_ACTRL2_PD_IREF                    (3)
+#define NPCM4XX_ACTRL2_PD_ISEN                    (2)
+#define NPCM4XX_ACTRL2_PD_RG                      (1)
+#define NPCM4XX_CFG_IOVFEN                        (6)
+#define NPCM4XX_CFG_ICEN                          (5)
+#define NPCM4XX_CFG_START                         (4)
+#define NPCM4XX_CS_CC5                            (5)
+#define NPCM4XX_CS_CC4                            (4)
+#define NPCM4XX_CS_CC3                            (3)
+#define NPCM4XX_CS_CC2                            (2)
+#define NPCM4XX_CS_CC1                            (1)
+#define NPCM4XX_CS_CC0                            (0)
+#define NPCM4XX_STS_OVFEV                         (1)
+#define NPCM4XX_STS_EOCEV                         (0)
+#define NPCM4XX_TCHNDATA_NEW                      (15)
+#define NPCM4XX_TCHNDATA_DAT                      (3)
+#define NPCM4XX_TCHNDATA_FRAC                     (0)
+#define NPCM4XX_THRCTL_EN                         (15)
+#define NPCM4XX_THRCTL_VAL                        (0)
+#define NPCM4XX_THRDCTL_EN                        (15)
 
 /*
  * Timer Watchdog (TWD) device registers
