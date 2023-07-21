@@ -148,6 +148,16 @@
 			label = "KCS4";
 			status = "disabled";
 		};
+
+		adc0: adc@400d1100 {
+			compatible = "nuvoton,npcm4xx-adc";
+			#io-channel-cells = <1>;
+			reg = <0x400d1100 0xf00>;
+			interrupts = <21 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB1 NPCM4XX_PWDWN_CTL4 4>;
+			status = "disabled";
+			label = "ADC_0";
+		};
 	};
 
 	soc-id {

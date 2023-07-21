@@ -301,16 +301,6 @@
 			label="GPIO_F";
 		};
 
-		adc0: adc@400d1000 {
-			compatible = "nuvoton,npcx-adc";
-			#io-channel-cells = <1>;
-			reg = <0x400d1000 0x2000>;
-			interrupts = <10 3>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB1 NPCM4XX_PWDWN_CTL4 4>;
-			status = "disabled";
-			label = "ADC_0";
-		};
-
 		i2c1a: i2c_a@40003000 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;

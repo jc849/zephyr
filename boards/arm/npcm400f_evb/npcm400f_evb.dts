@@ -39,6 +39,20 @@
 			min-residency-us = <201000>;
 		};
 	};
+
+	zephyr,user {
+		/* adjust channel number according to enum adc_channel_en in adc_npcm4xx.c */
+		/* Because VIN16, THR16, TD2P is the same pin, it must only select one type.
+		 * Because VIN15, THR15, TD0P is the same pin, it must only select one type.
+		 * Because VIN14, THR14, TD1P is the same pin, it must only select one type.
+		 * Because VIN1, THR1, TD3P is the same pin, it must only select one type.
+		 * Because VIN2, THR2, TD4P is the same pin, it must only select one type.
+		 * Exsample : if you select channel 6(VIN16),
+		 *            and you can't select channel 7(THR16) and channel 19(TD2P).
+		 */
+		io-channels = <&adc0 17>, <&adc0 18>;
+	};
+
 };
 
 &uart0 {
@@ -121,4 +135,32 @@
 &i2c1b {
 	clock-frequency = <700000>;
 	status = "disabled";
+};
+
+&adc0 {
+	status = "okay";
+	/* Pin D7 have three type VIN16, THR16, TD2P, so it must only select one type for pin.
+	 * Pin C7 have three type VIN15, THR15, TD1P, so it must only select one type for pin.
+	 * Pin A6 have three type VIN14, THR14, TD0P, so it must only select one type for pin.
+	 * Pin B6 have three type VIN1, THR1, TD3P, so it must only select one type for pin.
+	 * Pin C6 have three type VIN2, THR2, TD4P, so it must only select one type for pin.
+	 */
+	pinctrl-0 = <&pinctrl_vin7_default /* VIN7 - C8 */
+		     &pinctrl_vin5_default  /* VIN5 - F7 */
+		     &pinctrl_vin16_default /* VIN16 - D7 */
+		     /* &pinctrl_thr16_default */ /* THR16 - D7 */
+		     /* &pinctrl_td2p_default */ /* TD2P - D7 */
+		     &pinctrl_vin15_default /* VIN15 - C7 */
+		     /* &pinctrl_thr15_default */ /* THR15 - C7 */
+		     /* &pinctrl_td1p_default */ /* TD1P - C7 */
+		     &pinctrl_vin14_default /* VIN14 - A6 */
+		     /* &pinctrl_thr14_default */ /* THR14 - A6 */
+		     /* &pinctrl_td0p_default */ /* TD0P - A6 */
+		     &pinctrl_vin1_default  /* VIN1 - B6 */
+		     /* &pinctrl_thr1_default */ /* THR1 - B6 */
+		     /* &pinctrl_td3p_default */ /* TD3P - B6 */
+		     &pinctrl_vin2_default  /* VIN2 - C6 */
+		     /* &pinctrl_thr2_default */ /* THR2 - C6 */
+		     /* &pinctrl_td4p_default */ /* TD4P - C6 */
+		     &pinctrl_vin3_default>; /* VIN3 - D6 */
 };
