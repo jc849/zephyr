@@ -55,7 +55,7 @@
 			#size-cells = <0>;
 			interrupts = <9 4>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_FMCLK NPCM4XX_PWDWN_CTL4 5>;
-			label = "PECI_0";
+			label = "PECI";
 			status = "disabled";
 		};
 
