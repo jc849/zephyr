@@ -357,6 +357,82 @@ static inline void spi_npcm4xx_fiu_quad_program_data(const struct device *dev,
 	}
 }
 
+static void spi_nor_npcm4xx_fiu_uma_transceive(const struct device *dev,
+						const struct spi_config *spi_cfg,
+						struct spi_nor_op_info op_info)
+{
+	struct fiu_reg *const inst = HAL_INSTANCE(dev);
+	struct spi_nor_op_info *uma_op_info = NULL;
+	uint8_t *buf_data = NULL;
+	uint8_t sub_addr = 0;
+	int index = 0;
+	uint8_t cts = 0;
+
+	/* op information */
+	uma_op_info = &op_info;
+
+	spi_npcm4xx_fiu_uma_lock(dev);
+
+	/* Assert chip assert */
+	spi_npcm4xx_fiu_cs_level(dev, spi_cfg, 0);
+
+	cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
+
+	/* send command */
+	spi_npcm4xx_fiu_exec_cmd(dev, uma_op_info->opcode, cts);
+
+	/* send address */
+	index = uma_op_info->addr_len;
+	while (index) {
+		index = index - 1;
+		sub_addr = (uma_op_info->addr >> (8 * index)) & 0xff;
+		spi_npcm4xx_fiu_exec_cmd(dev, sub_addr, cts);
+	}
+
+	/* only support single dummy byte */
+	if ((uma_op_info->dummy_cycle % NPCM4XX_FIU_SINGLE_DUMMY_BYTE) != 0) {
+		LOG_ERR("UMA dummy must multi by %d",
+				NPCM4XX_FIU_SINGLE_DUMMY_BYTE);
+		return;
+	}
+
+	cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
+
+	/* send dummy bytes */
+	for (index = 0; index < uma_op_info->dummy_cycle;
+				index += NPCM4XX_FIU_SINGLE_DUMMY_BYTE) {
+		spi_npcm4xx_fiu_exec_cmd(dev, 0x0, cts);
+	}
+
+	buf_data = uma_op_info->buf;
+
+	if (buf_data == NULL)
+		goto spi_nor_uma_done;
+
+	/* read data from SPI flash */
+	if (uma_op_info->data_direct == SPI_NOR_DATA_DIRECT_IN) {
+		for (index = 0; index < uma_op_info->data_len; index++) {
+			cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, false);
+			/* execute UMA flash transaction */
+			inst->UMA_CTS = cts;
+			while (IS_BIT_SET(inst->UMA_CTS, NPCM4XX_UMA_CTS_EXEC_DONE))
+				continue;
+			/* Get read transaction results */
+			*(buf_data + index) = inst->UMA_DB0;
+		}
+	} else if (uma_op_info->data_direct == SPI_NOR_DATA_DIRECT_OUT) {
+		for (index = 0; index < uma_op_info->data_len; index++) {
+			cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
+			/* execute UMA flash transaction */
+			spi_npcm4xx_fiu_exec_cmd(dev, *(buf_data + index), cts);
+		}
+	}
+
+spi_nor_uma_done:
+	spi_npcm4xx_fiu_cs_level(dev, spi_cfg, 1);
+	spi_npcm4xx_fiu_uma_release(dev);
+}
+
 #ifdef CONFIG_SPI_NPCM4XX_FIU_DIRECT_WRITE
 static inline void spi_npcm4xx_fiu_direct_write_lock(const struct device *dev)
 {
@@ -478,15 +554,41 @@ static inline void spi_nor_npcm4xx_fiu_direct_write_transceive(const struct devi
 	spi_npcm4xx_fiu_direct_write_release(dev);
 }
 #else
+static void spi_nor_npcm4xx_fiu_write_enable(const struct device *dev,
+					const struct spi_config *spi_cfg)
+{
+	struct spi_nor_op_info wren_op_info =
+				SPI_NOR_OP_INFO(JESD216_MODE_111, SPI_NOR_CMD_WREN,
+				0, 0, 0, NULL, 0, SPI_NOR_DATA_DIRECT_OUT);
+
+	spi_nor_npcm4xx_fiu_uma_transceive(dev, spi_cfg, wren_op_info);
+}
+
+
+static void spi_nor_npcm4xx_fiu_wait_ready(const struct device *dev,
+						const struct spi_config *spi_cfg)
+{
+	uint8_t reg;
+	struct spi_nor_op_info wait_op_info =
+		SPI_NOR_OP_INFO(JESD216_MODE_111, SPI_NOR_CMD_RDSR,
+		0, 0, 0, &reg, sizeof(reg), SPI_NOR_DATA_DIRECT_IN);
+
+	/* wait wait command finish */
+	do {
+		spi_nor_npcm4xx_fiu_uma_transceive(dev, spi_cfg, wait_op_info);
+	} while (reg & SPI_NOR_WIP_BIT);
+}
+
 static void spi_nor_npcm4xx_fiu_uma_write_transceive(const struct device *dev,
 						const struct spi_config *spi_cfg,
 						struct spi_nor_op_info op_info)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	uint32_t total_len = 0, write_len = 0;
+	uint32_t total_len = 0, write_len = 0, write_count = 0;
 	struct spi_nor_op_info *uma_op_info = NULL;
 	uint8_t *buf_data = NULL;
 	uint8_t cts = 0;
+	bool last_write = false;
 
 	/* write op information */
 	uma_op_info = &op_info;
@@ -508,17 +610,27 @@ static void spi_nor_npcm4xx_fiu_uma_write_transceive(const struct device *dev,
 	/* select device */
 	cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
 
+	/* if only write one byte, combine with command and address */
+	if (uma_op_info->data_len == 1) {
+		buf_data = (uint8_t *)uma_op_info->buf;
+		inst->UMA_DB0 = buf_data[0];
+		SET_FIELD(cts, NPCM4XX_UMA_CTS_D_SIZE, UMA_FIELD_DATA_1);
+		write_count++;
+	}
+
 	/* execute UMA flash transaction */
 	inst->UMA_CTS = cts;
 	while (IS_BIT_SET(inst->UMA_CTS, NPCM4XX_UMA_CTS_EXEC_DONE))
                         continue;
 
 	/* clean address size */
-	SET_FIELD(inst->UMA_ECTS, NPCM4XX_UMA_ECTS_UMA_ADDR_SIZE, 0);
+	SET_FIELD(inst->UMA_ECTS, NPCM4XX_UMA_ECTS_UMA_ADDR_SIZE, UMA_FIELD_ADDR_0);
 
-	total_len = uma_op_info->data_len;
-
-	buf_data = (uint8_t *)uma_op_info->buf;
+	/* start to send remaining write bytes */
+	if (uma_op_info->data_len) {
+		total_len = uma_op_info->data_len - write_count;
+		buf_data = (uint8_t *)uma_op_info->buf + write_count;
+	}
 
 	while (total_len) {
 		/* select device */
@@ -531,6 +643,12 @@ static void spi_nor_npcm4xx_fiu_uma_write_transceive(const struct device *dev,
 			write_len = NPCM4XX_FIU_EXT_DB_SIZE;
 		} else {
 			write_len = total_len;
+		}
+
+		/* last write byte */
+		if (write_len == 1) {
+			last_write = true;
+			break;
 		}
 
 		/* configure EXT DB data */
@@ -547,6 +665,7 @@ static void spi_nor_npcm4xx_fiu_uma_write_transceive(const struct device *dev,
 
 		buf_data = buf_data + write_len;
 		total_len = total_len - write_len;
+		write_count = write_count + write_len;
 	}
 
 	/* clean EXT DB setting */
@@ -559,84 +678,28 @@ static void spi_nor_npcm4xx_fiu_uma_write_transceive(const struct device *dev,
 	spi_npcm4xx_fiu_quad_program_data(dev, spi_cfg, false);
 
 	spi_npcm4xx_fiu_uma_release(dev);
+
+	if (last_write) {
+		struct spi_nor_op_info write_op_info;
+
+		/* wait WIP clear */
+		spi_nor_npcm4xx_fiu_wait_ready(dev, spi_cfg);
+
+		/* write enable */
+		spi_nor_npcm4xx_fiu_write_enable(dev, spi_cfg);
+
+		/* write the last byte */
+		memcpy(&write_op_info, (void *)uma_op_info, sizeof(write_op_info));
+
+		write_op_info.addr = write_op_info.addr + write_count;
+		write_op_info.buf = buf_data;
+		write_op_info.data_len = 1;
+
+		/* write the last byte */
+		spi_nor_npcm4xx_fiu_uma_write_transceive(dev, spi_cfg, write_op_info);
+	}
 }
 #endif
-
-static void spi_nor_npcm4xx_fiu_uma_transceive(const struct device *dev,
-						const struct spi_config *spi_cfg,
-						struct spi_nor_op_info op_info)
-{
-	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	struct spi_nor_op_info *uma_op_info = NULL;
-	uint8_t *buf_data = NULL;
-	uint8_t sub_addr = 0;
-	int index = 0;
-	uint8_t cts = 0;
-
-	/* op information */
-	uma_op_info = &op_info;
-
-	spi_npcm4xx_fiu_uma_lock(dev);
-
-	/* Assert chip assert */
-	spi_npcm4xx_fiu_cs_level(dev, spi_cfg, 0);
-
-	cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
-
-	/* send command */
-	spi_npcm4xx_fiu_exec_cmd(dev, uma_op_info->opcode, cts);
-
-	/* send address */
-	index = uma_op_info->addr_len;
-	while (index) {
-		index = index - 1;
-		sub_addr = (uma_op_info->addr >> (8 * index)) & 0xff;
-		spi_npcm4xx_fiu_exec_cmd(dev, sub_addr, cts);
-	}
-
-	/* only support single dummy byte */
-	if ((uma_op_info->dummy_cycle % NPCM4XX_FIU_SINGLE_DUMMY_BYTE) != 0) {
-		LOG_ERR("UMA dummy must multi by %d",
-				NPCM4XX_FIU_SINGLE_DUMMY_BYTE);
-		return;
-	}
-
-	cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
-
-	/* send dummy bytes */
-	for (index = 0; index < uma_op_info->dummy_cycle;
-				index += NPCM4XX_FIU_SINGLE_DUMMY_BYTE) {
-		spi_npcm4xx_fiu_exec_cmd(dev, 0x0, cts);
-	}
-
-	buf_data = uma_op_info->buf;
-
-	if (buf_data == NULL)
-		goto spi_nor_uma_done;
-
-	/* read data from SPI flash */
-	if (uma_op_info->data_direct == SPI_NOR_DATA_DIRECT_IN) {
-		for (index = 0; index < uma_op_info->data_len; index++) {
-			cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, false);
-			/* execute UMA flash transaction */
-			inst->UMA_CTS = cts;
-			while (IS_BIT_SET(inst->UMA_CTS, NPCM4XX_UMA_CTS_EXEC_DONE))
-				continue;
-			/* Get read transaction results */
-			*(buf_data + index) = inst->UMA_DB0;
-		}
-	} else if (uma_op_info->data_direct == SPI_NOR_DATA_DIRECT_OUT) {
-		for (index = 0; index < uma_op_info->data_len; index++) {
-			cts = spi_npcm4xx_fiu_uma_device_select(dev, spi_cfg, true);
-			/* execute UMA flash transaction */
-			spi_npcm4xx_fiu_exec_cmd(dev, *(buf_data + index), cts);
-		}
-	}
-
-spi_nor_uma_done:
-	spi_npcm4xx_fiu_cs_level(dev, spi_cfg, 1);
-	spi_npcm4xx_fiu_uma_release(dev);
-}
 
 static int spi_nor_npcm4xx_fiu_transceive(const struct device *dev,
 					const struct spi_config *spi_cfg,
