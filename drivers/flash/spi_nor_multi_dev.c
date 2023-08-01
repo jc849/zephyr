@@ -1578,6 +1578,7 @@ static int sfdp_post_fixup(const struct device *dev)
 
 		if (SPI_NOR_GET_JESDID(data->jedec_id) == 0x7022) {
 			data->fixup_read = winbond_w25q02g_read_fixup;
+		}
 
 		if (SPI_NOR_GET_JESDID(data->jedec_id) == 0x4012) {
 			ret = winbond_w25q20cl_fixup(dev);
