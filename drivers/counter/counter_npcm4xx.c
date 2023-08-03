@@ -9,8 +9,6 @@
 #include <common/reg/reg_access.h>
 #include <drivers/clock_control.h>
 #include <soc.h>
-#include "NPCM4XX.h"
-
 
 #define DT_DRV_COMPAT nuvoton_npcm4xx_itim_timer
 

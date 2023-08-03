@@ -13,7 +13,6 @@
 #include <kernel.h>
 #include <pm/device.h>
 #include <soc.h>
-#include "NPCM4XX.h"
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(uart_npcm4xx, LOG_LEVEL_ERR);
