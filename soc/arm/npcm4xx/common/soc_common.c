@@ -10,6 +10,10 @@
 #include <linker/linker-defs.h>
 
 #ifdef CONFIG_XIP
+void (*npcm4xx_spi_nor_do_fw_update)(int type) = NULL;
+uint8_t (*npcm4xx_spi_nor_set_update_fw_address)(uint32_t fw_img_start,
+		uint32_t fw_img_size, struct npcm4xx_fw_write_bitmap *bitmap) = NULL;
+
 __ramfunc uintptr_t npcm4xx_vector_table_save(void)
 {
 	extern char _npcm4xx_sram_vector_start[];
@@ -39,6 +43,34 @@ void npcm4xx_sram_vector_table_copy(void)
         (void *)memcpy(&_npcm4xx_sram_vector_start, &_npcm4xx_rom_vector_table_start,
                         (uint32_t)_npcm4xx_sram_vector_table_size);
 }
+
+__ramfunc uint8_t npcm4xx_set_update_fw_spi_nor_address(uint32_t fw_img_start,
+                                                uint32_t fw_img_size,
+                                                struct npcm4xx_fw_write_bitmap *bitmap)
+{
+	if (npcm4xx_spi_nor_set_update_fw_address)
+		return npcm4xx_spi_nor_set_update_fw_address(fw_img_start, fw_img_size, bitmap);
+
+	return -1;
+}
+
+__ramfunc void sys_arch_reboot(int type)
+{
+	uintptr_t vtor = 0;
+
+	vtor = npcm4xx_vector_table_save();
+
+	if (npcm4xx_spi_nor_do_fw_update)
+		npcm4xx_spi_nor_do_fw_update(type);
+
+	npcm4xx_vector_table_restore(vtor);
+
+	NVIC_SystemReset();
+
+	/* pending here */
+	for (;;);
+}
+
 #else /* !CONFIG_XIP */
 uintptr_t npcm4xx_vector_table_save(void)
 {
@@ -53,5 +85,12 @@ void npcm4xx_vector_table_restore(uintptr_t vtor)
 void npcm4xx_sram_vector_table_copy(void)
 {
 	return;
+}
+
+uint8_t npcm4xx_set_update_fw_spi_nor_address(uint32_t fw_img_start,
+						uint32_t fw_img_size,
+						struct npcm4xx_fw_write_bitmap *bitmap)
+{
+	return 0;
 }
 #endif
