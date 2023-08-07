@@ -10,6 +10,8 @@
 #include <drivers/spi.h>
 #include <logging/log.h>
 #include <soc.h>
+#include <header.h>
+#include <kernel.h>
 
 LOG_MODULE_REGISTER(spi_npcm4xx_spim, LOG_LEVEL_ERR);
 
@@ -20,6 +22,21 @@ LOG_MODULE_REGISTER(spi_npcm4xx_spim, LOG_LEVEL_ERR);
 #define RAMFUNC __ramfunc
 #else
 #define RAMFUNC
+#endif
+
+#ifdef CONFIG_XIP
+extern struct FIRMWARE_HEDAER_TYPE fw_header;
+
+/* record fw update device and spi config */
+const struct device *npcm4xx_fw_update_device = NULL;
+const struct spi_config *npcm4xx_fw_update_spi_cfg = NULL;
+
+/* fw update data */
+bool npcm4xx_fw_update = false;
+uint32_t npcm4xx_fw_update_start = 0;
+uint32_t npcm4xx_fw_update_size = 0;
+struct npcm4xx_fw_write_bitmap fw_write_bitmap;
+uint8_t *npcm4xx_update_buffer = NULL;
 #endif
 
 /* Device config */
@@ -43,6 +60,10 @@ struct npcm4xx_spi_spim_data {
 	struct spi_nor_op_info write_op_info;
 };
 
+enum npcm4xx_spim_spi_nor_type {
+	SPIM_FW_SPI_NOR,
+	SPIM_MAX_SPI_NOR
+};
 /* Driver convenience defines */
 #define HAL_INSTANCE(dev)                                                                          \
 	((struct spim_reg *)((const struct npcm4xx_spi_spim_config *)(dev)->config)->base)
@@ -391,9 +412,21 @@ RAMFUNC static int spi_nor_npcm4xx_spim_write_init(const struct device *dev,
 					struct spi_nor_op_info op_info)
 {
 	struct npcm4xx_spi_spim_data *data = dev->data;
+#ifdef CONFIG_XIP
+	enum npcm4xx_spim_spi_nor_type spi_nor_type = spi_cfg->slave;
+#endif
 
 	/* record read command from jesd216 */
 	memcpy(&data->write_op_info, &op_info, sizeof(op_info));
+
+#ifdef CONFIG_XIP
+	/* accept update fw flow when write init */
+	if (spi_nor_type == SPIM_FW_SPI_NOR) {
+		npcm4xx_fw_update_device = dev;
+		npcm4xx_fw_update_spi_cfg = spi_cfg;
+		memset(&fw_write_bitmap, 0x0, sizeof(struct npcm4xx_fw_write_bitmap));
+	}
+#endif
 
 	data->rw_init |= NPCM4XX_SPIM_SPI_NOR_WRITE_INIT_OK;
 
@@ -414,6 +447,213 @@ RAMFUNC int spi_npcm4xx_spim_release(const struct device *dev, const struct spi_
 #endif
 	return 0;
 }
+
+#ifdef CONFIG_XIP
+static uint8_t spi_nor_npcm4xx_spim_set_update_fw_address(uint32_t fw_img_start,
+							uint32_t fw_img_size,
+							struct npcm4xx_fw_write_bitmap *bitmap)
+{
+	uint32_t flash_used = 0;
+	uint32_t flash_max_size = BITMAP_ARRAY_PER_SIZE * BITMAP_LIST_SIZE * SPI_NOR_SECTOR_SIZE;
+
+	/* update device not exist */
+	if (npcm4xx_fw_update_device == NULL || npcm4xx_fw_update_spi_cfg == NULL) {
+		LOG_ERR("fw update device or cfg not exist");
+		return -1;
+	}
+
+	/* fw start and size should be legal setting */
+	if (fw_img_size == 0x0 || (!SPI_NOR_IS_SECTOR_ALIGNED(fw_img_start))) {
+		LOG_ERR("setting invalid, addr=0x%x(should align 0x%x) size=0x%x",
+					fw_img_start, SPI_NOR_SECTOR_SIZE, fw_img_size);
+		return -1;
+	}
+
+	/* cannot set range overlap running firmware */
+	flash_used = ROUND_UP((uint32_t) _flash_used, SPI_NOR_SECTOR_SIZE);
+	if (fw_img_start < flash_used) {
+		LOG_ERR("should not overlap running firmware, used = 0x%x", flash_used);
+		return -1;
+	}
+
+	/* allocate buffer for update */
+	if (npcm4xx_update_buffer == NULL) {
+		npcm4xx_update_buffer = k_malloc(SPI_NOR_SECTOR_SIZE);
+		if (!npcm4xx_update_buffer) {
+			LOG_ERR("allocate buffer for update failed.");
+			return -1;
+		}
+	}
+
+	npcm4xx_fw_update_start = fw_img_start;
+	npcm4xx_fw_update_size = fw_img_size;
+
+	if (npcm4xx_fw_update_size > flash_max_size) {
+		LOG_ERR("new firmware image over size.");
+		return -1;
+	}
+
+	/* partial write or update all */
+	if (bitmap)
+		memcpy(&fw_write_bitmap, (void *)bitmap,
+				sizeof(struct npcm4xx_fw_write_bitmap));
+	else
+		memset(&fw_write_bitmap, 0xff, sizeof(struct npcm4xx_fw_write_bitmap));
+
+	npcm4xx_fw_update = true;
+
+	return 0;
+}
+
+RAMFUNC static void spi_nor_npcm4xx_spim_write_enable(const struct device *dev,
+						const struct spi_config *spi_cfg)
+{
+	struct spi_nor_op_info wren_op_info;
+
+	wren_op_info.mode = JESD216_MODE_111;
+	wren_op_info.opcode = SPI_NOR_CMD_WREN;
+	wren_op_info.addr = 0;
+	wren_op_info.addr_len = 0;
+	wren_op_info.dummy_cycle = 0;
+	wren_op_info.buf = NULL;
+	wren_op_info.data_len = 0;
+	wren_op_info.data_direct = SPI_NOR_DATA_DIRECT_OUT;
+
+	spi_nor_npcm4xx_spim_normal_transceive(dev, spi_cfg, wren_op_info);
+}
+
+RAMFUNC static void spi_nor_npcm4xx_spim_invalid_cache(const struct device *dev,
+						const struct spi_config *spi_cfg)
+{
+	struct spim_reg *const inst = HAL_INSTANCE(dev);
+
+	inst->SPIM_CTL1 |= BIT(NPCM4XX_SPIM_CTL1_CDINVAL);
+	/* wait hw clear invalid bit */
+	while(inst->SPIM_CTL1 & BIT(NPCM4XX_SPIM_CTL1_CDINVAL));
+}
+
+RAMFUNC static void spi_nor_npcm4xx_spim_erase(const struct device *dev,
+						const struct spi_config *spi_cfg,
+						uint32_t address)
+{
+	struct spi_nor_op_info erase_op_info;
+
+	/* suppose update internal flash fw only need 3 bytes address mode */
+	erase_op_info.mode = JESD216_MODE_111;
+	erase_op_info.opcode = SPI_NOR_CMD_SE;
+	erase_op_info.addr = address;
+	erase_op_info.addr_len = 3;
+	erase_op_info.dummy_cycle = 0;
+	erase_op_info.buf = NULL;
+	erase_op_info.data_len = 0;
+	erase_op_info.data_direct = SPI_NOR_DATA_DIRECT_OUT;
+
+	spi_nor_npcm4xx_spim_normal_transceive(dev, spi_cfg, erase_op_info);
+}
+
+RAMFUNC void static spi_nor_npcm4xx_spim_fw_update(int type)
+{
+	const struct device *dev = NULL;
+	const struct spi_config *spi_cfg = NULL;
+	struct npcm4xx_spi_spim_data *data = NULL;
+	struct spi_nor_op_info read_opinfo;
+	struct spi_nor_op_info write_opinfo;
+	uint32_t write_start_address = 0, read_start_address = 0;
+	uint32_t index = 0, read_end_address = 0;
+	uint32_t flash_used = 0;
+	uint32_t *fw_bitmap = NULL, bitmap_index = 0;
+
+	ARG_UNUSED(type);
+
+	if (!npcm4xx_fw_update)
+		return;
+
+	if (!npcm4xx_update_buffer)
+		return;
+
+	dev = npcm4xx_fw_update_device;
+	spi_cfg = npcm4xx_fw_update_spi_cfg;
+
+	spi_nor_npcm4xx_spim_invalid_cache(dev, spi_cfg);
+
+	/* must access before erase FW spi flash */
+	flash_used = ROUND_UP((uint32_t) _flash_used, SPI_NOR_SECTOR_SIZE);
+
+	/* init read/write opinfo */
+	data = dev->data;
+	memcpy(&read_opinfo, &data->read_op_info, sizeof(write_opinfo));
+	memcpy(&write_opinfo, &data->write_op_info, sizeof(write_opinfo));
+
+	read_opinfo.addr = npcm4xx_fw_update_start;
+	read_opinfo.data_len = sizeof(fw_header.hImageTag);
+	read_opinfo.buf = (void *)npcm4xx_update_buffer;
+	spi_nor_npcm4xx_spim_normal_transceive(dev, spi_cfg, read_opinfo);
+
+	if (memcmp((void *)npcm4xx_update_buffer, (void *)fw_header.hImageTag,
+				sizeof(fw_header.hImageTag)))
+		return;
+
+	read_start_address = npcm4xx_fw_update_start;
+
+	read_end_address = npcm4xx_fw_update_start + npcm4xx_fw_update_size;
+	read_end_address = ROUND_UP(read_end_address, SPI_NOR_SECTOR_SIZE);
+
+	/* initial bitmap index */
+	fw_bitmap = &fw_write_bitmap.bitmap_lists[0];
+	bitmap_index = 0;
+
+	while (read_start_address != read_end_address) {
+		/* check bit set or not */
+		if (!(*fw_bitmap & BIT(bitmap_index))) {
+			goto fw_update_next_sector;
+		}
+
+		/* erase flash */
+		spi_nor_npcm4xx_spim_write_enable(dev, spi_cfg);
+		spi_nor_npcm4xx_spim_erase(dev, spi_cfg, write_start_address);
+
+		/* read data */
+		read_opinfo.addr = read_start_address;
+		read_opinfo.data_len = SPI_NOR_SECTOR_SIZE;
+		read_opinfo.buf = (void *)npcm4xx_update_buffer;
+		spi_nor_npcm4xx_spim_normal_transceive(dev, spi_cfg, read_opinfo);
+
+		/* write data */
+		for (index = 0; index < SPI_NOR_SECTOR_SIZE; index += SPI_NOR_PAGE_SIZE) {
+			/* write enable */
+			spi_nor_npcm4xx_spim_write_enable(dev, spi_cfg);
+			/* write data per SPI_NOR_PAGE_SIZE */
+			write_opinfo.addr = write_start_address + index;
+			write_opinfo.data_len = SPI_NOR_PAGE_SIZE;
+			write_opinfo.buf = (void *)(npcm4xx_update_buffer + index);
+			spi_nor_npcm4xx_spim_normal_transceive(dev, spi_cfg, write_opinfo);
+		}
+
+fw_update_next_sector:
+		read_start_address = read_start_address + SPI_NOR_SECTOR_SIZE;
+		write_start_address = write_start_address + SPI_NOR_SECTOR_SIZE;
+		bitmap_index++;
+
+		/* shift to next fw_bitmap */
+		if (bitmap_index == BITMAP_ARRAY_PER_SIZE) {
+			fw_bitmap++;
+			bitmap_index = 0;
+		}
+	}
+
+#if 0
+	/* erase useless execute code if exist */
+	while(write_start_address < flash_used) {
+		/* erase flash */
+		spi_nor_npcm4xx_spim_write_enable(dev, spi_cfg);
+		spi_nor_npcm4xx_spim_erase(dev, spi_cfg, write_start_address);
+		write_start_address = write_start_address + SPI_NOR_SECTOR_SIZE;
+	}
+#endif
+
+	return;
+}
+#endif
 
 RAMFUNC static int spi_npcm4xx_spim_init(const struct device *dev)
 {
@@ -440,7 +680,15 @@ RAMFUNC static int spi_npcm4xx_spim_init(const struct device *dev)
 	spi_context_unlock_unconditionally(&((struct npcm4xx_spi_spim_data *)dev->data)->ctx);
 #endif
 
-	return 0;
+#ifdef CONFIG_XIP
+	/* setup fw update callback */
+	if (!npcm4xx_spi_nor_set_update_fw_address)
+		npcm4xx_spi_nor_set_update_fw_address = spi_nor_npcm4xx_spim_set_update_fw_address;
+
+	if (!npcm4xx_spi_nor_do_fw_update)
+		npcm4xx_spi_nor_do_fw_update = spi_nor_npcm4xx_spim_fw_update;
+#endif
+        return 0;
 }
 
 static const struct spi_nor_ops npcm4xx_spim_spi_nor_ops = {
