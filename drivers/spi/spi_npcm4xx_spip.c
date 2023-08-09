@@ -54,7 +54,7 @@ static int spip_npcm4xx_configure(const struct device *dev,
 	struct npcm4xx_spip_data *data = dev->data;
 	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
 	uint32_t u32Div;
-	int ret;
+	int ret = 0;
 
 	if (SPI_WORD_SIZE_GET(config->operation) != 8) {
 		LOG_ERR("Word sizes other than 8 bits are not supported");
