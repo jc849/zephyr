@@ -1,0 +1,14 @@
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nuvoton, NPCM4XX-SPIP controller node
+
+compatible: "nuvoton,npcm4xx-spip"
+
+include: ["spi-controller.yaml", "nuvoton-pinctrl.yaml"]
+
+properties:
+  reg:
+    required: true
+  clocks:
+    required: true

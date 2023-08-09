@@ -161,3 +161,6 @@
 		     /* &pinctrl_td4p_default */ /* TD4P - C6 */
 		     &pinctrl_vin3_default>; /* VIN3 - D6 */
 };
+&spip {
+	status = "okay";
+};

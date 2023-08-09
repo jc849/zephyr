@@ -33,4 +33,6 @@
 	pinctrl_thr2_default: thr2_default {};
 	pinctrl_td4p_default: td4p_default {};
 	pinctrl_vin3_default: vin3_default {};
+	pinctrl_spip_default: spip_default{};
+	pinctrl_spip_quad: spip_quad{};
 };

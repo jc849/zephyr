@@ -66,3 +66,8 @@ FUN_DEFINE(DT_NODELABEL(pinctrl_thr2_default), THR2)
 FUN_DEFINE(DT_NODELABEL(pinctrl_td4p_default), TD4P)
 FUN_DEFINE(DT_NODELABEL(pinctrl_vin3_default), VIN3)
 #endif
+
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(spip), okay) && CONFIG_SPIP_NPCM4XX
+FUN_DEFINE(DT_NODELABEL(pinctrl_spip_default), SPIP_CS, SPIP_SCLK, SPIP_DIO0, SPIP_DIO1)
+FUN_DEFINE(DT_NODELABEL(pinctrl_spip_quad), SPIP_DIO2, SPIP_DIO3)
+#endif
