@@ -1,0 +1,11 @@
+# NPCM4XX SPI Driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config SPIP_NPCM4XX
+	bool "Nuvoton NPCM4XX SPI driver SPIP"
+	default y
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  Enable the SPI driver for NPCM4XX family of processors.

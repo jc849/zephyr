@@ -26,5 +26,6 @@ zephyr_library_sources_ifdef(CONFIG_ESP32_SPIM		spi_esp32_spim.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_TEST		spi_test.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_PSOC6		spi_psoc6.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_NPCM4XX_FIU	spi_npcm4xx_fiu.c)
+zephyr_library_sources_ifdef(CONFIG_SPIP_NPCM4XX	spi_npcm4xx_spip.c)
 
 zephyr_library_sources_ifdef(CONFIG_USERSPACE		spi_handlers.c)

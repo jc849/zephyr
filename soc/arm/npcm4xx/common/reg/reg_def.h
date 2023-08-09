@@ -388,33 +388,33 @@ struct adc_reg {
 	/* 0x0E: Operation Mode select */
 	volatile uint16_t ADCTM;
 	volatile uint16_t RESERVED2;
-  /* 0x12: Offset setting for tdp */
+	/* 0x12: Offset setting for tdp */
 	volatile uint16_t ADCTDPO[3];
 	volatile uint16_t RESERVED3[4];
-  /* 0x20: DSADC Analog Control register 1 */
+	/* 0x20: DSADC Analog Control register 1 */
 	volatile uint8_t  ADCACTRL1;
 	volatile uint8_t  RESERVED4;
-  /* 0x22: DSADC Analog Power Down Control */
+	/* 0x22: DSADC Analog Power Down Control */
 	volatile uint16_t ADCACTRL2;
 	volatile uint8_t  RESERVED5[2];
-  /* 0x26: Voltage / Thermister mode select */
+	/* 0x26: Voltage / Thermister mode select */
 	volatile uint8_t  DSADCCTRL6;
 	volatile uint8_t  RESERVED6;
-  /* 0x28: Voltage / Thermister mode select */
+	/* 0x28: Voltage / Thermister mode select */
 	volatile uint8_t  DSADCCTRL7;
 	volatile uint8_t  RESERVED7[3];
-  /* 0x2C: Voltage / Thermister mode select */
+	/* 0x2C: Voltage / Thermister mode select */
 	volatile uint16_t DSADCCTRL8;
 	volatile uint8_t  RESERVED8[74];
-  /* 0x78: DSADC Configuration */
+	/* 0x78: DSADC Configuration */
 	volatile uint16_t DSADCCFG;
-  /* 0x7A: DSADC Channel select */
+	/* 0x7A: DSADC Channel select */
 	volatile uint8_t  DSADCCS;
 	volatile uint8_t  RESERVED9;
-  /* 0x7C: DSADC global status */
+	/* 0x7C: DSADC global status */
 	volatile uint16_t DSADCSTS;
 	volatile uint16_t RESERVED10;
-  /* 0x80: Temperature Channel Data */
+	/* 0x80: Temperature Channel Data */
 	volatile uint16_t TCHNDAT;
 };
 
@@ -502,6 +502,109 @@ struct twd_reg {
 #define NPCM4XX_T0CSR_T0EN                  (6)
 #define NPCM4XX_T0CSR_TESDIS                (7)
 #define NPCM4XX_WDCP_WDIV                   (0)
+
+/*
+ * SPI PERIPHERAL INTERFACE (SPIP) device registers
+ */
+struct spip_reg {
+	/* 0x00: SPI Control Register */
+	volatile uint32_t CTL;
+	/* 0x04: SPI Clock Divider Register */
+	volatile uint32_t CLKDIV;
+	/* 0x08: SPI Slave Select Control Register */
+	volatile uint32_t SSCTL;
+	/* 0x0C: SPI PDMA Control Register */
+	volatile uint32_t PDMACTL;
+	/* 0x10: SPI FIFO Control Register */
+	volatile uint32_t FIFOCTL;
+	/* 0x14: SPI Status Register */
+	volatile uint32_t STATUS;
+	volatile uint32_t RESERVE0[2];
+	/* 0x20: SPI Data Transmit Register */
+	volatile uint32_t TX;
+	volatile uint32_t RESERVE1[3];
+	/* 0x30: SPI Data Receive Register */
+	volatile uint32_t RX;
+};
+
+/* SPIP register fields */
+/* 0x00: SPI_CTL fields */
+#define NPCM4XX_CTL_QUADIOEN                (22)
+#define NPCM4XX_CTL_DUALIOEN                (21)
+#define NPCM4XX_CTL_QDIODIR                 (20)
+#define NPCM4XX_CTL_REORDER                 (19)
+#define NPCM4XX_CTL_SLAVE                   (18)
+#define NPCM4XX_CTL_UNITIEN                 (17)
+#define NPCM4XX_CTL_TWOBIT                  (16)
+#define NPCM4XX_CTL_LSB                     (13)
+#define NPCM4XX_CTL_DWIDTH                   (8)
+#define NPCM4XX_CTL_SUSPITV                  (4)
+#define NPCM4XX_CTL_CLKPOL                   (3)
+#define NPCM4XX_CTL_TXNEG                    (2)
+#define NPCM4XX_CTL_RXNEG                    (1)
+#define NPCM4XX_CTL_SPIEN                    (0)
+
+/* 0x04: SPI_CLKDIV fields */
+#define NPCM4XX_CLKDIV_DIVIDER               (0)
+
+/* 0x08: SPI_SSCTL fields */
+#define NPCM4XX_SSCTL_SLVTOCNT              (16)
+#define NPCM4XX_SSCTL_SSINAIEN              (13)
+#define NPCM4XX_SSCTL_SSACTIEN              (12)
+#define NPCM4XX_SSCTL_SLVURIEN               (9)
+#define NPCM4XX_SSCTL_SLVBEIEN               (8)
+#define NPCM4XX_SSCTL_SLVTORST               (6)
+#define NPCM4XX_SSCTL_SLVTOIEN               (5)
+#define NPCM4XX_SSCTL_SLV3WIRE               (4)
+#define NPCM4XX_SSCTL_AUTOSS                 (3)
+#define NPCM4XX_SSCTL_SSACTPOL               (2)
+#define NPCM4XX_SSCTL_SS                     (0)
+
+/* 0x0C: SPI_PDMACTL fields */
+#define NPCM4XX_PDMACTL_PDMARST              (2)
+#define NPCM4XX_PDMACTL_RXPDMAEN             (1)
+#define NPCM4XX_PDMACTL_TXPDMAEN             (0)
+
+/* 0x10: SPI_FIFOCTL fields */
+#define NPCM4XX_FIFOCTL_TXTH                (28)
+#define NPCM4XX_FIFOCTL_RXTH                (24)
+#define NPCM4XX_FIFOCTL_TXUFIEN              (7)
+#define NPCM4XX_FIFOCTL_TXUFPOL              (6)
+#define NPCM4XX_FIFOCTL_RXOVIEN              (5)
+#define NPCM4XX_FIFOCTL_RXTOIEN              (4)
+#define NPCM4XX_FIFOCTL_TXTHIEN              (3)
+#define NPCM4XX_FIFOCTL_RXTHIEN              (2)
+#define NPCM4XX_FIFOCTL_TXRST                (1)
+#define NPCM4XX_FIFOCTL_RXRST                (0)
+
+/* 0x14: SPI_STATUS fields */
+#define NPCM4XX_STATUS_TXCNT                (28)
+#define NPCM4XX_STATUS_RXCNT                (24)
+#define NPCM4XX_STATUS_TXRXRST              (23)
+#define NPCM4XX_STATUS_TXUFIF               (19)
+#define NPCM4XX_STATUS_TXTHIF               (18)
+#define NPCM4XX_STATUS_TXFULL               (17)
+#define NPCM4XX_STATUS_TXEMPTY              (16)
+#define NPCM4XX_STATUS_SPIENSTS             (15)
+#define NPCM4XX_STATUS_RXTOIF               (12)
+#define NPCM4XX_STATUS_RXOVIF               (11)
+#define NPCM4XX_STATUS_RXTHIF               (10)
+#define NPCM4XX_STATUS_RXFULL                (9)
+#define NPCM4XX_STATUS_RXEMPTY               (8)
+#define NPCM4XX_STATUS_SLVUDRIF              (7)
+#define NPCM4XX_STATUS_SLVBEIF               (6)
+#define NPCM4XX_STATUS_SLVTOIF               (5)
+#define NPCM4XX_STATUS_SSLINE                (4)
+#define NPCM4XX_STATUS_SSINAIF               (3)
+#define NPCM4XX_STATUS_SSACTIF               (2)
+#define NPCM4XX_STATUS_UNITIF                (1)
+#define NPCM4XX_STATUS_BUSY                  (0)
+
+/* 0x20: SPI_TX fields */
+#define NPCM4XX_TX_TX                        (0)
+
+/* 0x30: SPI_RX fields */
+#define NPCM4XX_RX_RX                        (0)
 
 /* Flash Interface Unit (FIU) device registers */
 struct fiu_reg {
