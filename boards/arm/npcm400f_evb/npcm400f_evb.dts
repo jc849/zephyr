@@ -106,27 +106,27 @@
  */
 &i2c1a {
 	clock-frequency = <I2C_BITRATE_STANDARD>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c3a {
 	clock-frequency = <I2C_BITRATE_FAST>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c4a {
 	clock-frequency = <I2C_BITRATE_FAST_PLUS>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c5a {
 	clock-frequency = <600000>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c6a {
 	clock-frequency = <200000>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c1b {
