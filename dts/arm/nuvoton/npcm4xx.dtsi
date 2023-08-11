@@ -309,7 +309,7 @@
 			interrupts = <35 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
 			pinctrl-0 = <&pinctrl_i2c1a_default>;
-			label = "I2C_1A";
+			label = "I2C_0";
 			status = "disabled";
 		};
 
@@ -321,7 +321,7 @@
 			interrupts = <37 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 2>;
 			pinctrl-0 = <&pinctrl_i2c3a_default>;
-			label = "I2C_3A";
+			label = "I2C_1";
 			status = "disabled";
 		};
 
@@ -333,7 +333,7 @@
 			interrupts = <38 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 3>;
 			pinctrl-0 = <&pinctrl_i2c4a_default>;
-			label = "I2C_4A";
+			label = "I2C_2";
 			status = "disabled";
 		};
 
@@ -345,7 +345,7 @@
 			interrupts = <39 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 4>;
 			pinctrl-0 = <&pinctrl_i2c5a_default>;
-			label = "I2C_5A";
+			label = "I2C_3";
 			status = "disabled";
 		};
 
@@ -357,7 +357,7 @@
 			interrupts = <20 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 5>;
 			pinctrl-0 = <&pinctrl_i2c6a_default>;
-			label = "I2C_6A";
+			label = "I2C_4";
 			status = "disabled";
 		};
 
@@ -369,7 +369,7 @@
 			interrupts = <35 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
 			pinctrl-0 = <&pinctrl_i2c1b_default>;
-			label = "I2C_1B";
+			label = "I2C_0";
 			status = "disabled";
 		};
 
