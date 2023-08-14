@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 ASPEED Technology Inc.
+ * Copyright (c) 2023 Zephyr Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -167,6 +167,17 @@ int i3c_aspeed_master_enable_ibi(struct i3c_dev_desc *i3cdev);
 int i3c_aspeed_master_send_entdaa(struct i3c_dev_desc *i3cdev);
 int i3c_aspeed_slave_register(const struct device *dev, struct i3c_slave_setup *slave_data);
 
+/* Nuvoton NPCM4XX API */
+int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_desc *slave);
+int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_desc *slave);
+int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *ccc);
+int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xfer *xfers,
+				int nxfers);
+int i3c_npcm4xx_master_request_ibi(struct i3c_dev_desc *i3cdev, struct i3c_ibi_callbacks *cb);
+int i3c_npcm4xx_master_enable_ibi(struct i3c_dev_desc *i3cdev);
+int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev);
+int i3c_npcm4xx_slave_register(const struct device *dev, struct i3c_slave_setup *slave_data);
+
 /**
  * @brief get the assigned dynamic address of the i3c controller
  * @param dev the I3C controller in slave mode
@@ -175,6 +186,7 @@ int i3c_aspeed_slave_register(const struct device *dev, struct i3c_slave_setup *
  * @return 0 if dynamic address is assigned.  The value is passed to `dynamic_addr`
  */
 int i3c_aspeed_slave_get_dynamic_addr(const struct device *dev, uint8_t *dynamic_addr);
+int i3c_npcm4xx_slave_get_dynamic_addr(const struct device *dev, uint8_t *dynamic_addr);
 
 /**
  * @brief get the event enabling status
@@ -186,6 +198,7 @@ int i3c_aspeed_slave_get_dynamic_addr(const struct device *dev, uint8_t *dynamic
  * The bits set in `event_en` means the corresponding slave events are enabled.
  */
 int i3c_aspeed_slave_get_event_enabling(const struct device *dev, uint32_t *event_en);
+int i3c_npcm4xx_slave_get_event_enabling(const struct device *dev, uint32_t *event_en);
 
 /**
  * @brief slave device sends SIR (IBI) with data
@@ -195,6 +208,7 @@ int i3c_aspeed_slave_get_event_enabling(const struct device *dev, uint32_t *even
  * @return int 0 = success
  */
 int i3c_aspeed_slave_send_sir(const struct device *dev, struct i3c_ibi_payload *payload);
+int i3c_npcm4xx_slave_send_sir(const struct device *dev, struct i3c_ibi_payload *payload);
 
 /**
  * @brief slave device prepares the data for master private read transfer
@@ -213,6 +227,8 @@ int i3c_aspeed_slave_send_sir(const struct device *dev, struct i3c_ibi_payload *
  */
 int i3c_aspeed_slave_put_read_data(const struct device *dev, struct i3c_slave_payload *data,
 				   struct i3c_ibi_payload *ibi_notify);
+int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_payload *data,
+				   struct i3c_ibi_payload *ibi_notify);
 
 /* common API */
 int i3c_master_send_enec(const struct device *master, uint8_t addr, uint8_t evt);
@@ -225,6 +241,8 @@ int i3c_master_send_setmrl(const struct device *master, uint8_t addr, uint16_t m
 int i3c_master_send_getpid(const struct device *master, uint8_t addr, uint64_t *pid);
 int i3c_master_send_getbcr(const struct device *master, uint8_t addr, uint8_t *bcr);
 
+
+#ifdef CONFIG_I3C_ASPEED
 #define i3c_master_attach_device	i3c_aspeed_master_attach_device
 #define i3c_master_detach_device	i3c_aspeed_master_detach_device
 #define i3c_master_send_ccc		i3c_aspeed_master_send_ccc
@@ -237,6 +255,22 @@ int i3c_master_send_getbcr(const struct device *master, uint8_t addr, uint8_t *b
 #define i3c_slave_put_read_data		i3c_aspeed_slave_put_read_data
 #define i3c_slave_get_dynamic_addr	i3c_aspeed_slave_get_dynamic_addr
 #define i3c_slave_get_event_enabling	i3c_aspeed_slave_get_event_enabling
+#endif
+
+#ifdef CONFIG_I3C_NPCM4XX
+#define i3c_master_attach_device	i3c_npcm4xx_master_attach_device
+#define i3c_master_detach_device	i3c_npcm4xx_master_detach_device
+#define i3c_master_send_ccc		i3c_npcm4xx_master_send_ccc
+#define i3c_master_priv_xfer		i3c_npcm4xx_master_priv_xfer
+#define i3c_master_request_ibi		i3c_npcm4xx_master_request_ibi
+#define i3c_master_enable_ibi		i3c_npcm4xx_master_enable_ibi
+#define i3c_master_send_entdaa		i3c_npcm4xx_master_send_entdaa
+#define i3c_slave_register		i3c_npcm4xx_slave_register
+#define i3c_slave_send_sir		i3c_npcm4xx_slave_send_sir
+#define i3c_slave_put_read_data		i3c_npcm4xx_slave_put_read_data
+#define i3c_slave_get_dynamic_addr	i3c_npcm4xx_slave_get_dynamic_addr
+#define i3c_slave_get_event_enabling	i3c_npcm4xx_slave_get_event_enabling
+#endif
 
 int i3c_jesd403_read(struct i3c_dev_desc *slave, uint8_t *addr, int addr_size, uint8_t *data,
 		     int data_size);

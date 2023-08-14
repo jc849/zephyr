@@ -1,0 +1,10 @@
+# NPCM4XX I3C driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config I3C_NPCM4XX
+	bool "NPCM4XX I3C driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the I3C master driver for SOC_NPCM400F SoCs.

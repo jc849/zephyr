@@ -226,6 +226,21 @@ int i3c_jesd403_write(struct i3c_dev_desc *slave, uint8_t *addr, int addr_size, 
  */
 int i3c_i2c_read(struct i3c_dev_desc *slave, uint8_t addr, uint8_t *buf, int length)
 {
+#ifdef CONFIG_I3C_NPCM4XX
+	struct i3c_priv_xfer xfer[2];
+
+	__ASSERT(slave->bus, "Unregistered device\n");
+	__ASSERT(slave->info.i2c_mode, "Not I2C device\n\n");
+
+	xfer[0].rnw = 0;
+	xfer[0].len = 1;
+	xfer[0].data.out = &addr;
+
+	xfer[1].rnw = 1;
+	xfer[1].len = length;
+	xfer[1].data.in = buf;
+	return i3c_master_priv_xfer(slave, xfer, 2);
+#else /* ASPEED case */
 	struct i3c_priv_xfer xfer;
 	uint8_t mode_reg = addr;
 	int ret;
@@ -245,6 +260,7 @@ int i3c_i2c_read(struct i3c_dev_desc *slave, uint8_t addr, uint8_t *buf, int len
 	xfer.len = length;
 	xfer.data.in = buf;
 	return i3c_master_priv_xfer(slave, &xfer, 1);
+#endif
 }
 
 /**

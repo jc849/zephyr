@@ -1,7 +1,10 @@
-# Copyright (c) 2021 ASPEED Technology Inc.
+# Copyright (c) 2023 Zephyr Inc.
 # SPDX-License-Identifier: Apache-2.0
 
 # Common fields for I3C devices
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
 
 include: base.yaml
 

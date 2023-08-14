@@ -1,7 +1,8 @@
 # I3C configuration options
 
-# Copyright (c) 2021 ASPEED Technology Inc.
+# Copyright (c) 2023 Zephyr Inc.
 # SPDX-License-Identifier: Apache-2.0
+# I3C options
 
 menuconfig I3C
 	bool "I3C Drivers"
@@ -23,5 +24,6 @@ source "subsys/logging/Kconfig.template.log_config"
 
 source "drivers/i3c/slave/Kconfig"
 source "drivers/i3c/Kconfig.aspeed"
+source "drivers/i3c/Kconfig.npcm4xx"
 
 endif # I3C

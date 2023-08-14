@@ -185,3 +185,46 @@
 	tms-gpios = <&gpiof 3 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
 	status = "okay";
 };
+
+&i3c0 {
+	status = "okay";
+	assigned-address = <0x20>;
+	i2c-scl-hz = <100000>;
+	i3c-scl-hz = <12500000>;
+	/* part-id = <0x1234>; */
+	/* vendor-def-id = <0x567>; */
+	bcr = <0x66>;
+	dcr = <0xCC>;
+	busno = <0x0>;
+	pinctrl-0 = <&pinctrl_i3c0_default>;
+};
+
+&i3c1 {
+	status = "okay";
+	assigned-address = <0x21>;
+	i2c-scl-hz = <100000>;
+	i3c-scl-hz = <12500000>;
+	/* part-id = <0x1234>; */
+	/* vendor-def-id = <0x5607>; */
+	bcr = <0x66>;
+	dcr = <0xCC>;
+	slave;
+	secondary;
+	busno = <0x0>;
+	pinctrl-0 = <&pinctrl_i3c1_default>;
+
+	/* #address-cells = <1>; */
+	/* #size-cells = <0>; */
+
+	/*
+	 * i3c1_smq:i3c-slave-mqueue@21 {
+	 *	compatible = "aspeed,i3c-slave-mqueue";
+	 *	reg = <0x21>;
+	 *	msg-size = <256>;
+	 *	num-of-msgs = <4>;
+	 *	mandatory-data-byte = <0xbf>;
+	 *	label = "I3C_1_SMQ";
+	 *	status = "okay";
+	 * };
+	 */
+};
