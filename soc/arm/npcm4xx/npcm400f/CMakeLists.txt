@@ -6,4 +6,5 @@ zephyr_sources(
   header.c
   soc.c
   gdma.c
+  jtag_master.c
 )
