@@ -53,7 +53,7 @@ static int spip_npcm4xx_configure(const struct device *dev,
 	const struct npcm4xx_spip_config *cfg = dev->config;
 	struct npcm4xx_spip_data *data = dev->data;
 	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
-	uint32_t u32Div;
+	uint32_t u32Div = 0;
 	int ret = 0;
 
 	if (SPI_WORD_SIZE_GET(config->operation) != 8) {

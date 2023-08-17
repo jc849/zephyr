@@ -161,12 +161,13 @@
 		     /* &pinctrl_td4p_default */ /* TD4P - C6 */
 		     &pinctrl_vin3_default>; /* VIN3 - D6 */
 };
+
 &spip {
 	status = "okay";
 };
 
 &i3c0 {
-	status = "okay";
+	status = "disabled";
 	assigned-address = <0x20>;
 	i2c-scl-hz = <100000>;
 	i3c-scl-hz = <12500000>;
@@ -179,7 +180,7 @@
 };
 
 &i3c1 {
-	status = "okay";
+	status = "disabled";
 	assigned-address = <0x21>;
 	i2c-scl-hz = <100000>;
 	i3c-scl-hz = <12500000>;
@@ -206,4 +207,8 @@
 	 *	status = "okay";
 	 * };
 	 */
+};
+
+&usbd0 {
+	status = "okay";
 };
