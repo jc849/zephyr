@@ -17,8 +17,8 @@ LOG_MODULE_REGISTER(i2c_npcm4xx, LOG_LEVEL_ERR);
 /* Configure TX and RX buffer size for I2C DMA
  * This setting applies to all (12c1a, 12c1b, 12c2a ...)
  */
-#define CONFIG_I2C_MAX_TX_SIZE 50
-#define CONFIG_I2C_MAX_RX_SIZE 50
+#define CONFIG_I2C_MAX_TX_SIZE 256
+#define CONFIG_I2C_MAX_RX_SIZE 256
 
 /* Default maximum time we allow for an I2C transfer (unit:ms) */
 #define I2C_TRANS_TIMEOUT K_MSEC(500)
