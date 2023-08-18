@@ -639,10 +639,9 @@ static void i2c_npcm4xx_slave_isr(const struct device *dev)
 static void i2c_set_slave_addr(const struct device *dev, uint8_t slave_addr)
 {
 	struct i2c_reg *const inst = I2C_INSTANCE(dev);
-	uint8_t addr = slave_addr >> 1;
 
 	/* set slave addr 1 */
-	inst->SMBnADDR1 = (addr | BIT(NPCM4XX_SMBnADDR_SAEN));
+	inst->SMBnADDR1 = (slave_addr | BIT(NPCM4XX_SMBnADDR_SAEN));
 
 	/* Enable I2C address match interrupt */
 	inst->SMBnCTL1 |= BIT(NPCM4XX_SMBnCTL1_NMINTE);
@@ -673,7 +672,7 @@ static int i2c_npcm4xx_slave_register(const struct device *dev,
 
 	data->slave_cfg = cfg;
 	data->slave_oper_state = I2C_NPCM4XX_OPER_STA_START;
-	/* set slave addr */
+	/* set slave addr, cfg->address is 7 bit address */
 	i2c_set_slave_addr(dev, cfg->address);
 
 exit:
@@ -865,7 +864,7 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 	/* prepare data to transfer */
 	data->rx_cnt = 0;
 	data->tx_cnt = 0;
-	data->dev_addr = addr;
+	data->dev_addr = addr << 1;
 	data->master_oper_state = I2C_NPCM4XX_OPER_STA_START;
 	data->err_code = 0;
 	if (i2c_npcm4xx_combine_msg(dev, msgs, num_msgs) < 0) {
