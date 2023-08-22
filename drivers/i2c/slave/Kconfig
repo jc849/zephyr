@@ -21,4 +21,6 @@ config I2C_SLAVE_INIT_PRIORITY
 
 source "drivers/i2c/slave/Kconfig.eeprom"
 
+source "drivers/i2c/slave/Kconfig.ipmb"
+
 endif # I2C_SLAVE
