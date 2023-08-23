@@ -1,0 +1,12 @@
+# NPCM4XX SPI-SPIM Driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+config SPI_NPCM4XX_SPIM
+	bool "Nuvoton NPCM4XX SPIM driver for internal flash"
+	default y
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  Enable the SPIM driver for NPCM4XX family of processors. This driver is
+	  for the dedicated SPI controller (SPIM) to access the internal flash.

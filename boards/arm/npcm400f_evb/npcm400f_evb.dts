@@ -65,6 +65,14 @@
 	pinctrl-0 = <&pinctrl_peci0_default>;
 };
 
+&spi_spim0 {
+	status = "okay";
+};
+
+&spi_spim0_cs0 {
+	status = "okay";
+};
+
 &spi_fiu0 {
 	status = "okay";
 };

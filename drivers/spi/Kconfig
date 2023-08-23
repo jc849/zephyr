@@ -79,4 +79,6 @@ source "drivers/spi/Kconfig.npcm4xx_fiu"
 
 source "drivers/spi/Kconfig.npcm4xx_spip"
 
+source "drivers/spi/Kconfig.npcm4xx_spim"
+
 endif # SPI
