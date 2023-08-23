@@ -30,5 +30,6 @@ zephyr_library_sources_ifdef(CONFIG_SPI_MONITOR_ASPEED	spi_monitor_aspeed.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_MONITOR_SHELL_ASPEED	spi_monitor_shell.c)
 zephyr_library_sources_ifdef(CONFIG_SPI_NPCM4XX_FIU	spi_npcm4xx_fiu.c)
 zephyr_library_sources_ifdef(CONFIG_SPIP_NPCM4XX	spi_npcm4xx_spip.c)
+zephyr_library_sources_ifdef(CONFIG_SPI_NPCM4XX_SPIM	spi_npcm4xx_spim.c)
 
 zephyr_library_sources_ifdef(CONFIG_USERSPACE		spi_handlers.c)

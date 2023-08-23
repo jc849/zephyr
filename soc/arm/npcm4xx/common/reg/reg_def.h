@@ -606,6 +606,116 @@ struct spip_reg {
 /* 0x30: SPI_RX fields */
 #define NPCM4XX_RX_RX                        (0)
 
+/*
+ * SPI Synchronous serial Interface Controller (SPIM) device registers
+ */
+struct spim_reg {
+	/* 0x000: Control and Status Register 0 */
+	volatile uint32_t SPIM_CTL0;
+	/* 0x004: Control and Status Register 1 */
+	volatile uint32_t SPIM_CTL1;
+	volatile uint32_t reserved1;
+	/* 0x00C: RX Clock Delay Control Register */
+	volatile uint32_t SPIM_RXCLKDLY;
+	/* 0x010: Data Receive Register 0 */
+	volatile uint32_t SPIM_RX0;
+	/* 0x014: Data Receive Register 1 */
+	volatile uint32_t SPIM_RX1;
+	/* 0x018: Data Receive Register 2 */
+	volatile uint32_t SPIM_RX2;
+	/* 0x01C: Data Receive Register 3 */
+	volatile uint32_t SPIM_RX3;
+	/* 0x020: Data Transmit Register 0 */
+	volatile uint32_t SPIM_TX0;
+	/* 0x024: Data Transmit Register 1 */
+	volatile uint32_t SPIM_TX1;
+	/* 0x028: Data Transmit Register 2 */
+	volatile uint32_t SPIM_TX2;
+	/* 0x02C: Data Transmit Register 3 */
+	volatile uint32_t SPIM_TX3;
+	/* 0x030: SRAM Memory Address Register */
+	volatile uint32_t SPIM_SRAMADDR;
+	/* 0x034: DMA Transfer Byte Count Register */
+	volatile uint32_t SPIM_DMACNT;
+	/* 0x038: SPI Flash Address Register */
+	volatile uint32_t SPIM_FADDR;
+	volatile uint32_t reserved2[2];
+	/* 0x044: Direct Memory Mapping Mode Control Register */
+	volatile uint32_t SPIM_DMMCTL;
+	/* 0x048: Control Register 2 */
+	volatile uint32_t SPIM_CTL2;
+};
+
+/* SPIM register fields */
+
+/* 0x000: SPIM_CTL0 */
+#define NPCM4XX_SPIM_CTL0_CMDCODE		FIELD(24, 8)
+
+#define NPCM4XX_SPIM_CTL0_OPMODE		FIELD(22, 2)
+#define NPCM4XX_SPIM_CTL0_OPMODE_NORMAL_IO      0x0
+#define NPCM4XX_SPIM_CTL0_OPMODE_DMA_WRITE      0x1
+#define NPCM4XX_SPIM_CTL0_OPMODE_DMA_READ       0x2
+#define NPCM4XX_SPIM_CTL0_OPMODE_DMM            0x3
+
+#define NPCM4XX_SPIM_CTL0_BITMODE		FIELD(20, 2)
+#define NPCM4XX_SPIM_CTL0_BITMODE_STANDARD      0x0
+#define NPCM4XX_SPIM_CTL0_BITMODE_DUAL          0x1
+#define NPCM4XX_SPIM_CTL0_BITMODE_QUAD          0x2
+
+#define NPCM4XX_SPIM_CTL0_SUSPITV		FIELD(16, 4)
+#define NPCM4XX_SPIM_CTL0_QDIODIR		15
+
+#define NPCM4XX_SPIM_CTL0_BURSTNUM		FIELD(13, 2)
+#define NPCM4XX_SPIM_CTL0_BURSTNUM_1            0x0
+#define NPCM4XX_SPIM_CTL0_BURSTNUM_2            0x1
+#define NPCM4XX_SPIM_CTL0_BURSTNUM_3            0x2
+#define NPCM4XX_SPIM_CTL0_BURSTNUM_4            0x3
+
+#define NPCM4XX_SPIM_CTL0_DWIDTH		FIELD(8, 5)
+#define NPCM4XX_SPIM_CTL0_DWIDTH_8              0x7
+#define NPCM4XX_SPIM_CTL0_DWIDTH_16             0xF
+#define NPCM4XX_SPIM_CTL0_DWIDTH_24             0x17
+#define NPCM4XX_SPIM_CTL0_DWIDTH_32             0x1F
+
+#define NPCM4XX_SPIM_CTL0_IF			7
+#define NPCM4XX_SPIM_CTL0_IEN			6
+#define NPCM4XX_SPIM_CTL0_B4ADDREN		5
+#define NPCM4XX_SPIM_CTL0_CIPHOFF		0
+
+/* 0x004: SPIM_CTL1 */
+#define NPCM4XX_SPIM_CTL1_DIVIDER		FIELD(16, 16)
+#define NPCM4XX_SPIM_CTL1_IDLE_TIME		FIELD(8, 4)
+#define NPCM4XX_SPIM_CTL1_SSACTPOL		5
+#define NPCM4XX_SPIM_CTL1_SS			4
+#define NPCM4XX_SPIM_CTL1_CDINVAL		3
+#define NPCM4XX_SPIM_CTL1_CACHEOFF		1
+#define NPCM4XX_SPIM_CTL1_SPIMEN		0
+
+/* 0x00C: SPIM_RXCLKDLY */
+#define NPCM4XX_SPIM_RXCLKDLY_RDDLYSEL		FIELD(16, 3)
+#define NPCM4XX_SPIM_RXCLKDLY_PHDELSEL          FIELD(8, 8)
+#define NPCM4XX_SPIM_RXCLKDLY_DWDELSEL		FIELD(0, 8)
+
+/* 0x044: SPIM_DMMCTL */
+#define NPCM4XX_SPIM_DMMCTL_ACTSCLKT		FIELD(28, 4)
+#define NPCM4XX_SPIM_DMMCTL_UACTSCLK		26
+#define NPCM4XX_SPIM_DMMCTL_CREN		25
+#define NPCM4XX_SPIM_DMMCTL_BWEN		24
+#define NPCM4XX_SPIM_DMMCTL_DESELTIM		FIELD(16, 5)
+#define NPCM4XX_SPIM_DMMCTL_CRMDAT		FIELD(8, 8)
+
+/* 0x048: SPIM_CTL2 */
+#define NPCM4XX_SPIM_CTL2_DCNUM			FIELD(24, 5)
+#define NPCM4XX_SPIM_CTL2_USETEN		16
+
+/* SPIM read write command init flags */
+#define NPCM4XX_SPIM_SPI_NOR_READ_INIT		0
+#define NPCM4XX_SPIM_SPI_NOR_WRITE_INIT		1
+#define NPCM4XX_SPIM_SPI_NOR_READ_INIT_OK	BIT(NPCM4XX_SPIM_SPI_NOR_READ_INIT)
+#define NPCM4XX_SPIM_SPI_NOR_WRITE_INIT_OK	BIT(NPCM4XX_SPIM_SPI_NOR_WRITE_INIT)
+
+#define NPCM4XX_SPIM_SINGLE_DUMMY_BYTE		0x8
+
 /* Flash Interface Unit (FIU) device registers */
 struct fiu_reg {
 	volatile uint8_t reserved1;

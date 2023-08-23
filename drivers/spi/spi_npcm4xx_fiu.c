@@ -15,12 +15,12 @@ LOG_MODULE_REGISTER(spi_npcm4xx_fiu, LOG_LEVEL_ERR);
 
 #include "spi_context.h"
 
-enum npcm4xx_ctrl_type {
+enum npcm4xx_fiu_ctrl_type {
 	NORMAL_SPI,
 	HOST_SPI
 };
 
-enum npcm4xx_spi_nor_type {
+enum npcm4xx_fiu_spi_nor_type {
 	PRIVATE_SPI_NOR,
 	SHARE_SPI_NOR,
 	BACKUP_SPI_NOR,
@@ -40,7 +40,7 @@ struct npcm4xx_spi_fiu_config {
 	/* direct access memory for private */
 	mm_reg_t private_mmap_base;
 	/* controller type */
-	enum npcm4xx_ctrl_type ctrl_type;
+	enum npcm4xx_fiu_ctrl_type ctrl_type;
 };
 
 /* Device data */
@@ -77,7 +77,7 @@ static inline void spi_npcm4xx_fiu_cs_level(const struct device *dev,
 						int level)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 
 	/* Set chip select to high/low level */
 	if (level == 0) {
@@ -104,7 +104,7 @@ static inline int spi_npcm4xx_fiu_uma_device_select(const struct device *dev,
 							bool write)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	int cts = 0;
 
 	/* clean backup device */
@@ -219,7 +219,7 @@ static inline void spi_npcm4xx_fiu_set_address_mode(const struct device *dev,
 							struct spi_nor_op_info *op_info)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 
 	if (op_info->addr_len == NPCM4XX_FIU_ADDR_4B_LENGTH) {
 		if (spi_nor_type == PRIVATE_SPI_NOR) {
@@ -244,7 +244,7 @@ static inline uint32_t spi_npcm4xx_fiu_mmap_address(const struct device *dev,
 						const struct spi_config *spi_cfg)
 {
 	const struct npcm4xx_spi_fiu_config *const config = dev->config;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	uint32_t mmap_address = 0;
 
 	/* get fiu device memory mapping address */
@@ -264,7 +264,7 @@ static inline void spi_npcm4xx_fiu_set_direct_read_mode(const struct device *dev
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	struct spi_nor_op_info *op_info = NULL;
 
 	/* read op information */
@@ -337,7 +337,7 @@ static inline void spi_npcm4xx_fiu_quad_program_data(const struct device *dev,
 
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	struct spi_nor_op_info *op_info = NULL;
 
 	/* write op information */
@@ -459,7 +459,7 @@ static inline void spi_npcm4xx_fiu_direct_write_cs_level(const struct device *de
 							int level)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 
 	/* Set chip select to high/low level for direct write */
 	if (level == 0) {
@@ -486,7 +486,7 @@ static inline void spi_npcm4xx_fiu_set_direct_write_mode(const struct device *de
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	struct spi_nor_op_info *op_info = NULL;
 
 	/* write op information */
@@ -706,7 +706,7 @@ static int spi_nor_npcm4xx_fiu_transceive(const struct device *dev,
 					struct spi_nor_op_info op_info)
 {
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 	struct spi_context *ctx = &data->ctx;
 	int error = 0;
 
@@ -743,7 +743,7 @@ static int spi_nor_npcm4xx_fiu_read_init(const struct device *dev,
 					struct spi_nor_op_info op_info)
 {
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 
 	/* record read command from jesd216 */
 	memcpy(&data->read_op_info[spi_nor_type], &op_info, sizeof(op_info));
@@ -761,7 +761,7 @@ static int spi_nor_npcm4xx_fiu_write_init(const struct device *dev,
 					struct spi_nor_op_info op_info)
 {
 	struct npcm4xx_spi_fiu_data *data = dev->data;
-	enum npcm4xx_spi_nor_type spi_nor_type = spi_cfg->slave;
+	enum npcm4xx_fiu_spi_nor_type spi_nor_type = spi_cfg->slave;
 
 	/* record read command from jesd216 */
 	memcpy(&data->write_op_info[spi_nor_type], &op_info, sizeof(op_info));
@@ -810,7 +810,7 @@ static int spi_npcm4xx_fiu_init(const struct device *dev)
 	return 0;
 }
 
-static const struct spi_nor_ops npcm4xx_spi_nor_ops = {
+static const struct spi_nor_ops npcm4xx_fiu_spi_nor_ops = {
         .transceive = spi_nor_npcm4xx_fiu_transceive,
         .read_init = spi_nor_npcm4xx_fiu_read_init,
         .write_init = spi_nor_npcm4xx_fiu_write_init,
@@ -819,10 +819,10 @@ static const struct spi_nor_ops npcm4xx_spi_nor_ops = {
 static struct spi_driver_api spi_npcm4xx_fiu_api = {
 	.transceive = spi_npcm4xx_fiu_transceive,
 	.release = spi_npcm4xx_fiu_release,
-	.spi_nor_op = &npcm4xx_spi_nor_ops,
+	.spi_nor_op = &npcm4xx_fiu_spi_nor_ops,
 };
 
-#define NPCM4XX_SPI_INIT(inst)                                                                      \
+#define NPCM4XX_FIU_INIT(inst)                                                                      \
 		static struct npcm4xx_spi_fiu_config npcm4xx_spi_fiu_config_##inst = {              \
 		.base = DT_INST_REG_ADDR_BY_NAME(inst, ctrl_reg),                                   \
 		.backup_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, backup_mmap),                    \
@@ -843,4 +843,4 @@ static struct spi_driver_api spi_npcm4xx_fiu_api = {
 							CONFIG_SPI_INIT_PRIORITY,                   \
 							&spi_npcm4xx_fiu_api);                      \
 
-DT_INST_FOREACH_STATUS_OKAY(NPCM4XX_SPI_INIT)
+DT_INST_FOREACH_STATUS_OKAY(NPCM4XX_FIU_INIT)

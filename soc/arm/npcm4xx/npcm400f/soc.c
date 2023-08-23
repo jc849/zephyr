@@ -20,6 +20,8 @@ static int soc_init(const struct device *dev)
 {
 	ARG_UNUSED(dev);
 
+	npcm4xx_sram_vector_table_copy();
+
 	return 0;
 }
 

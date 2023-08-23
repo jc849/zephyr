@@ -1,4 +1,4 @@
-# NPCM4XX SPI Driver configuration options
+# NPCM4XX SPI-FIU Driver configuration options
 
 # Copyright (c) 2023 Nuvoton Technology Corporation.
 # SPDX-License-Identifier: Apache-2.0
