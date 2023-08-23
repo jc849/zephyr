@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
 */
-#define DT_DRV_COMPAT aspeed_ipmb
+#define DT_DRV_COMPAT zephyr_i2c_ipmb
 
 #include <sys/util.h>
 #include <sys/slist.h>
@@ -155,6 +155,12 @@ int ipmb_slave_read(const struct device *dev, struct ipmb_msg **ipmb_data, uint8
 		*ipmb_data = &(pack->msg);
 		*length = pack->msg_length;
 
+		/* if buffer received done not yet */
+		if (*length == 0) {
+			ret = 1;
+			goto exit;
+		}
+
 		/* remove this item from list */
 		sys_slist_find_and_remove(&(data->list_head), list_node);
 
@@ -165,6 +171,7 @@ int ipmb_slave_read(const struct device *dev, struct ipmb_msg **ipmb_data, uint8
 		ret = 1;
 	}
 
+exit:
 	/* exit critical section */
 	if (!k_is_in_isr())
 		irq_unlock(key);

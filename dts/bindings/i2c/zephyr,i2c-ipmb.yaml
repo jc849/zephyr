@@ -1,0 +1,17 @@
+#
+# Copyright (c) ZEPHYR
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: ZEPHYR I2C IPMB device
+
+compatible: "zephyr,i2c-ipmb"
+
+include: i2c-device.yaml
+
+properties:
+    size:
+      type: int
+      required: true
+      description: Total IPMB page size
