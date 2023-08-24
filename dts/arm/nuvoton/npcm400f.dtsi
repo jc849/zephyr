@@ -158,17 +158,6 @@
 			status = "disabled";
 			label = "ADC_0";
 		};
-
-		spip: spi@40016000 {
-			compatible = "nuvoton,npcm4xx-spip";
-			#address-cells = <1>;
-			#size-cells = <0>;
-			reg = <0x40016000 0x100>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL4 7>;
-			pinctrl-0 = <&pinctrl_spip_default &pinctrl_spip_quad>;
-			label = "SPIP";
-			status = "disabled";
-		};
 	};
 
 	soc-id {
