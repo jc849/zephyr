@@ -134,7 +134,7 @@
 
 &i2c6a {
 	clock-frequency = <200000>;
-	status = "okay";
+	status = "disabled";
 };
 
 &i2c1b {
