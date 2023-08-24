@@ -473,6 +473,30 @@
 			label = "SPI_FIU1";
 			status = "disabled";
 		};
+
+		spip1: spi@40016000 {
+			compatible = "nuvoton,npcm4xx-spip";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40016000 0x100>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL4 7>;
+			spi-ctrl-caps-mask = <0x000f0f0c>;
+			pinctrl-0 = <&pinctrl_spip1_default &pinctrl_spip1_quad>;
+			label = "SPIP";
+			status = "disabled";
+
+			spi_spip1_cs0: flash@0 {
+				compatible ="jedec,spi-nor";
+				/* slave */
+				reg = <0>;
+				spi-max-buswidth = <1>;
+				spi-max-frequency = <48000000>;
+				jedec-id = [];
+				label = "spi_spip1_cs0";
+				status = "disabled";
+			};
+		};
+
 	};
 
 	soc-if {

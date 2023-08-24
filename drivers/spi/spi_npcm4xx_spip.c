@@ -25,34 +25,41 @@ struct npcm4xx_spip_config {
 struct npcm4xx_spip_data {
 	struct spi_context ctx;
 	uint32_t apb3;
+	/* read/write init flags */
+	int rw_init;
+	/* read command data */
+	struct spi_nor_op_info read_op_info;
+	/* write command data */
+	struct spi_nor_op_info write_op_info;
 };
+
+/* Driver convenience defines */
+#define HAL_INSTANCE(dev)									\
+	((struct spip_reg *)((const struct npcm4xx_spip_config *)(dev)->config)->base)
 
 static void SPI_SET_SS0_HIGH(const struct device *dev)
 {
-	const struct npcm4xx_spip_config *cfg = dev->config;
-	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
 
-	spip_regs->SSCTL &= ~BIT(NPCM4XX_SSCTL_AUTOSS);
-	spip_regs->SSCTL |= BIT(NPCM4XX_SSCTL_SSACTPOL);
-	spip_regs->SSCTL |= BIT(NPCM4XX_SSCTL_SS);
+	inst->SSCTL &= ~BIT(NPCM4XX_SSCTL_AUTOSS);
+	inst->SSCTL |= BIT(NPCM4XX_SSCTL_SSACTPOL);
+	inst->SSCTL |= BIT(NPCM4XX_SSCTL_SS);
 }
 
 static void SPI_SET_SS0_LOW(const struct device *dev)
 {
-	const struct npcm4xx_spip_config *cfg = dev->config;
-	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
 
-	spip_regs->SSCTL &= ~BIT(NPCM4XX_SSCTL_AUTOSS);
-	spip_regs->SSCTL &= ~BIT(NPCM4XX_SSCTL_SSACTPOL);
-	spip_regs->SSCTL |= BIT(NPCM4XX_SSCTL_SS);
+	inst->SSCTL &= ~BIT(NPCM4XX_SSCTL_AUTOSS);
+	inst->SSCTL &= ~BIT(NPCM4XX_SSCTL_SSACTPOL);
+	inst->SSCTL |= BIT(NPCM4XX_SSCTL_SS);
 }
 
 static int spip_npcm4xx_configure(const struct device *dev,
 				  const struct spi_config *config)
 {
-	const struct npcm4xx_spip_config *cfg = dev->config;
 	struct npcm4xx_spip_data *data = dev->data;
-	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
 	uint32_t u32Div = 0;
 	int ret = 0;
 
@@ -60,34 +67,34 @@ static int spip_npcm4xx_configure(const struct device *dev,
 		LOG_ERR("Word sizes other than 8 bits are not supported");
 		ret = -ENOTSUP;
 	} else  {
-		spip_regs->CTL &= ~(0x1F << NPCM4XX_CTL_DWIDTH);
-		spip_regs->CTL |=  (SPI_WORD_SIZE_GET(config->operation) << NPCM4XX_CTL_DWIDTH);
+		inst->CTL &= ~(0x1F << NPCM4XX_CTL_DWIDTH);
+		inst->CTL |=  (SPI_WORD_SIZE_GET(config->operation) << NPCM4XX_CTL_DWIDTH);
 	}
 
 	if (SPI_MODE_GET(config->operation) & SPI_MODE_CPOL) {
-		spip_regs->CTL |= BIT(NPCM4XX_CTL_CLKPOL);
+		inst->CTL |= BIT(NPCM4XX_CTL_CLKPOL);
 		if (SPI_MODE_GET(config->operation) & SPI_MODE_CPHA) {
-			spip_regs->CTL &= ~BIT(NPCM4XX_CTL_TXNEG);
-			spip_regs->CTL &= ~BIT(NPCM4XX_CTL_RXNEG);
+			inst->CTL &= ~BIT(NPCM4XX_CTL_TXNEG);
+			inst->CTL &= ~BIT(NPCM4XX_CTL_RXNEG);
 		} else {
-			spip_regs->CTL |= BIT(NPCM4XX_CTL_TXNEG);
-			spip_regs->CTL |= BIT(NPCM4XX_CTL_RXNEG);
+			inst->CTL |= BIT(NPCM4XX_CTL_TXNEG);
+			inst->CTL |= BIT(NPCM4XX_CTL_RXNEG);
 		}
 	} else {
-		spip_regs->CTL &= ~BIT(NPCM4XX_CTL_CLKPOL);
+		inst->CTL &= ~BIT(NPCM4XX_CTL_CLKPOL);
 	}
 
 	if (config->operation & SPI_TRANSFER_LSB) {
-		spip_regs->CTL |= BIT(NPCM4XX_CTL_LSB);
+		inst->CTL |= BIT(NPCM4XX_CTL_LSB);
 	} else {
-		spip_regs->CTL &= ~BIT(NPCM4XX_CTL_LSB);
+		inst->CTL &= ~BIT(NPCM4XX_CTL_LSB);
 	}
 
 	if (config->operation & SPI_OP_MODE_SLAVE) {
 		LOG_ERR("Slave mode is not supported");
 		ret = -ENOTSUP;
 	} else {
-		spip_regs->CTL &= ~BIT(NPCM4XX_CTL_SLAVE);
+		inst->CTL &= ~BIT(NPCM4XX_CTL_SLAVE);
 	}
 
 	/* Set Bus clock */
@@ -103,10 +110,10 @@ static int spip_npcm4xx_configure(const struct device *dev,
 		}
 	}
 
-	spip_regs->CLKDIV = (spip_regs->CLKDIV & ~0xFF) | u32Div;
+	inst->CLKDIV = (inst->CLKDIV & ~0xFF) | u32Div;
 
 	/* spip enable */
-	spip_regs->CTL |= BIT(NPCM4XX_CTL_SPIEN);
+	inst->CTL |= BIT(NPCM4XX_CTL_SPIEN);
 
 	return ret;
 }
@@ -116,65 +123,65 @@ static int spip_npcm4xx_transceive(const struct device *dev,
 				   const struct spi_buf_set *tx_bufs,
 				   const struct spi_buf_set *rx_bufs)
 {
-	const struct npcm4xx_spip_config *cfg = dev->config;
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
 	struct npcm4xx_spip_data *data = dev->data;
-	struct spip_reg *const spip_regs = (struct spip_reg *) cfg->base;
+	struct spi_context *ctx = &data->ctx;
+	int ret = 0, error = 0;
+	uint8_t tx_done = 0;
 
-	spi_context_lock(&data->ctx, false, NULL, config);
-	data->ctx.config = config;
+	spi_context_lock(ctx, false, NULL, config);
+	ctx->config = config;
 
-	int ret, error = 0;
-	uint8_t txDone;
 	/* Configure */
 	ret = spip_npcm4xx_configure(dev, config);
 	if (ret) {
-		return -ENOTSUP;
+		ret = -ENOTSUP;
+		goto spip_transceive_done;
 	}
-	ret = 0;
-	spi_context_buffers_setup(&data->ctx, tx_bufs, rx_bufs, 1);
 
+	spi_context_buffers_setup(ctx, tx_bufs, rx_bufs, 1);
 
 	if (config->operation & SPI_OP_MODE_SLAVE) {
 		/* Slave */
 		LOG_ERR("Slave mode is not supported");
 		ret = -ENOTSUP;
+		goto spip_transceive_done;
 	} else {
 		/* Master */
 		SPI_SET_SS0_LOW(dev);
 		if (rx_bufs == NULL) {
 			/* write data to SPI flash */
-			while (spi_context_tx_buf_on(&data->ctx)) {
+			while (spi_context_tx_buf_on(ctx)) {
 				/*TX*/
-				if ((spip_regs->STATUS & BIT(NPCM4XX_STATUS_TXFULL)) == 0) {
-					spip_regs->TX = *data->ctx.tx_buf;
-					spi_context_update_tx(&data->ctx, 1, 1);
+				if ((inst->STATUS & BIT(NPCM4XX_STATUS_TXFULL)) == 0) {
+					inst->TX = (uint8_t)*ctx->tx_buf;
+					spi_context_update_tx(ctx, 1, 1);
 				}
 			}
-		} else   {
-			txDone = 0;
-			spip_regs->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
+		} else {
+			inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
 			while (1) {
 				/*TX*/
-				if (spi_context_tx_buf_on(&data->ctx)) {
-					if (!(spip_regs->STATUS & BIT(NPCM4XX_STATUS_TXFULL))) {
-						spip_regs->TX = *data->ctx.tx_buf;
-						spi_context_update_tx(&data->ctx, 1, 1);
+				if (spi_context_tx_buf_on(ctx)) {
+					if (!(inst->STATUS & BIT(NPCM4XX_STATUS_TXFULL))) {
+						inst->TX = (uint8_t)*ctx->tx_buf;
+						spi_context_update_tx(ctx, 1, 1);
 					}
-				} else if (!(spip_regs->STATUS & BIT(NPCM4XX_STATUS_BUSY))) {
-					txDone = 1;
+				} else if (!(inst->STATUS & BIT(NPCM4XX_STATUS_BUSY))) {
+					tx_done = 1;
 				}
 
 				/*RX*/
-				if (spi_context_rx_buf_on(&data->ctx)) {
-					if (!(spip_regs->STATUS & BIT(NPCM4XX_STATUS_RXEMPTY))) {
-						*data->ctx.rx_buf = spip_regs->RX;
-						spi_context_update_rx(&data->ctx, 1, 1);
-					} else if (txDone == 1) {
+				if (spi_context_rx_buf_on(ctx)) {
+					if (!(inst->STATUS & BIT(NPCM4XX_STATUS_RXEMPTY))) {
+						*ctx->rx_buf = (uint8_t)inst->RX;
+						spi_context_update_rx(ctx, 1, 1);
+					} else if (tx_done == 1) {
 						ret = -EOVERFLOW;
 						break;
 					}
 				} else   {
-					if (txDone == 1) {
+					if (tx_done == 1) {
 						break;
 					}
 				}
@@ -182,19 +189,21 @@ static int spip_npcm4xx_transceive(const struct device *dev,
 		}
 
 		do {
-			if ((spip_regs->STATUS & BIT(NPCM4XX_STATUS_BUSY)) == 0) {
+			if ((inst->STATUS & BIT(NPCM4XX_STATUS_BUSY)) == 0) {
 				break;
 			}
 		} while (1);
 
 		SPI_SET_SS0_HIGH(dev);
 	}
-	spi_context_release(&data->ctx, error);
-	if (error != 0) {
-		ret = error;
-	}
 
-	return ret;
+spip_transceive_done:
+	spi_context_release(ctx, error);
+
+	if (ret)
+		return ret;
+	else
+		return error;
 }
 
 #ifdef CONFIG_SPI_ASYNC
@@ -252,12 +261,155 @@ static int spip_npcm4xx_init(const struct device *dev)
 	return 0;
 }
 
+static inline void spi_npcm4xx_spip_write_data(const struct device *dev, uint32_t code)
+{
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
+
+	while ((inst->STATUS & BIT(NPCM4XX_STATUS_TXFULL)));
+
+	inst->TX = code;
+
+	while (inst->STATUS & BIT(NPCM4XX_STATUS_BUSY));
+}
+
+static void spi_nor_npcm4xx_spip_fifo_transceive(const struct device *dev,
+					const struct spi_config *spi_cfg,
+					struct spi_nor_op_info op_info)
+{
+	struct spip_reg *const inst = HAL_INSTANCE(dev);
+	struct spi_nor_op_info *normal_op_info = NULL;
+	uint32_t index = 0, dummy_write = 0;
+	uint8_t *buf_data = NULL;
+	uint8_t sub_addr = 0;
+
+	normal_op_info = &op_info;
+
+	/* clear tx/rx fifo buffer */
+	inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_TXRST);
+	inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
+
+	SPI_SET_SS0_LOW(dev);
+
+	/* send command */
+	spi_npcm4xx_spip_write_data(dev, (uint32_t)normal_op_info->opcode);
+
+	/* send address */
+	index = normal_op_info->addr_len;
+	while (index) {
+		index = index - 1;
+		sub_addr = (normal_op_info->addr >> (8 * index)) & 0xff;
+		spi_npcm4xx_spip_write_data(dev, (uint32_t)sub_addr);
+	}
+
+	/* only support single mode dummy byte */
+	if ((normal_op_info->dummy_cycle % NPCM4XX_SPIP_SINGLE_DUMMY_BYTE) != 0) {
+		LOG_ERR("SPIP now only support single mode");
+		return;
+	}
+
+	/* send dummy bytes */
+	for (index = 0; index < normal_op_info->dummy_cycle;
+				index += NPCM4XX_SPIP_SINGLE_DUMMY_BYTE) {
+		spi_npcm4xx_spip_write_data(dev, dummy_write);
+	}
+
+	/* clear rx fifo buffer */
+	inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
+
+	buf_data = normal_op_info->buf;
+
+	if (buf_data == NULL) {
+		inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
+		goto spi_nor_normal_done;
+	}
+
+	/* read data from SPI flash */
+	if (normal_op_info->data_direct == SPI_NOR_DATA_DIRECT_IN) {
+		for (index = 0; index < normal_op_info->data_len; index++) {
+			/* write dummy data out*/
+			spi_npcm4xx_spip_write_data(dev, dummy_write);
+			/* wait received data */
+			while((inst->STATUS & BIT(NPCM4XX_STATUS_RXEMPTY)));
+
+			*(buf_data + index) = (uint8_t)inst->RX;
+		}
+	} else if (normal_op_info->data_direct == SPI_NOR_DATA_DIRECT_OUT) {
+		for (index = 0; index < normal_op_info->data_len; index++) {
+			/* write data to SPI flash */
+			spi_npcm4xx_spip_write_data(dev, (uint32_t)*(buf_data + index));
+		}
+		/* clear rx fifo buffer */
+		inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
+	}
+
+spi_nor_normal_done:
+
+	SPI_SET_SS0_HIGH(dev);
+}
+
+static int spi_nor_npcm4xx_spip_transceive(const struct device *dev,
+					const struct spi_config *spi_cfg,
+					struct spi_nor_op_info op_info)
+{
+	struct npcm4xx_spip_data *data = dev->data;
+	struct spi_context *ctx = &data->ctx;
+	int ret = 0, error = 0;
+
+	ret = spip_npcm4xx_configure(dev, spi_cfg);
+	if (ret)
+		return ret;
+
+	spi_context_lock(ctx, false, NULL, spi_cfg);
+	ctx->config = spi_cfg;
+
+	spi_nor_npcm4xx_spip_fifo_transceive(dev, spi_cfg, op_info);
+
+	spi_context_release(ctx, error);
+
+	return error;
+}
+
+static int spi_nor_npcm4xx_spip_read_init(const struct device *dev,
+					const struct spi_config *spi_cfg,
+					struct spi_nor_op_info op_info)
+{
+	struct npcm4xx_spip_data *data = dev->data;
+
+	/* record read command from jesd216 */
+	memcpy(&data->read_op_info, &op_info, sizeof(op_info));
+
+	data->rw_init |= NPCM4XX_SPIP_SPI_NOR_READ_INIT_OK;
+
+	return 0;
+}
+
+static int spi_nor_npcm4xx_spip_write_init(const struct device *dev,
+					const struct spi_config *spi_cfg,
+					struct spi_nor_op_info op_info)
+{
+	struct npcm4xx_spip_data *data = dev->data;
+
+	/* record read command from jesd216 */
+	memcpy(&data->write_op_info, &op_info, sizeof(op_info));
+
+	data->rw_init |= NPCM4XX_SPIP_SPI_NOR_WRITE_INIT_OK;
+
+	return 0;
+}
+
+static const struct spi_nor_ops npcm4xx_spip_spi_nor_ops = {
+	.transceive = spi_nor_npcm4xx_spip_transceive,
+	.read_init = spi_nor_npcm4xx_spip_read_init,
+	.write_init = spi_nor_npcm4xx_spip_write_init,
+};
+
 static const struct spi_driver_api spip_npcm4xx_driver_api = {
 	.transceive = spip_npcm4xx_transceive,
 #ifdef CONFIG_SPI_ASYNC
 	.transceive_async = spip_npcm4xx_transceive_async,
 #endif
 	.release = spip_npcm4xx_release,
+	.spi_nor_op = &npcm4xx_spip_spi_nor_ops,
 };
 
 
