@@ -127,4 +127,12 @@ config USB_ASPEED
 	help
 	  ASPEED USB Device Controller Driver
 
+config USB_DC_NPCM4XX
+	bool "Nuvoton NPCM4XX USB Device Controller Driver"
+	depends on SOC_FAMILY_NPCM4XX
+	select USB_DEVICE_DRIVER
+	help
+	  This option enables the USB device driver for NPCM4XX family of processors.
+	  Say y if you wish to use USB device on NPCM4XX.
+
 endif # USB

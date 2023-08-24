@@ -35,4 +35,6 @@
 	pinctrl_vin3_default: vin3_default {};
 	pinctrl_spip1_default: spip1_default{};
 	pinctrl_spip1_quad: spip1_quad{};
+	pinctrl_usbd_phy_iclk: usbd_phy_iclk {};
+	pinctrl_usbd_phy_xclk: usbd_phy_xclk {};
 };

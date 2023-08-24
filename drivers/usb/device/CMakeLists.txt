@@ -10,5 +10,6 @@ zephyr_sources_ifdef(CONFIG_USB_NATIVE_POSIX
 	usb_dc_native_posix.c
 	usb_dc_native_posix_adapt.c
 	)
-zephyr_sources_ifdef(CONFIG_USB_DC_NXP_EHCI  usb_dc_mcux_ehci.c)
-zephyr_sources_ifdef(CONFIG_USB_ASPEED   usb_dc_aspeed.c)
+zephyr_sources_ifdef(CONFIG_USB_DC_NXP_EHCI	usb_dc_mcux_ehci.c)
+zephyr_sources_ifdef(CONFIG_USB_ASPEED		usb_dc_aspeed.c)
+zephyr_sources_ifdef(CONFIG_USB_DC_NPCM4XX	usb_dc_npcm4xx.c)
