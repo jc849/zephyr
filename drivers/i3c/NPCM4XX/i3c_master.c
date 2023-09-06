@@ -11,6 +11,10 @@
 
 LOG_MODULE_REGISTER(npcm4xx_i3c_master, CONFIG_I3C_LOG_LEVEL);
 
+extern struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
+extern struct k_work work_retry[I3C_PORT_MAX];
+extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
+
 /**
  * @brief                           Callback for I3C master
  * @param [in]      TaskInfo        Pointer to the running task
@@ -64,6 +68,11 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 		return I3C_DO_SW_TIMEOUT(pTaskInfo);
 	}
 
+	/*
+	 * IBI / Hot-Join / MasterRequest tasks are forked by SLV_START
+	 * So, there is no xfer to return status and data.
+	 * We should define callback functions for these cases.
+	 */
 	if (ErrDetail == I3C_ERR_IBI) {
 		return I3C_DO_IBI(pTaskInfo);
 	}
@@ -427,9 +436,7 @@ __u32 I3C_DO_SW_TIMEOUT(I3C_TASK_INFO_t *pTaskInfo)
 /*------------------------------------------------------------------------------*/
 __u32 I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
 {
-	I3C_TRANSFER_TASK_t *pTask;
 	I3C_BUS_INFO_t *pBus;
-	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -441,16 +448,12 @@ __u32 I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
-	pTask = pTaskInfo->pTask;
-	pBus = Get_Bus_From_Port(pTaskInfo->Port);
-	pDev = GetDevInfoByDynamicAddr(pBus, pTask->address);
-	if (pDev == NULL) {
-		return I3C_ERR_TASK_INVALID;
-	}
-
 	if (pTaskInfo->callback != NULL) {
 		/* pTaskInfo->callback(TaskInfo, ErrDetail); */
 	}
+
+	pBus = Get_Bus_From_Port(pTaskInfo->Port);
+	pBus->pCurrentMaster->bAbort = FALSE;
 
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
@@ -771,12 +774,24 @@ __u32 I3C_DO_SETAASA(I3C_TASK_INFO_t *pTaskInfo)
 	pDev = pBus->pDevList;
 
 	while (pDev != NULL) {
+		/* only SPD5118 support SETAASA */
+		if ((pDev->attr.b.present) && /* IS_SPD5118_DEVICE(pDev->pDeviceInfo) */
+			(pDev->staticAddr >= 0x50) && (pDev->staticAddr <= 0x57) &&
+			(pDev->attr.b.reqSETAASA)) {
+			/* SPD5118_DO_SETAASA(pDev->dynamicAddr & 0x07); */
+
+			pDev->attr.b.runI3C = TRUE;
+			pDev->dynamicAddr = pDev->staticAddr;
+
+			if ((pDev->attr.b.reqSETAASA) && (pDev->attr.b.doneSETAASA == 0))
+				pDev->attr.b.doneSETAASA = 1;
+		}
+
 		pDev = pDev->pNextDev;
 	}
 
 	/* Remove from master's task */
-	pBus->pCurrentTask = NULL;
-	pBus->busState = I3C_BUS_STATE_INIT;
+	/* pBus->busState = I3C_BUS_STATE_INIT; */
 	return I3C_ERR_OK;
 }
 
@@ -978,7 +993,8 @@ void I3C_Master_Start_Request(__u32 Parm)
 	} else if (I3C_IS_BUS_WAIT_STOP_OR_RETRY(pBus)) {
 		hal_I3C_Process_Task(pTaskInfo);
 	} else {
-		hal_I3C_Master_Stall(pBus, pTaskInfo->Port);
+		/* run retry after isr, let slave's isr can complete its task in time */
+		/* hal_I3C_Master_Stall(pBus, pTaskInfo->Port); */
 
 		if (I3C_IS_BUS_DETECT_SLVSTART(pBus) && (protocol != I3C_TRANSFER_PROTOCOL_EVENT)) {
 			pBus->pCurrentTask = NULL;
@@ -1001,6 +1017,8 @@ void I3C_Master_Stop_Request(__u32 Parm)
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
 	__u8 port;
+	I3C_DEVICE_INFO_t *pDevice;
+	I3C_ErrCode_Enum result;
 
 	if (Parm == 0) {
 		return;
@@ -1017,13 +1035,65 @@ void I3C_Master_Stop_Request(__u32 Parm)
 	}
 
 	port = pTaskInfo->Port;
+	pDevice = I3C_Get_INODE(port);
+	result = pTaskInfo->result;
 
-	if (pTaskInfo->result == I3C_ERR_IBI) {
+	if (result == I3C_ERR_IBI) {
 		pTask->address = hal_I3C_get_ibiAddr(port);
 	}
 
 	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
 	hal_I3C_Stop(port);
+	pDevice->bAbort = FALSE;
+
+	if (result == I3C_ERR_IBI) {
+		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_rcv_ibi[port]);
+	}
+}
+
+/*---------------------------------------------------------------------------------*/
+/**
+ * @brief                           Retry master task
+ * @param [in]      Parm            Pointer to task
+ * @return                          none
+ */
+/*---------------------------------------------------------------------------------*/
+void I3C_Master_Retry_Frame(__u32 Parm)
+{
+	I3C_TRANSFER_TASK_t *pTask;
+	I3C_TRANSFER_FRAME_t *pFrame;
+	I3C_TASK_INFO_t *pTaskInfo;
+
+	if (Parm == 0)
+		return;
+
+	pTask = (I3C_TRANSFER_TASK_t *)Parm;
+
+	if (pTask->frame_idx >= pTask->frame_count)
+		return;
+
+	if (pTask->pTaskInfo == NULL)
+		return;
+
+	pTaskInfo = pTask->pTaskInfo;
+
+	pFrame = &pTask->pFrameList[pTask->frame_idx];
+	if ((pFrame->flag & I3C_TRANSFER_RETRY_ENABLE) && (pFrame->retry_count >= 1)) {
+		pFrame->retry_count--;
+
+		if (pFrame->flag & I3C_TRANSFER_RETRY_WITHOUT_STOP) {
+			pFrame->flag |= I3C_TRANSFER_REPEAT_START;
+		} else {
+			I3C_Master_Stop_Request((__u32) pTask);
+
+			/* wait a moment for slave to prepare response data */
+			/* k_usleep(WAIT_SLAVE_PREPARE_RESPONSE_TIME); */
+		}
+
+		I3C_Master_Start_Request((__u32) pTaskInfo);
+	} else {
+		I3C_Master_Stop_Request((__u32) pTask);
+	}
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1130,7 +1200,6 @@ void I3C_Master_Run_Next_Frame(__u32 Parm)
 			pDev = pDev->pNextDev;
 		}
 	}
-#undef ASSIGN_NEW_ADDRESS
 
 	pTask->frame_idx++;
 	I3C_Master_Start_Request((__u32)pTaskInfo);

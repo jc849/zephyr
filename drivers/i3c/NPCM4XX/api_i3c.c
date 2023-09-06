@@ -195,6 +195,11 @@ void api_I3C_Master_Stop(__u32 Parm)
 	I3C_Master_Stop_Request(Parm);
 }
 
+void api_I3C_Master_Retry(__u32 Parm)
+{
+	I3C_Master_Retry_Frame(Parm);
+}
+
 void api_I3C_Master_Run_Next_Frame(__u32 Parm)
 {
 	I3C_Master_Run_Next_Frame(Parm);

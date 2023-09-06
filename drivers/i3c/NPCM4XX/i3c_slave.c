@@ -11,7 +11,16 @@
 #include <drivers/i3c/NPCM4XX/i3c_drv.h>
 #include <drivers/i3c/NPCM4XX/api_i3c.h>
 
-I3C_REG_ITEM_t *pSlaveReg[I3C_PORT_MAX] = { NULL, NULL };
+I3C_REG_ITEM_t *pSlaveReg[I3C_PORT_MAX] = {
+	NULL,
+	NULL,
+#if (I3C_PORT_MAX > 2)
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+#endif
+};
 
 /*------------------------------------------------------------------------------*/
 /**
@@ -371,7 +380,7 @@ I3C_ErrCode_Enum Setup_Slave_IBI_DMA(I3C_DEVICE_INFO_t *pDevice)
 	return I3C_ERR_OK;
 }
 
-void I3C_Update_Dynamic_Address(__u32 Parm)
+uint8_t I3C_Update_Dynamic_Address(__u32 Parm)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
@@ -379,7 +388,8 @@ void I3C_Update_Dynamic_Address(__u32 Parm)
 	port = (I3C_PORT_Enum)Parm;
 	pDevice = api_I3C_Get_INODE(port);
 	pDevice->dynamicAddr = hal_i3c_get_dynamic_address(port);
-	pDevice->bRunI3C = TRUE;
+	pDevice->bRunI3C = (pDevice->dynamicAddr) ? TRUE : FALSE;
+	return pDevice->dynamicAddr;
 }
 
 void I3C_Prepare_To_Read_Command(__u32 Parm)

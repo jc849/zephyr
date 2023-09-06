@@ -19,7 +19,7 @@ module = I3C
 module-str = i3c
 source "subsys/logging/Kconfig.template.log_config"
 
-#source "drivers/i3c/slave/Kconfig"
+source "drivers/i3c/slave/Kconfig"
 
 # Include these first so that any properties (e.g. defaults) below can be
 # overridden (by defining symbols in multiple locations)

@@ -318,6 +318,10 @@ I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port)
 	pDevice->vendorID = 0;
 	pDevice->partNumber = 0;
 
+	pDevice->max_rd_len = hal_I3C_get_MAXRD(port);
+	pDevice->max_wr_len = hal_I3C_get_MAXWR(port);
+
+	pDevice->regCnt = 0;
 	pDevice->pReg = NULL;
 	pDevice->cmdIndex = CMD_DEFAULT;
 	pDevice->stopSplitRead = FALSE;
@@ -3064,6 +3068,7 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __u16 buf_siz
 	__u16 i;
 	__u8 fmt;
 	__u16 dev_count;
+	__u8 remainder;
 
 	if (HSize < 1) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -3118,6 +3123,7 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __u16 buf_siz
 	} else if (CCC == CCC_DIRECT_SETMWL) {
 		fmt = 3;
 	} else if (CCC == CCC_DIRECT_SETMRL) {
+		/*fmt = 3;*/
 		fmt = 4;
 	} else if ((CCC == CCC_DIRECT_SETBRGTGT) || (CCC == CCC_DIRECT_SETROUTE) ||
 			 (CCC == CCC_DIRECT_SETXTIME)) {
@@ -3128,7 +3134,18 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __u16 buf_siz
 		return I3C_ERR_HW_NOT_SUPPORT;
 	}
 
-	dev_count = buf_size - (HSize - 1) / fmt;
+RETRY:
+	dev_count = (buf_size - (HSize - 1)) / fmt;
+	remainder = (buf_size - (HSize - 1)) % fmt;
+
+	if (remainder != 0) {
+		/* try another fmt */
+		if ((CCC == CCC_DIRECT_SETMRL) && (fmt == 4)) {
+			fmt = 3;
+			goto RETRY;
+		}
+	}
+
 	if (dev_count < 1) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}

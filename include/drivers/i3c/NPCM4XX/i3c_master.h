@@ -35,6 +35,7 @@ extern __u32 I3C_DO_SETNEWDA(I3C_TASK_INFO_t *pTaskInfo);
 /* Operation */
 extern void I3C_Master_Start_Request(__u32 Parm);
 extern void I3C_Master_Stop_Request(__u32 Parm);
+extern void I3C_Master_Retry_Frame(__u32 Parm);
 extern void I3C_Master_End_Request(__u32 Parm);
 extern void I3C_Master_Run_Next_Frame(__u32 Parm);
 extern void I3C_Master_New_Request(__u32 Parm);
