@@ -1,0 +1,12 @@
+# NPCM4XX JTAG driver configuration options
+
+# Copyright (c) 2023 Nuvoton Technology Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config JTAG_NPCM4XX
+	bool "NPCM4XX JTAG driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the JTAG driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use JTAG channels on NPCM4XX MCU.
