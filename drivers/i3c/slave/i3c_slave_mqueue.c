@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2021 ASPEED Technology Inc.
+ * Copyright (c) 2023 Zephyr Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#define DT_DRV_COMPAT aspeed_i3c_slave_mqueue
+
+#define DT_DRV_COMPAT i3c_slave_mqueue
 
 #include <soc.h>
 #include <sys/util.h>
@@ -55,7 +56,6 @@ static void i3c_slave_mqueue_write_done(const struct device *dev)
 		printk("%02x\n", buf[i]);
 	}
 #endif
-
 	/* update pointer */
 	obj->in = (obj->in + 1) & (config->num_of_msgs - 1);
 	obj->msg_curr = &obj->msg_queue[obj->in];
@@ -117,6 +117,25 @@ int i3c_slave_mqueue_write(const struct device *dev, uint8_t *src, int size)
 		return -EACCES;
 	}
 
+#ifdef CONFIG_I3C_NPCM4XX
+	struct i3c_slave_payload read_data;
+
+	read_data.buf = src;
+	read_data.size = size;
+
+	if (IS_MDB_PENDING_READ_NOTIFY(config->mdb)) {
+		/* response with ibi */
+		uint32_t ibi_data = config->mdb;
+
+		ibi.buf = (uint8_t *)&ibi_data;
+		ibi.size = 1;
+		return i3c_slave_put_read_data(obj->i3c_controller, &read_data, &ibi);
+	}
+
+	/* response without ibi, master should support retry */
+	return i3c_slave_put_read_data(obj->i3c_controller, &read_data, NULL);
+
+#else /* ASPEED case */
 	if (IS_MDB_PENDING_READ_NOTIFY(config->mdb)) {
 		struct i3c_slave_payload read_data;
 		uint32_t ibi_data = config->mdb;
@@ -132,6 +151,7 @@ int i3c_slave_mqueue_write(const struct device *dev, uint8_t *src, int size)
 		ibi.size = size;
 		return i3c_slave_send_sir(obj->i3c_controller, &ibi);
 	}
+#endif
 }
 
 static void i3c_slave_mqueue_init(const struct device *dev)

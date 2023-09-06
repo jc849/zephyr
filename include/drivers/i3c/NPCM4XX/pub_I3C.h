@@ -14,6 +14,8 @@
 #include <common/reg/reg_def.h>
 #include <common/reg/reg_access.h>
 
+#define WAIT_SLAVE_PREPARE_RESPONSE_TIME 10 /* unit: us */
+
 /* generic data type used in lib source for compatibility */
 typedef uint8_t		__u8;
 typedef uint16_t	__u16;
@@ -70,7 +72,7 @@ typedef int32_t		__s32;
 
 #define I3C_TRANSFER_SPEED_UNDEF  0
 
-#define I3C_PAYLOAD_SIZE_MAX	69
+#define I3C_PAYLOAD_SIZE_MAX	256
 #define IBI_PAYLOAD_SIZE_MAX	8
 
 enum I3C_PORT {
@@ -95,6 +97,8 @@ enum I3C_PORT {
 #define I3C_DYNAMIC_ADDR_DEFAULT_7BIT 0x00U
 
 /*#define I3C_BROADCAST_ADDR	0x7E*/
+
+#define RX_HANDLER_MAX	3
 
 enum I3C_DEVICE_TYPE {
 	I3C_DEVICE_TYPE_PURE_I3C = 0U,
@@ -240,10 +244,10 @@ struct I3C_DEVICE_INFO_SHORT;
 #define cmd_t union cmd_t
 
 /*typedef */struct cmd_attrib {
-	__u8 endian	: 1;	/* 0b: little, 1b: bigh endian, if width != 0 */
-	__u8 width : 1;		/* 0b = 1, 1b = 2 */
-	__u8 write : 1;
-	__u8 read  : 1;
+	__u8 endian	: 1;    /* 0b: little, 1b: bigh endian, if width != 0 */
+	__u8 width : 1;     /* 0b = 1, 1b = 2 */
+	__u8 write : 1;     /* wrtiable */
+	__u8 read  : 1;     /* readable */
 } /* cmd_attrib_t */;
 
 #define cmd_attrib_t struct cmd_attrib
@@ -518,6 +522,9 @@ struct I3C_DEVICE_INFO {
 	__u16 vendorID;          /* Device vendor ID (manufacture ID).*/
 	__u32 partNumber;        /* Device part number info */
 
+	__u32 max_rd_len;
+	__u32 max_wr_len;
+
 	/* master config */
 	_Bool enableOpenDrainHigh;
 	_Bool enableOpenDrainStop;
@@ -541,6 +548,7 @@ struct I3C_DEVICE_INFO {
 						 /* 0b: slave should reset command, RX DMA/FIFO */
 	__u8 cmdIndex;
 	I3C_REG_ITEM_t *pReg;
+	uint8_t regCnt;
 
 	_Bool bAbort;
 	volatile __u8 task_count;
@@ -671,6 +679,229 @@ struct LSM6DSO_DEVICE_INFO {
 	__u8 rxBuf[16];
 	__u8 temp_val;
 };
+
+#define SPD5118_POST_INIT_STATE_Enum enum SPD5118_POST_INIT_STATE
+
+enum SPD5118_POST_INIT_STATE {
+	SPD5118_POST_INIT_STATE_Default,
+
+	SPD5118_POST_INIT_STATE_Sync_Wait,
+	SPD5118_POST_INIT_STATE_Sync_Done,
+
+	SPD5118_POST_INIT_STATE_1_Wait,
+	SPD5118_POST_INIT_STATE_1_Done,
+
+	SPD5118_POST_INIT_STATE_2,
+	SPD5118_POST_INIT_STATE_2_Wait,
+	SPD5118_POST_INIT_STATE_2_Done,
+
+	SPD5118_POST_INIT_STATE_3,
+	SPD5118_POST_INIT_STATE_3_Wait,
+	SPD5118_POST_INIT_STATE_3_Done,
+
+	SPD5118_POST_INIT_STATE_4,
+	SPD5118_POST_INIT_STATE_4_Wait,
+	SPD5118_POST_INIT_STATE_4_Done,
+
+	SPD5118_POST_INIT_STATE_5,
+	SPD5118_POST_INIT_STATE_5_Wait,
+	SPD5118_POST_INIT_STATE_5_Done,
+
+	SPD5118_POST_INIT_STATE_6,
+	SPD5118_POST_INIT_STATE_6_Wait,
+	SPD5118_POST_INIT_STATE_6_Done,
+
+	SPD5118_POST_INIT_STATE_7,
+	SPD5118_POST_INIT_STATE_7_Wait,
+	SPD5118_POST_INIT_STATE_7_Done,
+
+	SPD5118_POST_INIT_STATE_8,
+	SPD5118_POST_INIT_STATE_8_Wait,
+	SPD5118_POST_INIT_STATE_8_Done,
+
+	SPD5118_POST_INIT_STATE_9,
+	SPD5118_POST_INIT_STATE_9_Wait,
+	SPD5118_POST_INIT_STATE_9_Done,
+
+	SPD5118_POST_INIT_STATE_10,
+	SPD5118_POST_INIT_STATE_10_Wait,
+	SPD5118_POST_INIT_STATE_10_Done,
+
+	SPD5118_POST_INIT_STATE_11,
+	SPD5118_POST_INIT_STATE_11_Wait,
+	SPD5118_POST_INIT_STATE_11_Done,
+
+	SPD5118_POST_INIT_STATE_12,
+	SPD5118_POST_INIT_STATE_12_Wait,
+	SPD5118_POST_INIT_STATE_12_Done,
+
+	SPD5118_POST_INIT_STATE_13,
+	SPD5118_POST_INIT_STATE_13_Wait,
+	SPD5118_POST_INIT_STATE_13_Done,
+
+	SPD5118_POST_INIT_STATE_END,
+};
+
+ #define SPD5118_STATE_Enum enum SPD5118_STATE
+
+enum SPD5118_STATE {
+	SPD5118_STATE_DEFAULT,
+	SPD5118_STATE_RESET,
+	SPD5118_STATE_CLEAR,
+	SPD5118_STATE_IDLE,
+	SPD5118_STATE_TASK_CANNOT_COMPLETE,
+	SPD5118_STATE_WAIT_WR_OP,
+	SPD5118_STATE_WAIT_NEXT_WR_OP,
+	SPD5118_STATE_WAIT_WR_OP_END,
+	SPD5118_STATE_GET_MR11,
+	SPD5118_STATE_GET_MR11_END,
+	SPD5118_STATE_WRITE_REG,
+	SPD5118_STATE_WRITE_REG_END,
+	SPD5118_STATE_WRITE_REG_NEXT,
+	SPD5118_STATE_READ_REG,
+	SPD5118_STATE_READ_REG_FAIL_NOT_PRESENT,
+	SPD5118_STATE_READ_REG_FAIL_FORMAT,
+	SPD5118_STATE_READ_REG_END,
+	SPD5118_STATE_READ_REG_NEXT,
+	SPD5118_STATE_GOTO_PAGE,
+	SPD5118_STATE_GOTO_PAGE_CHECK,
+	SPD5118_STATE_CHECK_PAGE,
+	SPD5118_STATE_GOTO_PAGE_END,
+	SPD5118_STATE_WRITE_EEPROM,
+	SPD5118_STATE_READ_EEPROM,
+	SPD5118_STATE_WRITE_ABORT_EEPROM, /* error case */
+
+	SPD5118_STATE_DEFAULT_READ,
+};
+
+#define SPD5118_OP_Enum enum SPD5118_OP
+
+enum SPD5118_OP {
+	SPD5118_OP_PEC_SYNC,
+	SPD5118_OP_REG_WRITE,
+	SPD5118_OP_REG_READ,
+	SPD5118_OP_REG_DEFAULT_POINTER_READ,
+	SPD5118_OP_EEPROM_WRITE,
+	SPD5118_OP_EEPROM_READ,
+};
+
+#define SPD5118_TASK_t struct SPD5118_TASK
+
+struct SPD5118_TASK {
+	/* used to link the next SPD5118 task if the current task is not finished */
+	struct SPD5118_TASK *pNextTask;
+
+	/* used to store task parameters */
+	__u8 address;
+	SPD5118_OP_Enum op;
+	_Bool bPEC;
+	_Bool b2B;
+	_Bool bRunI3C;   /* optional, used to switch i2c and i3c*/
+	__u16 offset;
+	__u8 *pWrBuf, *pRdBuf;
+	__u16 *pWrLen, *pRdLen;
+
+	__u16 retry_cnt;     /* used to retry */
+	__u16 timeout;       /* used to validate task timeout */
+	__u16 access_offset; /* used to record status for long read/write */
+	__u8 access_size;    /* used to validate read length */
+};
+
+#define SPD5118_DEVICE_INFO_t struct SPD5118_DEVICE_INFO
+
+struct SPD5118_DEVICE_INFO {
+	I3C_DEVICE_INFO_t i3c_device;
+	__u32 baudrate;
+
+	__u8 bPEC : 1;
+
+	SPD5118_POST_INIT_STATE_Enum post_init_state;
+	SPD5118_STATE_Enum state;
+	__u8 checkMask;
+	__u16 reset_timeout;
+
+	__u8 MR0;    /* Device Type, MSB */
+	__u8 MR1;    /* Device Type, LSB */
+	__u8 MR2;    /* Revision */
+	__u8 MR3;    /* Vendor ID, Byte 0 */
+	__u8 MR4;    /* Vendor ID, Byte 1 */
+	__u8 MR5;    /* Device Capability */
+		/* [1] Internal Temperature Sensor Support */
+		/* [0] Hub function support */
+	__u8 MR6;    /* Device Write Recovery Time Capability */
+		/* [7:4]: 0, .., 10, 50, 100, 200, 500 */
+		/* [1:0] == 00b, ns */
+		/*       == 01b, us */
+		/*       == 10b, ms */
+		/*       == 11b, Reserved */
+	__u8 MR11;   /* I2C Legacy Mode Device Configuration*/
+		/* [3] == 0b, 1 Byte addressing */
+		/*     == 1b, 2 Byte addressing */
+		/* [2:0], Non Volatile Memory Address Page Pointer in I2C Legacy Mode */
+	__u8 MR12;   /* Write Protection For NVM Blocks [7:0] */
+	__u8 MR13;   /* Write Protection for NVM Blocks [15:8] */
+	__u8 MR14;   /* Device Configuration - Host and Local Interface IO; */
+		/* [5] Local Interface Pull Up Resistor Configuration */
+	__u8 MR18;   /* Device Configuration */
+		/* [7] PEC, I3C mode only */
+		/* [6] T bit Disable, I3C mode only */
+		/* [5] Interface Selection */
+		/* [4] Default Read Address Pointer Enable */
+		/* [3:2], Default Read Pointer Starting Address */
+		/* [1], Burst Length for Default Read Pointer Address for PEC Calculation */
+	__u8 MR19;   /* Clear Register MR51 Temperature Status Command */
+		/* [3] CRIT_LOW, clear MR51[3] */
+		/* [2] CRIT_HIGH, clear MR51[2] */
+		/* [1] LOW, clear MR51[1] */
+		/* [0] HIGH, clear MR51[0] */
+	__u8 MR20;   /* Clear Register MR52 Error Status Command */
+		/* [7]  Write or Read Attempt while SPD Device Busy Error, Clear MR52[7] */
+		/* [6]  Write Attempt to Protected NVM Block Error, Clear MR52[6] */
+		/* [5]  Write Attempt to NVM Protection Register Error, Clear MR52[5] */
+		/* [1]  PEC Error, Clear MR52[1] */
+		/* [0]  Parity Error, Clear MR52[0] */
+	__u8 MR26;   /* TS Configuration */
+		/* [0] Disable thermal sensor */
+	__u8 MR27;   /* Interrupt Configurations */
+		/* [7] Clear MR48[8], MR51[3:0], MR52[7:5,3,1:0] */
+		/* [4] IBI enabled for MR52[7:5, 1:0] */
+		/* [3] MR27[4] = 1 & MR27[3] = 1 & MR51[3] = 1 generate IBI for CRIT_LOW */
+		/* [2] MR27[4] = 1 & MR27[2] = 1 & MR51[2] = 1 generate IBI for CRIT_HIGH */
+		/* [1] MR27[4] = 1 & MR27[1] = 1 & MR51[1] = 1 generate IBI for LOW */
+		/* [0] MR27[4] = 1 & MR27[0] = 1 & MR51[0] = 1 generate IBI for HIGH */
+
+	__u8 MR28;   /* TS Temperature High Limit Configuration - Low Byte */
+	__u8 MR29;   /* TS Temperature High Limit Configuration - High Byte */
+	__u8 MR30;   /* TS Temperature Low Limit Configuration - Low Byte */
+	__u8 MR31;   /* TS Temperature Low Limit Configuration - High Byte */
+	__u8 MR32;   /* TS Critical Temperature High Limit Configuration - Low Byte */
+	__u8 MR33;   /* TS Critical Temperature High Limit Configuration - High Byte */
+	__u8 MR34;   /* TS Critical Temperature Low Limit Configuration - Low Byte */
+	__u8 MR35;   /* TS Critical Temperature Low Limit Configuration - High Byte */
+
+	__u8 MR48;   /* Device Status */
+		/* [7] Pending IBI */
+		/* [3] Write Operation Status */
+		/* [2] Write Protect Override Status */
+	__u8 MR49;   /* TS Current Sensed Temperature - Low Byte */
+	__u8 MR50;   /* TS Current Sensed Temperature - High Byte */
+	__u8 MR51;   /* TS Temperature Status */
+		/* [3] TS < CRIT_LOW */
+		/* [2] TS > CRIT_HIGH */
+		/* [1] TS < LOW */
+		/* [0] TS > HIGH */
+	__u8 MR52;   /* Hub, Thermal and NVM Error Status */
+		/* [7] BUSY_ERROR */
+		/* [6] WR_NVM_BLK_ERROR */
+		/* [5] WR_NVM_PRO_REG_ERROR */
+		/* [1] PEC_ERROR */
+		/* [0] PAR_ERROR */
+
+	SPD5118_TASK_t *pOpListHead; /* op list for a specified device */
+
+	__u16 initMode;
+};
+
 
 #define LSM6DSO_DEVICE_INFO_t struct LSM6DSO_DEVICE_INFO
 

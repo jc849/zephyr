@@ -33,7 +33,7 @@ extern I3C_ErrCode_Enum Setup_Slave_Write_DMA(I3C_DEVICE_INFO_t *pDevice);
 extern I3C_ErrCode_Enum Setup_Slave_Read_DMA(I3C_DEVICE_INFO_t *pDevice);
 extern I3C_ErrCode_Enum Setup_Slave_IBI_DMA(I3C_DEVICE_INFO_t *pDevice);
 
-extern void I3C_Update_Dynamic_Address(__u32 Parm);
+extern uint8_t I3C_Update_Dynamic_Address(__u32 Parm);
 extern void I3C_Prepare_To_Read_Command(__u32 Parm);
 extern uint8_t GetCmdWidth(uint8_t width_type);
 

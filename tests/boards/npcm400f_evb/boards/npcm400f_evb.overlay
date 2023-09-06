@@ -1,0 +1,60 @@
+/*
+ * Copyright (c) 2023 Nuvoton Technology Corporation.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&i3c0 {
+	status = "okay";
+	assigned-address = <0x20>;
+	part-id = <0x1234>;
+	vendor-def-id = <0x567>;
+	bcr = <0x66>;
+	dcr = <0xCC>;
+	busno = <0x0>;
+	pinctrl-0 = <&pinctrl_i3c0_default>;
+	i2c-scl-hz = <100000>;
+	i3c-scl-hz = <12500000>;
+
+	/*test-i3c-dev@420000ABCD12345678 {*/
+	/*	compatible = "vnd,i3c-device";*/
+	/*	label = "TEST_I3C_DEV_42";*/
+	/*	reg = < 0x42 0xABCD 0x12345678 >;*/
+	/*};*/
+
+	/*test-i3c-i2c-dev@380000000000000050 {*/
+	/*	compatible = "vnd,i3c-i2c-device";*/
+	/*	label = "TEST_I3C_I2C_DEV_38";*/
+	/*	reg = < 0x38 0x0 0x50 >;*/
+	/*};*/
+};
+
+&i3c1 {
+	status = "okay";
+	slave;
+	secondary;
+	assigned-address = <0x21>;
+	part-id = <0x1234>;
+	vendor-def-id = <0x567>;
+	bcr = <0x66>;
+	dcr = <0xCC>;
+	busno = <0x0>;
+	pinctrl-0 = <&pinctrl_i3c1_default>;
+	i2c-scl-hz = <100000>;
+	i3c-scl-hz = <12500000>;
+	/* ibi-append-pec; */
+	/* priv-xfer-pec; */
+
+	/* #address-cells = <0x01> */
+	/* #size-cells = <0x00> */
+
+	i3c1_smq:i3c-slave-mqueue@21 {
+		compatible = "i3c-slave-mqueue";
+		reg = <0x21>;
+		msg-size = <256>;
+		num-of-msgs = <4>;
+		mandatory-data-byte = <0xAE>;
+		label = "I3C_1_SMQ";
+		status = "okay";
+	};
+};

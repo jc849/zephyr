@@ -8,77 +8,74 @@ compatible: "nuvoton,npcm4xx-i3c"
 include: [i3c-controller.yaml, nuvoton-pinctrl.yaml]
 
 properties:
-# specify port number
   instance-id:
     required: true
     type: int
-    description: Instance ID of the device
-
-#specify port address (master: dynamic address, slave: assigned address for ENTDAA or static address for SETAASA and SETDASA)
-  assigned-address:
-    required: true
-    type: int
     description: |
-      Dynamic address when playing the role as the main master. Static address when playing the role as the slave.
-      If extra-gpios exist, the lsb of slave static address will be replaced by the value of extra-gpios.
+      Instance ID of the device, used to specify port number
 
-# not declare --> master
-# declare --> slave
   slave:
     required: false
     type: boolean
-    description: Initialized as slave / master
+    description: Initialized as slave (default) / master
 
-# declare --> secondary master if slave is config
   secondary:
     required: false
     type: boolean
     description: Initialized as a secondary master
 
-  manufacture-id:
-    required: false
+  assigned-address:
+    required: true
     type: int
-    description: PID[47:32]
+    description: |
+      The default address of the device
 
   part-id:
     required: false
     type: int
-    description: PID[31:16]
+    description: |
+      PID[31:16], used for bus enumeration with entdaa
 
   vendor-def-id:
     required: false
     type: int
-    description: PID[11:0]
+    description: |
+      PID[11:0], used for bus enumeration with entdaa
 
   bcr:
     required: false
     type: int
-    description: Bus Characteristics Register
+    description: |
+      Bus Characteristics Register, used for bus enumeration with entdaa
 
   dcr:
     required: false
     type: int
-    description: Device Characteristics Register
+    description: |
+      Device Characteristics Register, used for bus enumeration with entdaa
 
   busno:
-    required: false
-    type: int
-    description: Bus Number
-
-# pinctrl
-  pinctrl-0:
     required: true
+    type: int
+    description: |
+      Bus Number, used for bus enumeration
 
-  extra-gpios:
-      type: phandle-array
-      required: false
-      description: |
-        Used to add the extra info to identify different BIC by GPIOs.
+  pinctrl-0:
+    type: phandles
+    required: true
+    description: configurations of pinmux controllers
+
+#  extra-gpios:
+#    type: phandle-array
+#    required: false
+#    description: |
+#      Used to add the extra info to identify different BIC by GPIOs.
 
   ibi-append-pec:
     required: false
     type: boolean
-    description: Append PEC byte to the IBI data.  Enable this option in slave mode if the master device is AST2600 or AST1030A0.
+    description: |
+      Append PEC byte to the IBI data.
 
   priv-xfer-pec:
     required: false
@@ -88,14 +85,9 @@ properties:
       The PEC will auto append to the tail of the data when doing private transfer and verify
       the PEC when receiving the data from master.
 
-  pid-extra-info:
-    required: false
-    type: int
-    description: |
-      Extra information of the PID Bits[11:0]. Use to identify the different BIC.
-      If extra-gpios exist, the extra pid will be replaced by the value of extra-gpios.
-
-  sda-tx-hold-ns:
-    required: false
-    type: int
-    description: The hold time of the SDA with respect to the SCL edge. The unit is in nanosecond.
+#  pid-extra-info:
+#    required: false
+#    type: int
+#    description: |
+#      Extra information of the PID Bits[11:0]. Use to identify the different BIC.
+#      If extra-gpios exist, the extra pid will be replaced by the value of extra-gpios.

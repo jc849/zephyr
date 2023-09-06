@@ -38,6 +38,7 @@ extern __u8 I3C_Task_Engine(void);
 
 extern void api_I3C_Master_Start_Request(__u32 Parm);
 extern void api_I3C_Master_Stop(__u32 Parm);
+extern void api_I3C_Master_Retry(__u32 Parm);
 extern void api_I3C_Master_Run_Next_Frame(__u32 Parm);
 
 extern void api_I3C_Master_New_Request(__u32 Parm);

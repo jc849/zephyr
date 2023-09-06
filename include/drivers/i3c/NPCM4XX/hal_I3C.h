@@ -82,6 +82,12 @@ extern I3C_ErrCode_Enum hal_I3C_disable_interface(I3C_PORT_Enum Port);
 extern I3C_ErrCode_Enum hal_I3C_enable_interrupt(I3C_PORT_Enum Port);
 extern I3C_ErrCode_Enum hal_I3C_disable_interrupt(I3C_PORT_Enum Port);
 
+extern __u32 hal_I3C_get_MAXRD(I3C_PORT_Enum Port);
+extern void hal_I3C_set_MAXRD(I3C_PORT_Enum Port, __u32 val);
+
+extern __u32 hal_I3C_get_MAXWR(I3C_PORT_Enum Port);
+extern void hal_I3C_set_MAXWR(I3C_PORT_Enum Port, __u32 val);
+
 extern __u32 hal_I3C_get_mstatus(I3C_PORT_Enum Port);
 extern void hal_I3C_set_mstatus(I3C_PORT_Enum Port, __u32 val);
 extern I3C_IBITYPE_Enum hal_I3C_get_ibiType(I3C_PORT_Enum Port);

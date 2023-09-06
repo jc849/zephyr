@@ -208,8 +208,8 @@
 	/* vendor-def-id = <0x5607>; */
 	bcr = <0x66>;
 	dcr = <0xCC>;
-	slave;
-	secondary;
+	/* slave; */
+	/* secondary; */
 	busno = <0x0>;
 	pinctrl-0 = <&pinctrl_i3c1_default>;
 
@@ -218,7 +218,7 @@
 
 	/*
 	 * i3c1_smq:i3c-slave-mqueue@21 {
-	 *	compatible = "aspeed,i3c-slave-mqueue";
+	 *	compatible = "i3c-slave-mqueue";
 	 *	reg = <0x21>;
 	 *	msg-size = <256>;
 	 *	num-of-msgs = <4>;
