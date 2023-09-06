@@ -177,3 +177,11 @@
 &usbd0 {
 	status = "okay";
 };
+
+&jtag1 {
+	tck-gpios = <&gpiof 0 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
+	tdi-gpios = <&gpiof 1 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
+	tdo-gpios = <&gpiof 2 (GPIO_ACTIVE_HIGH)>;
+	tms-gpios = <&gpiof 3 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
+	status = "okay";
+};

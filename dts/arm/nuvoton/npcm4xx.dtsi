@@ -509,6 +509,13 @@
 			status = "disabled";
                 };
 
+		jtag1: jtag1 {
+			compatible = "nuvoton,npcm4xx-jtag";
+			label = "JTAG1";
+			use-spi = <0>;
+			status = "disabled";
+		};
+
 	};
 
 	soc-if {

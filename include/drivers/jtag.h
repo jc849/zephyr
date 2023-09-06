@@ -4,7 +4,7 @@
  */
 
 /*
- * Copyright (c) 2021 Aspeed Technology Inc.
+ * Copyright (c) 2023 Zephyr OpenBIC Framework.
  *
  * SPDX-License-Identifier: Apache-2.0
  */

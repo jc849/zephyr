@@ -1,0 +1,32 @@
+description: NPCM4XX family JTAG
+
+compatible: "nuvoton,npcm4xx-jtag"
+
+include: base.yaml
+
+properties:
+    use-spi:
+      type: int
+      required: true
+      description: |
+        Use spi pins to service jtag signal.
+    tck-gpios:
+      type: phandle-array
+      required: true
+      description: |
+        Use to service jtag tck signal.
+    tdi-gpios:
+      type: phandle-array
+      required: true
+      description: |
+        Use to service jtag tdi signal.
+    tdo-gpios:
+      type: phandle-array
+      required: true
+      description: |
+        Use to service jtag tdo signal.
+    tms-gpios:
+      type: phandle-array
+      required: true
+      description: |
+        Use to service jtag tms signal.
