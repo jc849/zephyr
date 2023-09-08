@@ -558,11 +558,6 @@ static int jtag_npcm4xx_init(const struct device *dev)
 	/* setup tdo */
 	flags = GPIO_INPUT;
 
-	if (config->gpio_tdo.flags & GPIO_ACTIVE_LOW)
-		flags |= GPIO_OUTPUT_INIT_HIGH;
-	else
-		flags |= GPIO_OUTPUT_INIT_LOW;
-
 	gpio_pin_configure(tdo_dev, tdo_pin, flags);
 
 	/* setup tms */
