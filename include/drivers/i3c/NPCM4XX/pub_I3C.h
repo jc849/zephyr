@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <string.h>
+#include <kernel.h>
 
 #include <common/reg/reg_def.h>
 #include <common/reg/reg_access.h>
@@ -554,6 +555,9 @@ struct I3C_DEVICE_INFO {
 	volatile __u8 task_count;
 	struct I3C_TRANSFER_TASK *pTaskListHead;
 	ptrI3C_RetFunc callback;
+
+	struct k_mutex lock;
+	struct k_sem ibi_complete;
 };
 
 #define I3C_DEVICE_INFO_t struct I3C_DEVICE_INFO

@@ -2330,6 +2330,8 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 	port = config->inst_id;
 	pDevice = api_I3C_Get_INODE(port);
 
+	k_mutex_lock(&pDevice->lock, K_FOREVER);
+
 	obj = DEV_DATA(dev);
 
 	if (config->priv_xfer_pec) {
@@ -2354,6 +2356,7 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 	if (ibi_notify) {
 		if (obj->sir_allowed_by_sw == 0) {
 			LOG_ERR("SIR is not allowed by software\n");
+			k_mutex_unlock(&pDevice->lock);
 			return -EACCES;
 		}
 
@@ -2363,8 +2366,12 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 		if (ret || !(event_en & I3C_SLAVE_EVENT_SIR)) {
 			/* master should polling pending interrupt by GetSTATUS */
 			api_I3C_Slave_Update_Pending(pDevice, 0x01);
+			k_mutex_unlock(&pDevice->lock);
 			return 0;
 		}
+
+		/* init ibi complete sem */
+		k_sem_init(&pDevice->ibi_complete, 0, 1);
 
 		/* osEventFlagsClear(obj->ibi_event, ~osFlagsError); */
 
@@ -2391,6 +2398,9 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 		api_I3C_Slave_Create_Task(protocol, txlen, &txlen, &rxlen, TxBuf, NULL,
 			timeout, NULL, port, NOT_HIF);
 		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
+
+		/* wait ibi master read complete done */
+		k_sem_take(&pDevice->ibi_complete, K_FOREVER);
 	}
 
 	/*
@@ -2403,6 +2413,8 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 	 *   i3c_npcm4xx_wr_tx_fifo(obj, data->buf, data->size);
 	 * }
 	 */
+
+	k_mutex_unlock(&pDevice->lock);
 
 	return 0;
 }
@@ -3398,7 +3410,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 void I3C_Slave_ISR(uint8_t I3C_IF)
 {
 	I3C_DEVICE_INFO_t *pDevice;
-	I3C_TASK_INFO_t *pTaskInfo;
+	I3C_TASK_INFO_t *pTaskInfo = NULL;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_FRAME_t *pFrame;
 	uint32_t intmasked;
@@ -3710,9 +3722,16 @@ void I3C_Slave_Handle_DMA(__u32 Parm)
 	/* Slave TX data has send ? */
 	txDataLen = 0;
 	if (I3C_GET_REG_DMACTRL(port) & I3C_DMACTRL_DMATB_MASK) {
-		/* Response data still not move to Tx FIFO */
-		txDataLen = ((PDMA->DSCT[port].CTL & PDMA_DSCT_CTL_TXCNT_Msk) >>
-			PDMA_DSCT_CTL_TXCNT_Pos) + 1;
+		__u8 pdma_ch;
+
+		pdma_ch = Get_PDMA_Channel(port, I3C_TRANSFER_DIR_WRITE);
+
+		if (PDMA->TDSTS & MaskBit(PDMA_OFFSET + pdma_ch)) {
+			txDataLen = 0;
+		} else {
+			txDataLen = ((PDMA->DSCT[port].CTL & PDMA_DSCT_CTL_TXCNT_Msk) >>
+				PDMA_DSCT_CTL_TXCNT_Pos) + 1;
+		}
 	}
 
 	/* Response data still in Tx FIFO */
@@ -3723,6 +3742,9 @@ void I3C_Slave_Handle_DMA(__u32 Parm)
 		if (txDataLen == 0) {
 			/* call tx send complete hook */
 			api_I3C_Slave_Finish_Response(pDevice);
+
+			/* master read ibi data done */
+			k_sem_give(&pDevice->ibi_complete);
 		} else {
 			/* do nothing, we can get correct tx len again */
 		}
@@ -4016,6 +4038,9 @@ static int i3c_npcm4xx_init(const struct device *dev)
 
 	pDevice->max_rd_len = I3C_PAYLOAD_SIZE_MAX;
 	pDevice->max_wr_len = I3C_PAYLOAD_SIZE_MAX;
+
+	/* init mutex lock */
+	k_mutex_init(&pDevice->lock);
 
 	if (config->slave) {
 		if (config->secondary)
