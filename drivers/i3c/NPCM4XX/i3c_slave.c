@@ -227,6 +227,12 @@ I3C_ErrCode_Enum I3C_Slave_Finish_Response(I3C_DEVICE_INFO_t *pDevice)
 
 	pDevice->txOffset = pDevice->txLen;
 
+	if (pDevice->pTxBuf != NULL) {
+		hal_I3C_MemFree(pDevice->pTxBuf);
+		pDevice->pTxBuf = NULL;
+		pDevice->txLen = 0;
+	}
+
 	return I3C_ERR_OK;
 }
 

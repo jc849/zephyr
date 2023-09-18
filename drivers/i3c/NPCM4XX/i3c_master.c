@@ -24,7 +24,7 @@ extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
 
 __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 {
-	const struct device *dev;
+	const struct device *dev = NULL;
 	struct i3c_npcm4xx_obj *obj;
 	struct i3c_npcm4xx_xfer *xfer;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -52,6 +52,9 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 	} else {
 
 	}
+
+	if (dev == NULL)
+		return I3C_ERR_PARAMETER_INVALID;
 
 	obj = DEV_DATA(dev);
 	xfer = obj->curr_xfer;
