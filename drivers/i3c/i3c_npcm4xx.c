@@ -3610,7 +3610,7 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 		}
 
 		if (I3C_GET_REG_STATUS(I3C_IF) & (I3C_STATUS_START_MASK | I3C_STATUS_STOP_MASK))
-			LOG_INF("\r\nRE-ENTRY\r\n");
+			LOG_DBG("\r\nRE-ENTRY\r\n");
 
 		I3C_Prepare_To_Read_Command((uint32_t) I3C_IF);
 	}
