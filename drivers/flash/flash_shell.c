@@ -28,9 +28,9 @@
 #endif
 
 #if defined(CONFIG_SPI_NPCM4XX_FIU)
-static uint8_t test_arr[TEST_ARR_SIZE];
-static uint8_t read_back_arr[TEST_ARR_SIZE];
-static uint8_t op_arr[TEST_ARR_SIZE];
+static uint8_t *test_arr = NULL;
+static uint8_t *read_back_arr = NULL;
+static uint8_t *op_arr = NULL;
 #else
 static uint8_t test_arr[TEST_ARR_SIZE] NON_CACHED_BSS_ALIGN16;
 static uint8_t read_back_arr[TEST_ARR_SIZE] NON_CACHED_BSS_ALIGN16;
@@ -206,6 +206,8 @@ static int cmd_test(const struct shell *shell, size_t argc, char *argv[])
 		return -EINVAL;
 	}
 
+	test_arr = k_malloc(TEST_ARR_SIZE);
+
 	for (uint32_t i = 0; i < size; i++) {
 		test_arr[i] = (uint8_t)i;
 	}
@@ -235,6 +237,8 @@ static int cmd_test(const struct shell *shell, size_t argc, char *argv[])
 	if (result == 0) {
 		shell_print(shell, "Erase-Write test done.");
 	}
+
+	k_free(test_arr);
 
 	return result;
 }
@@ -305,6 +309,10 @@ static int do_update(const struct device *flash_device,
 
 	printk("Writing %d bytes to %s (offset: 0x%08x)...\n",
 			len, flash_device->name, offset);
+
+	read_back_arr = k_malloc(TEST_ARR_SIZE);
+
+	op_arr = k_malloc(TEST_ARR_SIZE);
 
 	if (flash_sz < flash_offset + len) {
 		printk("ERROR: update boundary exceeds flash size. (%d, %d, %d)\n",
@@ -378,6 +386,9 @@ static int do_update(const struct device *flash_device,
 end:
 	printk("Update %s.\n", ret ? "FAILED" : "done");
 
+	k_free(read_back_arr);
+	k_free(op_arr);
+
 	return ret;
 }
 
@@ -403,6 +414,8 @@ static int cmd_update_test(const struct shell *shell, size_t argc, char *argv[])
 		cnt = 1;
 	}
 
+	test_arr = k_malloc(TEST_ARR_SIZE);
+
 	while (cnt > 0) {
 		if (test_repeat) {
 			for (i = 0; i < UPDATE_TEST_PATTERN_SIZE; i++) {
@@ -425,6 +438,8 @@ static int cmd_update_test(const struct shell *shell, size_t argc, char *argv[])
 		test_repeat ^= true;
 		cnt--;
 	}
+
+	k_free(test_arr);
 
 	return ret;
 }
