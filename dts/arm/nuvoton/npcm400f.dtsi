@@ -53,7 +53,7 @@
 			reg = <0x400d4000 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			interrupts = <9 4>;
+			interrupts = <9 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_FMCLK NPCM4XX_PWDWN_CTL4 5>;
 			label = "PECI";
 			status = "disabled";
@@ -179,18 +179,6 @@
 			instance-id = <1>;
 			status = "disabled";
 			label = "I3C_1";
-		};
-
-		usbd0: usbd@4001b000 {
-			compatible = "nuvoton,npcm4xx-usbd";
-			reg = <0x4001b000 0x1000>;
-			interrupts = <13 3>;
-			num-bidir-endpoints = <13>;
-			usbd-ram-size = <4096>;
-			pinctrl-0 = <&pinctrl_usbd_phy_iclk>;
-			/* pinctrl-0 = <&pinctrl_usbd_phy_xclk>; */
-			label = "USBD_0";
-			status = "disabled";
 		};
 
 		usbd0: usbd@4001b000 {
