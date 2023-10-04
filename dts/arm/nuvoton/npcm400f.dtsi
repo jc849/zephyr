@@ -53,7 +53,7 @@
 			reg = <0x400d4000 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			interrupts = <9 4>;
+			interrupts = <9 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_FMCLK NPCM4XX_PWDWN_CTL4 5>;
 			label = "PECI";
 			status = "disabled";
