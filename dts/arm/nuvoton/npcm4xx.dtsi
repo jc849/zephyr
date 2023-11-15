@@ -503,8 +503,8 @@
 			interrupts = <13 3>;
 			num-bidir-endpoints = <13>;
 			usbd-ram-size = <4096>;
-			pinctrl-0 = <&pinctrl_usbd_phy_iclk>;
-			/* pinctrl-0 = <&pinctrl_usbd_phy_xclk>; */
+			/*pinctrl-0 = <&pinctrl_usbd_phy_iclk>;*/
+			pinctrl-0 = <&pinctrl_usbd_phy_xclk>;
 			label = "USBD_0";
 			status = "disabled";
                 };
