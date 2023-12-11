@@ -344,8 +344,8 @@ RAMFUNC static int spi_nor_npcm4xx_spim_transceive(const struct device *dev,
 					const struct spi_config *spi_cfg,
 					struct spi_nor_op_info op_info)
 {
-#ifdef CONFIG_XIP
 	struct npcm4xx_spi_spim_data *data = dev->data;
+#ifdef CONFIG_XIP
 	unsigned int key = 0;
 	uintptr_t vtor;
 	uint32_t flash_used = 0;

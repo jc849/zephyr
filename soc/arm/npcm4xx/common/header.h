@@ -102,6 +102,8 @@ struct FIRMWARE_HEDAER_TYPE {
 
 };
 
+#define NPCM4XX_FW_HEADER_SIZE (sizeof(struct FIRMWARE_HEDAER_TYPE))
+
 #ifdef __cplusplus
 }
 #endif

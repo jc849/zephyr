@@ -6,7 +6,7 @@
 
 /* linker.ld - Linker command/script file
  *
- * Copyright (c) 2021 Nuvoton Technology Corporation.
+ * Copyright (c) 2023 Nuvoton Technology Corporation.
  */
 
 /**
@@ -135,26 +135,17 @@ SECTIONS
 
     GROUP_START(ROMABLE_REGION)
 
+	_image_rom_start = ROM_ADDR;
+
     SECTION_PROLOGUE(header,,)
 	{
-  KEEP(*(.header))
+	KEEP(*(.header))
+	__main_fw_seg_start__ = .;
 	} GROUP_LINK_IN(ROMABLE_REGION)
-
-    SECTION_PROLOGUE(hookcode,,)
-	{
-  __hook_seg_start__ = .;
-  KEEP(*(.hookcode))
-    . = ALIGN(16);
-	} GROUP_LINK_IN(ROMABLE_REGION)
-
-	_image_rom_start = ROM_ADDR;
-  . = ROM_ADDR + 0x600;
 
     SECTION_PROLOGUE(rom_start,,)
 	{
 
-    . = ALIGN(16);
-    __mainfw_seg_start__ = .;
 /* Located in generated directory. This file is populated by calling
  * zephyr_linker_sources(ROM_START ...). This typically contains the vector
  * table and debug information.
@@ -215,13 +206,6 @@ SECTIONS
 	__exidx_end = .;
 	} GROUP_LINK_IN(ROMABLE_REGION)
 
-      SECTION_PROLOGUE(tagstart,,)
-	{
-    . = ALIGN(16);
-    __ramcode_flashstart__ = .;
-	} GROUP_LINK_IN(ROMABLE_REGION)
-
-  __ramcode_ramstart__ = .;
 	_image_rodata_start = .;
 
 #include <linker/common-rom.ld>
@@ -254,13 +238,6 @@ SECTIONS
 	} GROUP_LINK_IN(ROMABLE_REGION)
 
 #include <linker/cplusplus-rom.ld>
-
-      SECTION_PROLOGUE(tagend,,)
-	{
-    . = ALIGN(16);
-    __mainfw_seg_end__ = .;
-    __ramcode_flashend__ = .;
-	} GROUP_LINK_IN(ROMABLE_REGION)
 
 	_image_rodata_end = .;
 	MPU_ALIGN(_image_rodata_end -_image_rom_start);
@@ -356,6 +333,10 @@ SECTIONS
 #include <linker/kobject-data.ld>
 
 #include <linker/cplusplus-ram.ld>
+
+    __main_fw_seg_end__ = .;
+
+    __main_fw_seg_size__ = __main_fw_seg_end__ - __main_fw_seg_start__;
 
     __data_ram_end = .;
 
