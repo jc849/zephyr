@@ -5,7 +5,7 @@
 #ifndef __I3C_MASTER_H__
 #define __I3C_MASTER_H__
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
+#include "pub_I3C.h"
 
 #ifdef __cplusplus
 extern "C"

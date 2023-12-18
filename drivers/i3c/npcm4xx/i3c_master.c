@@ -2,12 +2,12 @@
  * Copyright (c) 2023 Nuvoton Technology Corporation.
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_core.h>
-#include <drivers/i3c/NPCM4XX/i3c_master.h>
-#include <drivers/i3c/NPCM4XX/i3c_slave.h>
-#include <drivers/i3c/NPCM4XX/hal_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_drv.h>
+#include "pub_I3C.h"
+#include "i3c_core.h"
+#include "i3c_master.h"
+#include "i3c_slave.h"
+#include "hal_I3C.h"
+#include "i3c_drv.h"
 
 LOG_MODULE_REGISTER(npcm4xx_i3c_master, CONFIG_I3C_LOG_LEVEL);
 

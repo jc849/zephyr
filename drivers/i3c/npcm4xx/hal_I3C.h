@@ -5,8 +5,8 @@
 #ifndef __HAL_I3C_H__
 #define __HAL_I3C_H__
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_drv.h>
+#include "pub_I3C.h"
+#include "i3c_drv.h"
 
 #if (CHIP_ID_NPCM4XX == 5832)
     /*#define I3C_PORT1_MODE      I3C_DEVICE_MODE_CURRENT_MASTER*/

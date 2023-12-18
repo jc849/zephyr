@@ -5,7 +5,7 @@
 #ifndef	API_I3C_H
 #define	API_I3C_H
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
+#include "pub_I3C.h"
 
 #ifdef __cplusplus
 extern "C"{

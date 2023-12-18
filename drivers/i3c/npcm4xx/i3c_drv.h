@@ -14,7 +14,7 @@
 #include <portability/cmsis_os2.h>
 #include <logging/log.h>
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
+#include "pub_I3C.h"
 
 #define DT_DRV_COMPAT nuvoton_npcm4xx_i3c
 
