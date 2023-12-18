@@ -14,13 +14,13 @@
 
 #include <portability/cmsis_os2.h>
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_core.h>
-#include <drivers/i3c/NPCM4XX/i3c_master.h>
-#include <drivers/i3c/NPCM4XX/i3c_slave.h>
-#include <drivers/i3c/NPCM4XX/hal_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_drv.h>
-#include <drivers/i3c/NPCM4XX/api_i3c.h>
+#include "pub_I3C.h"
+#include "i3c_core.h"
+#include "i3c_master.h"
+#include "i3c_slave.h"
+#include "hal_I3C.h"
+#include "i3c_drv.h"
+#include "api_i3c.h"
 
 #include <stdlib.h>
 #include <string.h>

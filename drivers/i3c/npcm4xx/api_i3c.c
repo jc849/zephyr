@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <drivers/i3c/NPCM4XX/pub_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_core.h>
-#include <drivers/i3c/NPCM4XX/i3c_master.h>
-#include <drivers/i3c/NPCM4XX/i3c_slave.h>
-#include <drivers/i3c/NPCM4XX/hal_I3C.h>
-#include <drivers/i3c/NPCM4XX/i3c_drv.h>
+#include "pub_I3C.h"
+#include "i3c_core.h"
+#include "i3c_master.h"
+#include "i3c_slave.h"
+#include "hal_I3C.h"
+#include "i3c_drv.h"
 
 extern I3C_BUS_INFO_t gBus[];
 extern I3C_DEVICE_INFO_t gI3c_dev_node_internal[];
