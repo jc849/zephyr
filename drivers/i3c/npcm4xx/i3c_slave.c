@@ -14,12 +14,10 @@
 I3C_REG_ITEM_t *pSlaveReg[I3C_PORT_MAX] = {
 	NULL,
 	NULL,
-#if (I3C_PORT_MAX > 2)
 	NULL,
 	NULL,
 	NULL,
 	NULL,
-#endif
 };
 
 /*------------------------------------------------------------------------------*/

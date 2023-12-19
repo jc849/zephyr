@@ -31,13 +31,23 @@ LOG_MODULE_REGISTER(npcm4xx_i3c_drv, CONFIG_I3C_LOG_LEVEL);
 
 #define NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE 1024
 #define NPCM4XX_I3C_WORK_QUEUE_PRIORITY -2
-K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area0, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
-K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area1, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
 
-#if (I3C_PORT_MAX == 6)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
+K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area0, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c1), okay)
+K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area1, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c2), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area2, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c3), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area3, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c4), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area4, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c5), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area5, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
 #endif
 
@@ -219,26 +229,30 @@ void work_rcv_ibi_fun(struct k_work *item)
 const struct device *GetDevNodeFromPort(I3C_PORT_Enum port)
 {
 	switch (port) {
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
 	case I3C1_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c0)));
-
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c1), okay)
 	case I3C2_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c1)));
-
-#if (I3C_PORT_MAX == 6)
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c2), okay)
 	case I3C3_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c2)));
-
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c3), okay)
 	case I3C4_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c3)));
-
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c4), okay)
 	case I3C5_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c4)));
-
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c5), okay)
 	case I3C6_IF:
 		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c5)));
 #endif
-
 	default:
 		return NULL;
 	}
@@ -315,15 +329,6 @@ void I3C_Enable_Interface(I3C_PORT_Enum port)
 void I3C_Disable_Interface(I3C_PORT_Enum port)
 {
 }
-
-uint8_t PDMA_I3C_CH[I3C_PORT_MAX * 2] = {
-#if (I3C_PORT_MAX == I3C3_IF)
-	PDMA_I3C1_TX, PDMA_I3C2_TX, PDMA_I3C1_RX, PDMA_I3C2_RX
-#else
-	PDMA_I3C1_TX, PDMA_I3C2_TX, PDMA_I3C3_TX, PDMA_I3C4_TX, PDMA_I3C5_TX, PDMA_I3C6_TX,
-	PDMA_I3C1_RX, PDMA_I3C2_RX, PDMA_I3C3_RX, PDMA_I3C4_RX, PDMA_I3C5_RX, PDMA_I3C6_RX
-#endif
-};
 
 /* declare 16 pdma descriptors to handle master/slave tx
  * in scatter gather mode
@@ -493,6 +498,70 @@ void hal_I3C_Config_Internal_Device(I3C_PORT_Enum port, I3C_DEVICE_INFO_t *pDevi
 	/* move to dtsi and i3c_npcm4xx_init() */
 }
 
+static void i3c_setup_dma_channel(uint8_t hw_id, int dma_channel)
+{
+	uint32_t pdma_offset = 0;
+	uint32_t pdma_value = 0;
+
+	if (dma_channel < 4)
+		pdma_value = PDMA->REQSEL0_3;
+	else if (dma_channel < 8)
+		pdma_value = PDMA->REQSEL4_7;
+	else if (dma_channel < 12)
+		pdma_value = PDMA->REQSEL8_11;
+	else if (dma_channel < 16)
+		pdma_value = PDMA->REQSEL12_15;
+	else
+		return;
+
+	pdma_offset = dma_channel % 4;
+	pdma_value = pdma_value & ~(0xFF << (8 * pdma_offset));
+	pdma_value = pdma_value | (hw_id << (8 * pdma_offset));
+
+	if (dma_channel < 4)
+		PDMA->REQSEL0_3 = pdma_value;
+	else if (dma_channel < 8)
+		PDMA->REQSEL4_7 = pdma_value;
+	else if (dma_channel < 12)
+		PDMA->REQSEL8_11 = pdma_value;
+	else if (dma_channel < 16)
+		PDMA->REQSEL12_15 = pdma_value;
+	else
+		return;
+}
+
+static void i3c_setup_dma_configure(I3C_PORT_Enum port, int tx_dma_channel, int rx_dma_channel)
+{
+	switch (port) {
+		case I3C1_IF:
+			i3c_setup_dma_channel(PDMA_I3C1_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C1_RX, rx_dma_channel);
+			break;
+		case I3C2_IF:
+			i3c_setup_dma_channel(PDMA_I3C2_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C2_RX, rx_dma_channel);
+			break;
+		case I3C3_IF:
+			i3c_setup_dma_channel(PDMA_I3C3_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C3_RX, rx_dma_channel);
+			break;
+		case I3C4_IF:
+			i3c_setup_dma_channel(PDMA_I3C4_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C4_RX, rx_dma_channel);
+			break;
+		case I3C5_IF:
+			i3c_setup_dma_channel(PDMA_I3C5_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C5_RX, rx_dma_channel);
+			break;
+		case I3C6_IF:
+			i3c_setup_dma_channel(PDMA_I3C6_TX, tx_dma_channel);
+			i3c_setup_dma_channel(PDMA_I3C6_RX, rx_dma_channel);
+			break;
+		default:
+			break;
+	}
+}
+
 /*--------------------------------------------------------------------------------------*/
 /**
  * @brief                           Update I3C register settings for the specific internal device
@@ -546,55 +615,13 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 		PDMA->CHCTL |= MaskBit(PDMA_OFFSET + port)
 			| MaskBit(PDMA_OFFSET + I3C_PORT_MAX + port);
 
-#if (I3C_PORT_MAX == I3C3_IF)
-		if (port == I3C1_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0xFF00FF00U) | (PDMA_I3C1_TX << 0)
-				| (PDMA_I3C1_RX << 16);
-		} else {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0x00FF00FFU) | (PDMA_I3C2_TX << 8)
-				| (PDMA_I3C2_RX << 24);
-		}
-#elif (PDMA_OFFSET == 0)
-		if (port == I3C1_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0xFFFFFF00U) | (PDMA_I3C1_TX << 0);
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFF00FFFFU) | (PDMA_I3C1_RX << 16);
-		} else if (port == I3C2_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0xFFFF00FFU) | (PDMA_I3C2_TX << 8);
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0x00FFFFFFU) | (PDMA_I3C2_RX << 24);
-		} else if (port == I3C3_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0xFF00FFFFU) | (PDMA_I3C3_TX << 16);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFFFFFF00U) | (PDMA_I3C3_RX << 0);
-		} else if (port == I3C4_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0x00FFFFFFU) | (PDMA_I3C4_TX << 24);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFFFF00FFU) | (PDMA_I3C4_RX << 8);
-		} else if (port == I3C5_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFFFFFF00U) | (PDMA_I3C5_TX << 0);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFF00FFFFU) | (PDMA_I3C5_RX << 16);
-		} else if (port == I3C6_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFFFF00FFU) | (PDMA_I3C6_TX << 8);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0x00FFFFFFU) | (PDMA_I3C6_RX << 24);
-		}
-#elif (PDMA_OFFSET == 2)
-		if (port == I3C1_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0xFF00FFFFU) | (PDMA_I3C1_TX << 16);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFFFFFF00U) | (PDMA_I3C1_RX << 0);
-		} else if (port == I3C2_IF) {
-			PDMA->REQSEL0_3 = (PDMA->REQSEL0_3 & 0x00FFFFFFU) | (PDMA_I3C2_TX << 24);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFFFF00FFU) | (PDMA_I3C2_RX << 8);
-		} else if (port == I3C3_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFFFFFF00U) | (PDMA_I3C3_TX << 0);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0xFF00FFFFU) | (PDMA_I3C3_RX << 16);
-		} else if (port == I3C4_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFFFF00FFU) | (PDMA_I3C4_TX << 8);
-			PDMA->REQSEL8_11 = (PDMA->REQSEL8_11 & 0x00FFFFFFU) | (PDMA_I3C4_RX << 24);
-		} else if (port == I3C5_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0xFF00FFFFU) | (PDMA_I3C5_TX << 16);
-			PDMA->REQSEL12_15 = (PDMA->REQSEL12_15 & 0xFFFFFF00U) | (PDMA_I3C5_RX << 0);
-		} else if (port == I3C6_IF) {
-			PDMA->REQSEL4_7 = (PDMA->REQSEL4_7 & 0x00FFFFFFU) | (PDMA_I3C6_TX << 24);
-			PDMA->REQSEL12_15 = (PDMA->REQSEL12_15 & 0xFFFF00FFU) | (PDMA_I3C6_RX << 8);
-		}
-#endif
+		if (pDevice->dma_tx_channel >= PDMA_CH_MAX)
+			return I3C_ERR_PARAMETER_INVALID;
+
+		if (pDevice->dma_rx_channel >= PDMA_CH_MAX)
+			return I3C_ERR_PARAMETER_INVALID;
+
+		i3c_setup_dma_configure(port, pDevice->dma_tx_channel, pDevice->dma_rx_channel);
 
 		PDMA->INTEN = 0;
 		PDMA->SCATBA = (uint32_t) I3C_SCATTER_GATHER_TABLE.SCAT_DSCT;
@@ -1103,6 +1130,8 @@ void hal_I3C_Ack_IBI_With_MDB(I3C_PORT_Enum port)
 
 uint8_t Get_PDMA_Channel(I3C_PORT_Enum port, I3C_TRANSFER_DIR_Enum direction)
 {
+	I3C_DEVICE_INFO_t *pDevice;
+
 	/* invalid channel, 6694 only support 14 channels, 0 - 13
 	 * I3C PDMA channel,
 	 * 0: I3C1_TX, 1: I3C2_TX, 2: I3C3_TX, 3: I3C4_TX, 4: I3C5_TX, 5: I3C6_TX,
@@ -1112,10 +1141,12 @@ uint8_t Get_PDMA_Channel(I3C_PORT_Enum port, I3C_TRANSFER_DIR_Enum direction)
 	if (port >= I3C_PORT_MAX)
 		return 0xFF;
 
+	pDevice = api_I3C_Get_INODE(port);
+
 	if (direction == I3C_TRANSFER_DIR_WRITE)
-		return port;
+		return pDevice->dma_tx_channel;
 	else
-		return (I3C_PORT_MAX + port);
+		return pDevice->dma_rx_channel;
 }
 
 void hal_I3C_Disable_Master_TX_DMA(I3C_PORT_Enum port)
@@ -3934,32 +3965,42 @@ uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t 
 static int i3c_init_work_queue(I3C_PORT_Enum port)
 {
 	switch (port) {
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
 	case 0:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area0,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area0),
 			NPCM4XX_I3C_WORK_QUEUE_PRIORITY, NULL);
 		break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c1), okay)
 	case 1:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area1,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area1),
 			NPCM4XX_I3C_WORK_QUEUE_PRIORITY, NULL);
 		break;
-#if (I3C_PORT_MAX == 6)
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c2), okay)
 	case 2:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area2,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area2),
 			NPCM4XX_I3C_WORK_QUEUE_PRIORITY, NULL);
 		break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c3), okay)
 	case 3:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area3,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area3),
 			NPCM4XX_I3C_WORK_QUEUE_PRIORITY, NULL);
 		break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c4), okay)
 	case 4:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area4,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area4),
 			NPCM4XX_I3C_WORK_QUEUE_PRIORITY, NULL);
 		break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c5), okay)
 	case 5:
 		k_work_queue_start(&npcm4xx_i3c_work_q[port], npcm4xx_i3c_stack_area5,
 			K_THREAD_STACK_SIZEOF(npcm4xx_i3c_stack_area5),
@@ -4039,6 +4080,9 @@ static int i3c_npcm4xx_init(const struct device *dev)
 	pDevice->max_rd_len = I3C_PAYLOAD_SIZE_MAX;
 	pDevice->max_wr_len = I3C_PAYLOAD_SIZE_MAX;
 
+	pDevice->dma_tx_channel = config->dma_tx_channel;
+	pDevice->dma_rx_channel = config->dma_rx_channel;
+
 	/* init mutex lock */
 	k_mutex_init(&pDevice->lock);
 
@@ -4084,6 +4128,8 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		.dcr = DT_INST_PROP_OR(n, dcr, 0),\
 		.part_id = DT_INST_PROP_OR(n, part_id, 0),\
 		.vendor_def_id = DT_INST_PROP_OR(n, vendor_def_id, 0),\
+		.dma_tx_channel = DT_INST_PROP_OR(n, dma_tx_channel, 0xff),\
+		.dma_rx_channel = DT_INST_PROP_OR(n, dma_rx_channel, 0xff),\
 		.busno = DT_INST_PROP_OR(n, busno, I3C_BUS_COUNT_MAX),\
 		.i2c_scl_hz = DT_INST_PROP_OR(n, i2c_scl_hz, 0),\
 		.i3c_scl_hz = DT_INST_PROP_OR(n, i3c_scl_hz, 0),\
