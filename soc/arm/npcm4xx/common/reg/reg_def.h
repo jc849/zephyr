@@ -11,8 +11,6 @@
 #define __O     volatile        /*!< Defines 'write only' permissions                */
 #define __IO    volatile        /*!< Defines 'read / write' permissions              */
 
-#define CHIP_ID_NPCM4XX	5832
-
 /*
  * NPCM4XX register structure size/offset checking macro function to mitigate
  * the risk of unexpected compiling results. All addresses of NPCM4XX registers

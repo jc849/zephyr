@@ -7,66 +7,6 @@
 
 #include "pub_I3C.h"
 #include "i3c_drv.h"
-
-#if (CHIP_ID_NPCM4XX == 5832)
-    /*#define I3C_PORT1_MODE      I3C_DEVICE_MODE_CURRENT_MASTER*/
-    /*#define I3C_PORT1_ADDR      0x20*/
-    #define I3C_PORT1_PARTNO    0x12345678
-    #define I3C_PORT1_BCR       0x66
-    #define I3C_PORT1_DCR  0xCC
-    /*#define I3C_PORT1_BUSNO 0*/
-
-    /*#define I3C_PORT2_MODE      I3C_DEVICE_MODE_CURRENT_MASTER*/
-    /*#define I3C_PORT2_ADDR      0x20*/
-    #define I3C_PORT2_PARTNO    0x12345678
-    #define I3C_PORT2_BCR       0x66
-    #define I3C_PORT2_DCR  0xCC
-    /*#define I3C_PORT2_BUSNO 1*/
-
-#else
-    #define I3C_PORT1_MODE  I3C_DEVICE_MODE_CURRENT_MASTER
-    #define I3C_PORT1_ADDR  0x20
-    #define I3C_PORT1_PARTNO  0x12345678
-    #define I3C_PORT1_BCR  0x66
-    #define I3C_PORT1_DCR  0xCC
-    #define I3C_PORT1_BUSNO 0
-
-    #define I3C_PORT2_MODE  I3C_DEVICE_MODE_SLAVE_ONLY
-    #define I3C_PORT2_ADDR  0x21
-    #define I3C_PORT2_PARTNO  0x12345678
-    #define I3C_PORT2_BCR  0x66
-    #define I3C_PORT2_DCR  0xCC
-    #define I3C_PORT2_BUSNO 0
-
-    #define I3C_PORT3_MODE  I3C_DEVICE_MODE_CURRENT_MASTER
-    #define I3C_PORT3_ADDR  0x22
-    #define I3C_PORT3_PARTNO  0x12345678
-    #define I3C_PORT3_BCR  0x66
-    #define I3C_PORT3_DCR  0xCC
-    #define I3C_PORT3_BUSNO 1
-
-    #define I3C_PORT4_MODE  I3C_DEVICE_MODE_SLAVE_ONLY
-    #define I3C_PORT4_ADDR  0x23
-    #define I3C_PORT4_PARTNO  0x12345678
-    #define I3C_PORT4_BCR  0x66
-    #define I3C_PORT4_DCR  0xCC
-    #define I3C_PORT4_BUSNO 1
-
-    #define I3C_PORT5_MODE  I3C_DEVICE_MODE_CURRENT_MASTER
-    #define I3C_PORT5_ADDR  0x24
-    #define I3C_PORT5_PARTNO  0x12345678
-    #define I3C_PORT5_BCR  0x66
-    #define I3C_PORT5_DCR  0xCC
-    #define I3C_PORT5_BUSNO 2
-
-    #define I3C_PORT6_MODE  I3C_DEVICE_MODE_SLAVE_ONLY
-    #define I3C_PORT6_ADDR  0x25
-    #define I3C_PORT6_PARTNO  0x12345678
-    #define I3C_PORT6_BCR  0x66
-    #define I3C_PORT6_DCR  0xCC
-    #define I3C_PORT6_BUSNO 2
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {

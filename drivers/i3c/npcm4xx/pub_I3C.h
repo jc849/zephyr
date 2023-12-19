@@ -83,11 +83,7 @@ enum I3C_PORT {
 	I3C4_IF,
 	I3C5_IF,
 	I3C6_IF,
-#if (CHIP_ID_NPCM4XX == 5832)
-	I3C_PORT_MAX = 2,
-#else
-	I3C_PORT_MAX = 6,
-#endif
+	I3C_PORT_MAX,
 };
 
 #define I3C_PORT_Enum enum I3C_PORT
@@ -555,6 +551,9 @@ struct I3C_DEVICE_INFO {
 	volatile __u8 task_count;
 	struct I3C_TRANSFER_TASK *pTaskListHead;
 	ptrI3C_RetFunc callback;
+
+	uint8_t dma_tx_channel;
+	uint8_t dma_rx_channel;
 
 	struct k_mutex lock;
 	struct k_sem ibi_complete;

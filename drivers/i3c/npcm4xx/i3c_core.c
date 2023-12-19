@@ -15,7 +15,6 @@ I3C_BUS_INFO_t gBus[I3C_BUS_COUNT_MAX] = {
 		.busState = I3C_BUS_STATE_DEFAULT, .pCurrentTask = NULL},
 	{.busno = 1, .DevCount = 0, .pDevList = NULL, .pCurrentMaster = NULL,
 		.busState = I3C_BUS_STATE_DEFAULT, .pCurrentTask = NULL},
-#if (I3C_BUS_COUNT_MAX > 2)
 	{.busno = 2, .DevCount = 0, .pDevList = NULL, .pCurrentMaster = NULL,
 		.busState = I3C_BUS_STATE_DEFAULT, .pCurrentTask = NULL},
 	{.busno = 3, .DevCount = 0, .pDevList = NULL, .pCurrentMaster = NULL,
@@ -24,7 +23,6 @@ I3C_BUS_INFO_t gBus[I3C_BUS_COUNT_MAX] = {
 		.busState = I3C_BUS_STATE_DEFAULT, .pCurrentTask = NULL},
 	{.busno = 5, .DevCount = 0, .pDevList = NULL, .pCurrentMaster = NULL,
 		.busState = I3C_BUS_STATE_DEFAULT, .pCurrentTask = NULL},
-#endif
 };
 
 I3C_DEVICE_INFO_t gI3c_dev_node_internal[I3C_PORT_MAX] = {
@@ -32,7 +30,6 @@ I3C_DEVICE_INFO_t gI3c_dev_node_internal[I3C_PORT_MAX] = {
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
 	{.port = I3C2_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-#if (I3C_BUS_COUNT_MAX > 2)
 	{.port = I3C3_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
 	{.port = I3C4_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
@@ -41,23 +38,17 @@ I3C_DEVICE_INFO_t gI3c_dev_node_internal[I3C_PORT_MAX] = {
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
 	{.port = I3C6_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-#endif
 };
 
 uint8_t slvRxBuf[I3C_PORT_MAX][MAX_READ_LEN];
 
 uint16_t slvRxLen[I3C_PORT_MAX] = {
 	MAX_READ_LEN, MAX_READ_LEN,
-#if (I3C_BUS_COUNT_MAX > 2)
 	MAX_READ_LEN, MAX_READ_LEN, MAX_READ_LEN, MAX_READ_LEN
-#endif
 };
 
 uint16_t slvRxOffset[I3C_PORT_MAX] = {
-	0, 0,
-#if (I3C_BUS_COUNT_MAX > 2)
-	0, 0, 0, 0
-#endif
+	0, 0, 0, 0, 0, 0
 };
 
 

@@ -90,6 +90,8 @@ struct i3c_npcm4xx_config {
 	int bcr;
 	int dcr;
 	int busno;
+	int dma_tx_channel;
+	int dma_rx_channel;
 	struct i3c_reg *base;
 	bool slave;
 	bool secondary;
@@ -1826,21 +1828,21 @@ enum I3C_ERRWARN_Enum {
 #define PDMA_REQSEL12_15_REQSRC12_Msk               (0x1ful << PDMA_REQSEL12_15_REQSRC12_Pos)
 
 /* PDMA Channel Select */
-#define PDMA_I3C1_RX        5
-#define PDMA_I3C1_TX        6
-#define PDMA_I3C2_RX        7
-#define PDMA_I3C2_TX        8
-#define PDMA_I3C3_RX        9
-#define PDMA_I3C3_TX        10
-#define PDMA_I3C4_RX        11
-#define PDMA_I3C4_TX        12
-#define PDMA_I3C5_RX        13
-#define PDMA_I3C5_TX        14
-#define PDMA_I3C6_RX        15
-#define PDMA_I3C6_TX        16
+#define PDMA_I3C1_RX	5
+#define PDMA_I3C1_TX	6
+#define PDMA_I3C2_RX	7
+#define PDMA_I3C2_TX	8
+#define PDMA_I3C3_RX	9
+#define PDMA_I3C3_TX	10
+#define PDMA_I3C4_RX	11
+#define PDMA_I3C4_TX	12
+#define PDMA_I3C5_RX	13
+#define PDMA_I3C5_TX	14
+#define PDMA_I3C6_RX	15
+#define PDMA_I3C6_TX	16
 
-#define PDMA_OFFSET 0
-#define PDMA_CH_MAX    16
+#define PDMA_OFFSET	0
+#define PDMA_CH_MAX	16
 
 #ifdef __cplusplus
 extern "C"

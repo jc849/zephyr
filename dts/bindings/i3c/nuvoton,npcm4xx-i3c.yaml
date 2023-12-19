@@ -60,6 +60,18 @@ properties:
     description: |
       Bus Number, used for bus enumeration
 
+  dma-tx-channel:
+    required: true
+    type: int
+    description: |
+      dma channel for write data to bus
+
+  dma-rx-channel:
+    required: true
+    type: int
+    description: |
+      dma channel for read data from bus
+
   pinctrl-0:
     type: phandles
     required: true
