@@ -89,10 +89,8 @@ __u32 I3C_DO_NACK_SLVSTART(I3C_TASK_INFO_t *pTaskInfo)
 	pDevice = &gI3c_dev_node_internal[pTaskInfo->Port];
 	pBus = pDevice->pOwner;
 
-	I3C_Notify(pTaskInfo);
-	I3C_Complete_Task(pTaskInfo);
-	pBus->pCurrentTask = NULL;
-	pBus->busState = I3C_BUS_STATE_IDLE;
+	// HW will auto retry, if master doesn't send disec
+	pTaskInfo->result = I3C_ERR_OK;
 
 	return I3C_ERR_NACK_SLVSTART;
 }
@@ -398,15 +396,25 @@ uint8_t I3C_Update_Dynamic_Address(__u32 Parm)
 
 void I3C_Prepare_To_Read_Command(__u32 Parm)
 {
+	uint8_t *pSlvRxBuf;
+	uint8_t idx;
+
 	if (Parm >= I3C_PORT_MAX)
 		return;
 
 	I3C_PORT_Enum port = (I3C_PORT_Enum) Parm;
 	I3C_DEVICE_INFO_t *pDevice = api_I3C_Get_INODE(port);
 
-	slvRxOffset[port] = 0;
-	slvRxLen[port] = MAX_READ_LEN;
-	hal_I3C_DMA_Read(port, pDevice->mode, slvRxBuf[port], slvRxLen[port]);
+	/* Prepare the other rx buffer to receive data from master
+	 * during processing the last received data
+	 */
+	idx = (slvRxId[port] == 0) ? 1 : 0;
+	slvRxId[port] = idx;
+
+	slvRxOffset[port + (I3C_PORT_MAX * idx)] = 0;
+	pSlvRxBuf = &slvRxBuf[port + (I3C_PORT_MAX * idx)][0];
+
+	hal_I3C_DMA_Read(port, pDevice->mode, pSlvRxBuf, MAX_READ_LEN);
 }
 
 uint8_t GetCmdWidth(uint8_t width_type)
