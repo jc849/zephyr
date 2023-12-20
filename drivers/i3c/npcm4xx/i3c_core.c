@@ -40,15 +40,19 @@ I3C_DEVICE_INFO_t gI3c_dev_node_internal[I3C_PORT_MAX] = {
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
 };
 
-uint8_t slvRxBuf[I3C_PORT_MAX][MAX_READ_LEN];
+uint8_t slvRxId[I3C_PORT_MAX] = {
+	0, 0, 0, 0, 0, 0
+};
+
+uint8_t slvRxBuf[I3C_PORT_MAX * 2][MAX_READ_LEN];
 
 uint16_t slvRxLen[I3C_PORT_MAX] = {
 	MAX_READ_LEN, MAX_READ_LEN,
 	MAX_READ_LEN, MAX_READ_LEN, MAX_READ_LEN, MAX_READ_LEN
 };
 
-uint16_t slvRxOffset[I3C_PORT_MAX] = {
-	0, 0, 0, 0, 0, 0
+uint16_t slvRxOffset[I3C_PORT_MAX * 2] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 
