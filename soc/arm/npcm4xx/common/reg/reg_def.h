@@ -2232,7 +2232,7 @@ struct i3c_reg {
 	volatile uint32_t ID;
 };
 
-#define I3C_BASE_ADDR(mdl)              (0x40004000 + ((mdl) * 0x0400L))
+#define I3C_BASE_ADDR(mdl)              (0x40004000 + ((mdl) * 0x0200L))
 
 /* I3C register fields */
 #define NPCM4XX_I3C_MCONFIG_I2CBAUD FIELD(28, 31)

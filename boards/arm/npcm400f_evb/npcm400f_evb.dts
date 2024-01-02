@@ -186,7 +186,7 @@
 	status = "okay";
 };
 
-&i3c0 {
+&i3c4 {
 	status = "okay";
 	assigned-address = <0x20>;
 	i2c-scl-hz = <100000>;
@@ -195,13 +195,13 @@
 	/* vendor-def-id = <0x567>; */
 	bcr = <0x66>;
 	dcr = <0xCC>;
-	dma-tx-channel = <0>;
-	dma-rx-channel = <2>;
-	busno = <0x0>;
-	pinctrl-0 = <&pinctrl_i3c0_default>;
+	dma-tx-channel = <4>;
+	dma-rx-channel = <10>;
+	busno = <0x4>;
+	pinctrl-0 = <&pinctrl_i3c4_default>;
 };
 
-&i3c1 {
+&i3c5 {
 	status = "okay";
 	assigned-address = <0x21>;
 	i2c-scl-hz = <100000>;
@@ -212,22 +212,22 @@
 	dcr = <0xCC>;
 	/* slave; */
 	/* secondary; */
-	dma-tx-channel = <1>;
-	dma-rx-channel = <3>;
-	busno = <0x0>;
-	pinctrl-0 = <&pinctrl_i3c1_default>;
+	dma-tx-channel = <5>;
+	dma-rx-channel = <11>;
+	busno = <0x5>;
+	pinctrl-0 = <&pinctrl_i3c5_default>;
 
 	/* #address-cells = <1>; */
 	/* #size-cells = <0>; */
 
 	/*
-	 * i3c1_smq:i3c-slave-mqueue@21 {
+	 * i3c5_smq:i3c-slave-mqueue@21 {
 	 *	compatible = "i3c-slave-mqueue";
 	 *	reg = <0x21>;
 	 *	msg-size = <256>;
 	 *	num-of-msgs = <4>;
-	 *	mandatory-data-byte = <0xbf>;
-	 *	label = "I3C_1_SMQ";
+	 *	mandatory-data-byte = <0xae>;
+	 *	label = "I3C_5_SMQ";
 	 *	status = "okay";
 	 * };
 	 */

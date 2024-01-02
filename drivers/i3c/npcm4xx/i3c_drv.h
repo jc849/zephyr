@@ -20,7 +20,7 @@
 
 #define I3C_1MHz_VAL_CONST		    1000000UL
 
-#define APB3_CLK                    48000000                    /** ARM Peripheral Bus 3    */
+#define APB3_CLK                    96000000                    /** ARM Peripheral Bus 3    */
 
 #define I3C_CLOCK_FREQUENCY         APB3_CLK
 #define I3C_FCLOCK_FREQUENCY	    APB3_CLK
