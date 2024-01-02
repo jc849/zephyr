@@ -227,6 +227,7 @@ static inline bool spi_nor_npcm4xx_spim_is_erase_command(uint8_t opcode)
 	return false;
 }
 
+#ifdef CONFIG_XIP
 /* must be call when disable irq */
 RAMFUNC static void spi_nor_npcm4xx_spim_wait_ready(const struct device *dev, const struct spi_config *spi_cfg)
 {
@@ -256,6 +257,7 @@ wait_again:
 
 	inst->SPIM_CTL0 = backup_ctrl0;
 }
+#endif
 
 RAMFUNC static void spi_nor_npcm4xx_spim_normal_transceive(const struct device *dev,
 						const struct spi_config *spi_cfg,
