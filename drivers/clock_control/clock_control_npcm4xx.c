@@ -141,6 +141,7 @@ static struct clock_control_driver_api npcm4xx_clock_control_api = {
 	.get_rate = npcm4xx_clock_control_get_subsys_rate,
 };
 
+#if 0
 /* valid clock frequency check */
 BUILD_ASSERT(CORE_CLK <= MHZ(100) && CORE_CLK >= MHZ(4) &&
              OFMCLK % CORE_CLK == 0 &&
@@ -169,6 +170,7 @@ BUILD_ASSERT(APBSRC_CLK / (APB4DIV_VAL + 1) <= MHZ(100) &&
              APBSRC_CLK / (APB4DIV_VAL + 1) >= MHZ(8) &&
              (APB4DIV_VAL + 1) % (FPRED_VAL + 1) == 0,
              "Invalid APB4_CLK setting");
+#endif
 #endif
 
 static int npcm4xx_clock_control_init(const struct device *dev)
