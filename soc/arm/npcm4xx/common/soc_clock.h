@@ -58,21 +58,21 @@ struct npcm4xx_clk_cfg {
 #define LFCLK     32768
 
 /* FMUL clock */
-#if (OFMCLK > 50000000)
-#define FMCLK (OFMCLK / 2) /* FMUL clock = OFMCLK/2 if OFMCLK > 50MHz */
-#else
+//#if (OFMCLK > 50000000)
+//#define FMCLK (OFMCLK / 2) /* FMUL clock = OFMCLK/2 if OFMCLK > 50MHz */
+//#else
 #define FMCLK OFMCLK /* FMUL clock = OFMCLK */
-#endif
+//#endif
 
 /* APBs source clock */
 #define APBSRC_CLK OFMCLK
 
 /* AHB6 clock */
-#if (CORE_CLK > 50000000)
-#define AHB6DIV_VAL 1 /* AHB6_CLK = CORE_CLK/2 if CORE_CLK > 50MHz */
-#else
+//#if (CORE_CLK > 50000000)
+//#define AHB6DIV_VAL 1 /* AHB6_CLK = CORE_CLK/2 if CORE_CLK > 50MHz */
+//#else
 #define AHB6DIV_VAL 0 /* AHB6_CLK = CORE_CLK */
-#endif
+//#endif
 /* FIU clock divider */
 #if (CORE_CLK > 50000000)
 #define FIUDIV_VAL 1 /* FIU_CLK = CORE_CLK/2 */
