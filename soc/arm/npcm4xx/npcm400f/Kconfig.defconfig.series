@@ -9,7 +9,7 @@ config SOC_SERIES
 	default "npcm400f"
 
 config NUM_IRQS
-	default 64
+	default 82
 
 config ESPI_NPCM4XX
 	default y
