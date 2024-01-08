@@ -1223,12 +1223,17 @@ void I3C_Master_New_Request(__u32 Parm)
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
 
+	__u16 rxLen;
+
 	if (Parm >= I3C_PORT_MAX) {
 		return;
 	}
 
+	rxLen = IBI_PAYLOAD_SIZE_MAX;
+
 	port = (__u8)Parm;
-	I3C_Master_Insert_Task_EVENT(IBI_PAYLOAD_SIZE_MAX, NULL, I3C_TRANSFER_SPEED_SDR_IBI,
+	/* must use NOT_HIF */
+	I3C_Master_Insert_Task_EVENT(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_IBI,
 		TIMEOUT_TYPICAL, I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 
 	pBus = Get_Bus_From_Port(port);
@@ -1359,6 +1364,8 @@ void I3C_Master_IBIACK(__u32 Parm)
 	uint8_t ibiAddress;
 	I3C_DEVICE_INFO_SHORT_t *pSlvDev;
 
+__u16 rxLen;
+
 	if (Parm == 0) {
 		return;
 	}
@@ -1383,7 +1390,8 @@ void I3C_Master_IBIACK(__u32 Parm)
 		/* Insert Event task and assume event task has running to
 		 * restore IBI Type and IBI address
 		 */
-		I3C_Master_Insert_Task_EVENT(IBI_PAYLOAD_SIZE_MAX, NULL,
+rxLen = IBI_PAYLOAD_SIZE_MAX;
+		I3C_Master_Insert_Task_EVENT(&rxLen, NULL,
 			I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL, I3C_Master_Callback,
 			port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 
@@ -1436,7 +1444,9 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 	I3C_TRANSFER_FRAME_t *pFrame;
 	__u8 wrBuf[2];
-	__u8 *rdBuf;
+	__u8 rdBuf[2];	/* addr + pec */
+	__u16 rxLen;
+	I3C_ErrCode_Enum res;
 
 	if (Parm == 0) {
 		return;
@@ -1453,7 +1463,6 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
 		return;
 	}
 	port = pTaskInfo->Port;
-
 
 	hal_I3C_Ack_IBI_Without_MDB(port);
 	hal_I3C_Disable_Master_RX_DMA(port);
@@ -1473,17 +1482,26 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
 		return;
 	}
 
-	rdBuf = hal_I3C_MemAlloc(1);
-	wrBuf[0] = ibiAddress;
-	I3C_Master_Insert_Task_CCCr(CCC_DIRECT_GETACCMST, 1, 1, 1, wrBuf, rdBuf,
-		I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL,
-		I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, IS_HIF);
+	rxLen = 1;
 
-	pTask = pBus->pCurrentMaster->pTaskListHead;
-	pTaskInfo = pTask->pTaskInfo;
-	pFrame = &pTask->pFrameList[pTask->frame_idx];
-	pFrame->flag |= I3C_TRANSFER_REPEAT_START;
-	I3C_Master_Start_Request((uint32_t) pTaskInfo);
+	wrBuf[0] = ibiAddress;
+
+	/* don't change NOT_HIF to IS_HIF */
+	/* We should malloc rdBuf and rxLen for IS_HIF if needed */
+	res = I3C_Master_Insert_Task_CCCr(CCC_DIRECT_GETACCMST, 1, 1, &rxLen, wrBuf,
+		rdBuf, I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL,
+		I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+
+	if (res == I3C_ERR_OK) {
+		pTask = pBus->pCurrentMaster->pTaskListHead;
+		pTaskInfo = pTask->pTaskInfo;
+		pFrame = &pTask->pFrameList[pTask->frame_idx];
+		pFrame->flag |= I3C_TRANSFER_REPEAT_START;
+		I3C_Master_Start_Request((uint32_t) pTaskInfo);
+	}
+
+	/* rdBuf[2] and rxLen might release here */
+	/* return data should be saved in variables allocated in I3C_Master_Create_Task */
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1498,7 +1516,7 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(__u32 Parm)
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
 	__u8 port;
-
+	__u16 rxLen;
 
 	if (Parm == 0) {
 		return;
@@ -1528,7 +1546,9 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(__u32 Parm)
 	 * Can't use RESTART + ENTDAA, that will cause MERRWARN.INVREQ
 	 */
 	I3C_Master_Stop_Request((__u32)pTask);
-	I3C_Master_Insert_Task_ENTDAA(63, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
+
+	rxLen = 63;
+	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
 		NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 }
 

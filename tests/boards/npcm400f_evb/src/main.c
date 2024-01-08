@@ -20,11 +20,11 @@ extern void test_i3c(void);
 #define TEST_MODULE_CNT		1
 #define TEST_STACKSIZE		8192
 
-#define TEST_CI_TIMEOUT		40
+#define TEST_CI_TIMEOUT		60
 #define TEST_SLT_TIMEOUT	20
 #define TEST_FT_TIMEOUT		5
 
-#define TEST_CI_FUNC_COUNT	100
+#define TEST_CI_FUNC_COUNT	2048
 #define TEST_SLT_FUNC_COUNT	1
 #define TEST_FT_FUNC_COUNT	1
 
@@ -193,7 +193,6 @@ static void nuvoton_run_test_suite(const char *name, struct unit_test *suite,
 		goto end;
 
 	unit_test_remain = unit_test_count;
-	thread_analyzer_print();
 
 	nuvoton_run_test();
 

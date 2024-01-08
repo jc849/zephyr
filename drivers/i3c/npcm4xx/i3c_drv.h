@@ -1118,6 +1118,13 @@ enum I3C_CONFIG_SLVENA_Enum {
 #define I3C_CTRL_EVENT(x)                       (((uint32_t)(((uint32_t)(x)) \
 << I3C_CTRL_EVENT_SHIFT)) & I3C_CTRL_EVENT_MASK)
 
+enum I3C_CTRL_EVENT_Enum {
+	I3C_CTRL_EVENT_None    = 0,
+	I3C_CTRL_EVENT_IBI     = 1,
+	I3C_CTRL_EVENT_MstReq  = 2,
+	I3C_CTRL_EVENT_HotJoin = 3,
+};
+
 /* INTSET */
 #define I3C_INTSET_EVENT_MASK                   (0x40000U)
 #define I3C_INTSET_EVENT_SHIFT                  (18U)

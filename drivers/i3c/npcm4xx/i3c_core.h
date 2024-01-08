@@ -128,7 +128,7 @@ extern I3C_ErrCode_Enum InsertTaskNode(I3C_DEVICE_INFO_t *pDevice,
 	I3C_TRANSFER_TASK_t *pNewTask, __u8 bType);
 
 /* Sample to create master task and might be used in the driver */
-extern I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 rxbuf_size, __u8 *rxbuf,
+extern I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf,
 	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
 	I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 extern I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(__u8 CCC, __u16 buf_size, __u8 *buf,
@@ -138,10 +138,10 @@ extern I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize,
 	__u16 buf_size, __u8 *buf, __u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback,
 	__u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 extern I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize,
-	__u16 txbuf_size, __u16 rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate,
+	__u16 txbuf_size, __u16 *rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate,
 	__u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy,
 	_Bool bHIF);
-extern I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(__u16 rxbuf_size, __u8 *rxbuf,
+extern I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(__u16 *rxbuf_size, __u8 *rxbuf,
 	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
 	I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 

@@ -73,7 +73,7 @@ extern I3C_TASK_INFO_t *api_I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Pro
 	__u16 *pWrCnt, __u16 *pRdCnt, __u8 *WrBuf, __u8 *RdBuf, __u32 Timeout,
 	ptrI3C_RetFunc callback, __u8 PortId, _Bool bHIF);
 
-extern I3C_ErrCode_Enum api_I3C_Master_Insert_Task_ENTDAA(__u16 rxbuf_size, __u8 *rxbuf,
+extern I3C_ErrCode_Enum api_I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf,
 	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
 	I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 extern I3C_ErrCode_Enum api_I3C_Master_Insert_Task_CCCb(__u8 CCC, __u16 buf_size, __u8 *buf,
@@ -83,7 +83,7 @@ extern I3C_ErrCode_Enum api_I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __
 	__u8 *buf, __u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
 	I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 extern I3C_ErrCode_Enum api_I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_size,
-	__u16 rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
+	__u16 *rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
 	ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF);
 
 extern I3C_ErrCode_Enum api_ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, __u8 Address,

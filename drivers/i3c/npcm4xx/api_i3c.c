@@ -443,7 +443,7 @@ I3C_TASK_INFO_t *api_I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol, 
 		callback, PortId, bHIF);
 }
 
-I3C_ErrCode_Enum api_I3C_Master_Insert_Task_ENTDAA(__u16 rxbuf_size, __u8 *rxbuf, __u32 Baudrate,
+I3C_ErrCode_Enum api_I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf, __u32 Baudrate,
 	__u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy,
 	_Bool bHIF)
 {
@@ -468,7 +468,7 @@ I3C_ErrCode_Enum api_I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __u16 buf
 }
 
 I3C_ErrCode_Enum api_I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_size,
-	__u16 rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
+	__u16 *rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
 	ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
 {
 	return I3C_Master_Insert_Task_CCCr(CCC, HSize, txbuf_size, rxbuf_size, txbuf, rxbuf,
