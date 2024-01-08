@@ -11,6 +11,10 @@
 #include <soc.h>
 #include "ast_test.h"
 
+
+#include <common/reg/reg_def.h>
+#include <common/reg/reg_access.h>
+
 #define LOG_MODULE_NAME i3c_test
 
 #include <logging/log.h>
@@ -25,7 +29,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 extern int i3c_slave_mqueue_read(const struct device *dev, uint8_t *dest, int budget);
 extern int i3c_slave_mqueue_write(const struct device *dev, uint8_t *src, int size);
 
-#define TEST_I3C_SLAVE_THREAD_STACK_SIZE	1024
+#define TEST_I3C_SLAVE_THREAD_STACK_SIZE	2048
 #define TEST_I3C_SLAVE_THREAD_PRIO		CONFIG_ZTEST_THREAD_PRIORITY
 
 K_THREAD_STACK_DEFINE(test_i3c_slave_thread_stack_area, TEST_I3C_SLAVE_THREAD_STACK_SIZE);
@@ -159,6 +163,13 @@ static void test_i3c_ci(int count)
 
 	i3c_master_attach_device(dev_master, slave);
 
+	/* PinSelect(Pin_M3_GPIOC4) */
+	/* PinSelect(Pin_L3_GPIOC5)	*/
+	/* RegClrBit(M8(0x400C3000 + 0x62), BIT4 | BIT5); */
+	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), MaskBit(4) | MaskBit(5)); */
+	/* RegClrBit(M8(0x40081000 + (0x0C * 0x2000L) + 0x06), MaskBit(4) | MaskBit(5)); */
+	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L) + 0x02), MaskBit(4) | MaskBit(5)); */
+
 	/* try to enter i3c mode */
 	/* assign dynamic address with setdasa or entdaa, doesn't support setaasa in slave mode */
 	i3c_master_send_rstdaa(dev_master);
@@ -188,16 +199,16 @@ static void test_i3c_ci(int count)
 
 	mdb = DT_PROP(DT_NODELABEL(i3c4_smq), mandatory_data_byte);
 
-	/* create semaphore to synchronize master and slave between ibi */
-	if (IS_MDB_PENDING_READ_NOTIFY(mdb)) {
-		k_sem_init(&ibi_complete, 0, 1);
-	}
-
 	for (i = 0; i < count; i++) {
 		/* prepare request message */
 		prepare_test_data(test_data_tx_mst, TEST_PRIV_XFER_SIZE);
 		/* test_data_tx_mst[0] = i; */ /* for debug only */
 		/* k_usleep(100); */ /* debug only */
+
+		/* create semaphore to synchronize master and slave between ibi */
+		if (IS_MDB_PENDING_READ_NOTIFY(mdb)) {
+			k_sem_init(&ibi_complete, 0, 1);
+		}
 
 		/* Requester send request message */
 		xfer[0].rnw = 0;
@@ -217,9 +228,6 @@ static void test_i3c_ci(int count)
 			/* master waits IBI from the slave */
 			k_sem_take(&ibi_complete, K_FOREVER);
 
-			/* init the flag for the next loop */
-			k_sem_init(&ibi_complete, 0, 1);
-
 			/* check result */
 			ast_zassert_equal(mdb, test_data_rx_mst[0],
 				"IBI MDB mismatch: %02x %02x\n",
@@ -230,7 +238,6 @@ static void test_i3c_ci(int count)
 		xfer[0].rnw = 1;
 		xfer[0].len = TEST_IBI_PAYLOAD_SIZE;
 		xfer[0].data.in = test_data_rx_mst;
-		k_yield();
 		ret = i3c_master_priv_xfer(slave, &xfer[0], 1);
 		ast_zassert_mem_equal(test_data_tx_slv, test_data_rx_mst, TEST_IBI_PAYLOAD_SIZE,
 			"data mismatch %d %X %X", i, test_data_tx_slv[0], test_data_rx_mst[0]);

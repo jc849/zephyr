@@ -1085,6 +1085,7 @@ void I3C_CCCb_RSTDAA(I3C_BUS_INFO_t *pBus)
 void I3C_CCCb_ENTDAA(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_t *pDevice;
+	uint16_t rxLen;
 
 	if (pBus == NULL) {
 		return;
@@ -1094,8 +1095,9 @@ void I3C_CCCb_ENTDAA(I3C_BUS_INFO_t *pBus)
 		return;
 	}
 
+	rxLen = 63;
 	pDevice = pBus->pCurrentMaster;
-	I3C_Master_Insert_Task_ENTDAA(63, NULL, I3C_TRANSFER_SPEED_I2C_1MHZ, TIMEOUT_TYPICAL,
+	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_I2C_1MHZ, TIMEOUT_TYPICAL,
 		I3C_Master_Callback, pDevice->port, I3C_TASK_POLICY_APPEND_LAST, NOT_HIF);
 }
 
@@ -2930,7 +2932,7 @@ CHECK_NEXT:
  * @return                          I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 rxbuf_size, __u8 *rxbuf,
+I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf,
 	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
 	I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
 {
@@ -2940,19 +2942,25 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 rxbuf_size, __u8 *rxbuf,
 	__u16 RxLen;
 	I3C_ErrCode_Enum result;
 
-	if (rxbuf_size < 9) {
+	if (rxbuf_size == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
-	if ((bHIF == IS_HIF) && (rxbuf == NULL)) {
+	if (*rxbuf_size < 9) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+
+	if ((rxbuf_size == NULL) && (rxbuf == NULL)) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
 	TxBuf[0] = CCC_BROADCAST_ENTDAA;
 	TxLen = 1;
-	RxLen = (rxbuf_size / 9) * 9;
+	RxLen = (*rxbuf_size / 9) * 9;
+	*rxbuf_size = RxLen;
+
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_ENTDAA, 0, TxLen,
-		&TxLen, &RxLen, TxBuf, rxbuf, Baudrate, Timeout, I3C_Master_Callback, PortId,
+		&TxLen, rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, I3C_Master_Callback, PortId,
 		Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
@@ -3180,7 +3188,7 @@ RETRY:
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_size,
-	__u16 rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
+	__u16 *rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
 	ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
@@ -3191,6 +3199,14 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
 	__u16 i;
 	__u8 fmt = 0;
 	__u16 dev_count;
+
+	if (rxbuf_size == NULL) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+
+	if (rxbuf == NULL) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
 
 	if (HSize < 1) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -3208,16 +3224,16 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
-	if (rxbuf_size == 0) {
+	if (*rxbuf_size == 0) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
-	if (rxbuf_size > 64) {
+	if (*rxbuf_size > 64) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
 	dev_count = txbuf_size - (HSize - 1);
-	if (dev_count > rxbuf_size) {
+	if (dev_count > *rxbuf_size) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
@@ -3251,7 +3267,7 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
 		} else if (TxBuf[1] == 0x91) {
 			fmt = 2;
 		} else {
-			fmt = rxbuf_size / dev_count;
+			fmt = *rxbuf_size / dev_count;
 		}
 	} else if (CCC == CCC_DIRECT_GETMXDS) {
 		if (HSize == 1) {
@@ -3259,23 +3275,23 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
 		} else if (TxBuf[1] == 0x91) {
 			fmt = 1;
 		} else {
-			fmt = rxbuf_size / dev_count;
+			fmt = *rxbuf_size / dev_count;
 		}
 	} else if (CCC == CCC_DIRECT_GETCAPS) {
 		if (HSize == 1)	{
 			fmt = 4;
 		} else {
-			fmt = rxbuf_size / dev_count;
+			fmt = *rxbuf_size / dev_count;
 		}
 	}
 
-	if ((dev_count * fmt) < rxbuf_size) {
+	if ((dev_count * fmt) < *rxbuf_size) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
-	RxLen = rxbuf_size;
+	RxLen = *rxbuf_size;
 
-	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_CCCr, fmt, HSize,
-		&TxLen, &RxLen, TxBuf, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
+	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_CCCr, fmt, HSize, &TxLen,
+		rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -3306,25 +3322,27 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
  * @return                 I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(__u16 rxbuf_size, __u8 *rxbuf, __u32 Baudrate,
+I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(__u16 *rxbuf_size, __u8 *rxbuf, __u32 Baudrate,
 	__u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy,
 	_Bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	__u16 TxLen;
-	__u16 RxLen;
 	I3C_ErrCode_Enum result;
 
-	if ((bHIF == IS_HIF) && (rxbuf == NULL)) {
+	if (rxbuf_size == NULL) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+
+	if ((*rxbuf_size == 0) && (rxbuf == NULL)) {
 		return I3C_ERR_PARAMETER_INVALID;
 	}
 
 	TxLen = 0;
 
 	/* ibi payload should not more than 255 byte specified in GETMRL if supported */
-	RxLen = rxbuf_size;
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_EVENT, I3C_BROADCAST_ADDR, 0,
-		&TxLen, &RxLen, NULL, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
+		&TxLen, rxbuf_size, NULL, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
