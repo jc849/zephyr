@@ -132,9 +132,9 @@ static void test_i3c_ci(int count)
 	struct i3c_priv_xfer xfer[2];
 	int ret, i;
 
-	dev_master = device_get_binding(DT_LABEL(DT_NODELABEL(i3c0)));
-	dev_slave = device_get_binding(DT_LABEL(DT_NODELABEL(i3c1)));
-	slave_mq = device_get_binding(DT_LABEL(DT_NODELABEL(i3c1_smq)));
+	dev_master = device_get_binding(DT_LABEL(DT_NODELABEL(i3c5)));
+	dev_slave = device_get_binding(DT_LABEL(DT_NODELABEL(i3c4)));
+	slave_mq = device_get_binding(DT_LABEL(DT_NODELABEL(i3c4_smq)));
 
 	/* Not ready, do not use */
 	if (!device_is_ready(dev_master) || !device_is_ready(dev_slave) ||
@@ -144,7 +144,7 @@ static void test_i3c_ci(int count)
 
 	/* prepare slave device info for attach */
 	slave = &slave_i3c;
-	slave->info.static_addr = DT_PROP(DT_BUS(DT_NODELABEL(i3c1_smq)), assigned_address);
+	slave->info.static_addr = DT_PROP(DT_BUS(DT_NODELABEL(i3c4_smq)), assigned_address);
 	slave->info.assigned_dynamic_addr = slave->info.static_addr;
 	slave->info.pid = 0x063212341567;
 	slave->info.i2c_mode = 1;	/* default run i2c mode */
@@ -197,7 +197,7 @@ static void test_i3c_ci(int count)
 		TEST_I3C_SLAVE_THREAD_STACK_SIZE, test_i3c_slave_task, (void *)slave_mq,
 		NULL, NULL, TEST_I3C_SLAVE_THREAD_PRIO, 0, K_NO_WAIT);
 
-	mdb = DT_PROP(DT_NODELABEL(i3c1_smq), mandatory_data_byte);
+	mdb = DT_PROP(DT_NODELABEL(i3c4_smq), mandatory_data_byte);
 
 	for (i = 0; i < count; i++) {
 		/* prepare request message */

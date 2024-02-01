@@ -163,22 +163,66 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004000 0x400>;
-			interrupts = <20 3>;
+			reg = <0x40004000 0x200>;
+			interrupts = <64 3>;
 			instance-id = <0>;
 			status = "disabled";
 			label = "I3C_0";
 		};
 
-		i3c1: i3c1@40004400 {
+		i3c1: i3c1@40004200 {
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004400 0x400>;
-			interrupts = <1 3>;
+			reg = <0x40004200 0x200>;
+			interrupts = <65 3>;
 			instance-id = <1>;
 			status = "disabled";
 			label = "I3C_1";
+		};
+
+		i3c2: i3c2@40004400 {
+			compatible = "nuvoton,npcm4xx-i3c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40004400 0x200>;
+			interrupts = <66 3>;
+			instance-id = <2>;
+			status = "disabled";
+			label = "I3C_2";
+		};
+
+		i3c3: i3c3@40004600 {
+			compatible = "nuvoton,npcm4xx-i3c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40004600 0x200>;
+			interrupts = <67 3>;
+			instance-id = <3>;
+			status = "disabled";
+			label = "I3C_3";
+		};
+
+		i3c4: i3c4@40004800 {
+			compatible = "nuvoton,npcm4xx-i3c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40004800 0x200>;
+			interrupts = <68 3>;
+			instance-id = <4>;
+			status = "disabled";
+			label = "I3C_4";
+		};
+
+		i3c5: i3c5@40004a00 {
+			compatible = "nuvoton,npcm4xx-i3c";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40004a00 0x200>;
+			interrupts = <69 3>;
+			instance-id = <5>;
+			status = "disabled";
+			label = "I3C_5";
 		};
 
 		usbd0: usbd@4001b000 {

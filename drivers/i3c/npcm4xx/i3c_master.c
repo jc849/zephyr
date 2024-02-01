@@ -39,22 +39,45 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 
 	pTaskInfo = (I3C_TASK_INFO_t *) TaskInfo;
 
-	if (pTaskInfo->Port == I3C1_IF) {
+	switch (pTaskInfo->Port) {
+		case I3C1_IF:
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
-		dev = DEVICE_DT_GET(DT_NODELABEL(i3c0));
-		__ASSERT_NO_MSG(device_is_ready(dev));
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c0));
 #endif
-	} else if (pTaskInfo->Port == I3C2_IF) {
+			break;
+		case I3C2_IF:
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c1), okay)
-		dev = DEVICE_DT_GET(DT_NODELABEL(i3c1));
-		__ASSERT_NO_MSG(device_is_ready(dev));
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c1));
 #endif
-	} else {
-
+			break;
+		case I3C3_IF:
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c2), okay)
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c2));
+#endif
+			break;
+		case I3C4_IF:
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c3), okay)
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c3));
+#endif
+			break;
+		case I3C5_IF:
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c4), okay)
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c4));
+#endif
+			break;
+		case I3C6_IF:
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c5), okay)
+			dev = DEVICE_DT_GET(DT_NODELABEL(i3c5));
+#endif
+			break;
+		default:
+			break;
 	}
 
 	if (dev == NULL)
 		return I3C_ERR_PARAMETER_INVALID;
+	else
+		__ASSERT_NO_MSG(device_is_ready(dev));
 
 	obj = DEV_DATA(dev);
 	xfer = obj->curr_xfer;
