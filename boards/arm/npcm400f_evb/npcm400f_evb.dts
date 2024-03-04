@@ -232,3 +232,329 @@
 	 * };
 	 */
 };
+
+&sgpio0 {
+	status = "disabled";
+	sgpio0_0: sgpio0_0 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_0";
+		pin-offset = <0>;
+	};
+
+	sgpio0_1: sgpio0_1 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_1";
+		pin-offset = <8>;
+	};
+
+	sgpio0_2: sgpio0_2 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_2";
+		pin-offset = <16>;
+	};
+
+	sgpio0_3: sgpio0_3 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_3";
+		pin-offset = <24>;
+	};
+
+	sgpio0_4: sgpio0_4 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_4";
+		pin-offset = <32>;
+	};
+
+	sgpio0_5: sgpio0_5 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_5";
+		pin-offset = <40>;
+	};
+
+	sgpio0_6: sgpio0_6 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_6";
+		pin-offset = <48>;
+	};
+
+	sgpio0_7: sgpio0_7 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_7";
+		pin-offset = <56>;
+	};
+
+	sgpio0_8: sgpio0_8 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_8";
+		pin-offset = <64>;
+	};
+
+	sgpio0_9: sgpio0_9 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_9";
+		pin-offset = <72>;
+	};
+
+	sgpio0_a: sgpio0_a {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_a";
+		pin-offset = <80>;
+	};
+
+	sgpio0_b: sgpio0_b {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_b";
+		pin-offset = <88>;
+	};
+
+	sgpio0_c: sgpio0_c {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_c";
+		pin-offset = <96>;
+	};
+
+	sgpio0_d: sgpio0_d {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_d";
+		pin-offset = <104>;
+	};
+
+	sgpio0_e: sgpio0_e {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_e";
+		pin-offset = <112>;
+	};
+
+	sgpio0_f: sgpio0_f {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO0_f";
+		pin-offset = <120>;
+	};
+};
+
+&sgpio1 {
+	status = "disabled";
+	sgpio1_0: sgpio1_0 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_0";
+		pin-offset = <0>;
+	};
+
+	sgpio1_1: sgpio1_1 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_1";
+		pin-offset = <8>;
+	};
+
+	sgpio1_2: sgpio1_2 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_2";
+		pin-offset = <16>;
+	};
+
+	sgpio1_3: sgpio1_3 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_3";
+		pin-offset = <24>;
+	};
+
+	sgpio1_4: sgpio1_4 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_4";
+		pin-offset = <32>;
+	};
+
+	sgpio1_5: sgpio1_5 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_5";
+		pin-offset = <40>;
+	};
+
+	sgpio1_6: sgpio1_6 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_6";
+		pin-offset = <48>;
+	};
+
+	sgpio1_7: sgpio1_7 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_7";
+		pin-offset = <56>;
+	};
+
+	sgpio1_8: sgpio1_8 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_8";
+		pin-offset = <64>;
+	};
+
+	sgpio1_9: sgpio1_9 {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_9";
+		pin-offset = <72>;
+	};
+
+	sgpio1_a: sgpio1_a {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_a";
+		pin-offset = <80>;
+	};
+
+	sgpio1_b: sgpio1_b {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_b";
+		pin-offset = <88>;
+	};
+
+	sgpio1_c: sgpio1_c {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_c";
+		pin-offset = <96>;
+	};
+
+	sgpio1_d: sgpio1_d {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_d";
+		pin-offset = <104>;
+	};
+
+	sgpio1_e: sgpio1_e {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_e";
+		pin-offset = <112>;
+	};
+
+	sgpio1_f: sgpio1_f {
+		#gpio-cells = <2>;
+		gpio-controller;
+		ngpios = <8>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		label = "SGPIO1_f";
+		pin-offset = <120>;
+	};
+};
