@@ -1,0 +1,53 @@
+# Copyright (c) 2023 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+
+description: Nuvoton, NPCM4XX-SGPIO node
+
+compatible: "nuvoton,npcm4xx-sgpio"
+
+include: [base.yaml, nuvoton-pinctrl.yaml]
+
+properties:
+  reg:
+    required: true
+
+  label:
+    required: true
+
+  nuvoton,bus-freq:
+    type: int
+    default: 8000000
+    description:
+      SGPIO clock frequency.
+
+  nuvoton,input-ngpios:
+    type: int
+    required: true
+
+  nuvoton,output-ngpios:
+    type: int
+    required: true
+
+child-binding:
+  description: GPIO child node
+  include: gpio-controller.yaml
+  properties:
+    label:
+      type: string
+      required: true
+
+    ngpios:
+      required: true
+
+    pin-offset:
+      type: int
+      required: true
+      description: Pin offset of this GPIO entry
+
+    "#gpio-cells":
+      const: 2
+
+  gpio-cells:
+  - pin
+  - flags

@@ -10,3 +10,18 @@ config GPIO_NPCM4XX
 	  This option enables the GPIO driver for NPCM4XX family of
 	  processors.
 	  Say y if you wish to use GPIO on NPCM4XX MCU.
+
+config SGPIO_NPCM4XX
+	bool "Nuvoton NPCM4XX sgpio driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the SGPIO driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use SGPIO on NPCM4XX MCU.
+
+config GPIO_NPCM4XX_SGPIO_INIT_PRIORITY
+	int "Init priority"
+	depends on SGPIO_NPCM4XX
+	default 60
+	help
+	  Device driver initialization priority.

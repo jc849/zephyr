@@ -180,6 +180,7 @@ struct scfg_reg {
 #define NPCM4XX_DEVALT_OFFSET(n) (0x010 + (n))
 #define NPCM4XX_DEVALT(base, n) (*(volatile uint8_t *)(base + \
 						NPCM4XX_DEVALT_OFFSET(n)))
+#define NPCM4XX_DEVALT6A_OFFSET  0x5A
 
 /* SCFG register fields */
 #define NPCM4XX_DEVCNT_F_SPI_TRIS                6
@@ -209,6 +210,9 @@ struct scfg_reg {
 #define NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_CORE   0
 #define NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_POWER  1
 #define NPCM4XX_DEVALTCX_GPIO_PULL_EN            7
+
+#define NPCM4XX_DEVALT6A_SIOX1_PU_EN             2
+#define NPCM4XX_DEVALT6A_SIOX2_PU_EN             3
 
 #define SCFG_BASE_ADDR (0x400C3000)
 
@@ -2561,5 +2565,103 @@ struct usbd_reg {
 #define NPCM4XX_USBD_PHYCTL_WKEN             (24)
 #define NPCM4XX_USBD_PHYCTL_VBUSDET          (31)
 
+/*
+ * SERIAL I/O EXPANSION INTERFACE (SIOX) device registers
+ */
+struct sgpio_reg {
+	/* SIOn (n=1,2) */
+	/* 0x00: I/O Expansion Data Out n Register 0 */
+	volatile uint8_t XDOUT0;
+	/* 0x01: I/O Expansion Data Out n Register 1 */
+	volatile uint8_t XDOUT1;
+	/* 0x02: I/O Expansion Data Out n Register 2 */
+	volatile uint8_t XDOUT2;
+	/* 0x03: I/O Expansion Data Out n Register 3 */
+	volatile uint8_t XDOUT3;
+	/* 0x04: I/O Expansion Data Out n Register 4 */
+	volatile uint8_t XDOUT4;
+	/* 0x05: I/O Expansion Data Out n Register 5 */
+	volatile uint8_t XDOUT5;
+	/* 0x06: I/O Expansion Data Out n Register 6 */
+	volatile uint8_t XDOUT6;
+	/* 0x07: I/O Expansion Data Out n Register 7 */
+	volatile uint8_t XDOUT7;
+	/* 0x08: I/O Expansion Data In n Register 0 */
+	volatile uint8_t XDIN0;
+	/* 0x09: I/O Expansion Data In n Register 1 */
+	volatile uint8_t XDIN1;
+	/* 0x0A: I/O Expansion Data In n Register 2 */
+	volatile uint8_t XDIN2;
+	/* 0x0B: I/O Expansion Data In n Register 3 */
+	volatile uint8_t XDIN3;
+	/* 0x0C: I/O Expansion Data In n Register 4 */
+	volatile uint8_t XDIN4;
+	/* 0x0D: I/O Expansion Data In n Register 5 */
+	volatile uint8_t XDIN5;
+	/* 0x0E: I/O Expansion Data In n Register 6 */
+	volatile uint8_t XDIN6;
+	/* 0x0F: I/O Expansion Data In n Register 7 */
+	volatile uint8_t XDIN7;
+	/* 0x10: I/O Expansion Event Configuration n Register 0 */
+	volatile uint16_t XEVCFG0;
+	/* 0x12: I/O Expansion Event Configuration n Register 1 */
+	volatile uint16_t XEVCFG1;
+	/* 0x14: I/O Expansion Event Configuration n Register 2 */
+	volatile uint16_t XEVCFG2;
+	/* 0x16: I/O Expansion Event Configuration n Register 3 */
+	volatile uint16_t XEVCFG3;
+	/* 0x18: I/O Expansion Event Configuration n Register 4 */
+	volatile uint16_t XEVCFG4;
+	/* 0x1A: I/O Expansion Event Configuration n Register 5 */
+	volatile uint16_t XEVCFG5;
+	/* 0x1C: I/O Expansion Event Configuration n Register 6 */
+	volatile uint16_t XEVCFG6;
+	/* 0x1E: I/O Expansion Event Configuration n Register 7 */
+	volatile uint16_t XEVCFG7;
+	/* 0x20: I/O Expansion Event Status n Register 0 */
+	volatile uint8_t XEVSTS0;
+	/* 0x21: I/O Expansion Event Status n Register 1 */
+	volatile uint8_t XEVSTS1;
+	/* 0x22: I/O Expansion Event Status n Register 2 */
+	volatile uint8_t XEVSTS2;
+	/* 0x23: I/O Expansion Event Status n Register 3 */
+	volatile uint8_t XEVSTS3;
+	/* 0x24: I/O Expansion Event Status n Register 4 */
+	volatile uint8_t XEVSTS4;
+	/* 0x25: I/O Expansion Event Status n Register 5 */
+	volatile uint8_t XEVSTS5;
+	/* 0x26: I/O Expansion Event Status n Register 6 */
+	volatile uint8_t XEVSTS6;
+	/* 0x27: I/O Expansion Event Status n Register 7 */
+	volatile uint8_t XEVSTS7;
+	/* 0x28: I/O Expansion Control and Status Register */
+	volatile uint8_t IOXCTS;
+	volatile uint8_t reserved1;
+	/* 0x2A: I/O Expansion Configuration 1 Register */
+	volatile uint8_t IOXCFG1;
+	/* 0x2B: I/O Expansion Configuration 2 Register */
+	volatile uint8_t IOXCFG2;
+};
+
+#define NPCM4XX_SGPIO_PORT_PIN_NUM	  8U
+#define MAX_NR_HW_SGPIO                   64
+#define NPCM4XX_IOXCTS_RD_MODE_MASK       0x6
+#define NPCM4XX_IOXCTS_RD_MODE_CONTINUOUS BIT(2)
+#define NPCM4XX_IOXCTS_IOXIF_EN           BIT(7)
+#define NPCM4XX_IOXCFG1_SFT_CLK_MASK      0xF
+
+#define NPCM4XX_XDOUT_OFFSET(n)           (0x00 + (n))
+#define NPCM4XX_XDIN_OFFSET(n)            (0x08 + (n))
+#define NPCM4XX_XEVCFG_OFFSET(n)          (0x10 + ((n) * 2L))
+#define NPCM4XX_XEVSTS_OFFSET(n)          (0x20 + (n))
+
+#define NPCM4XX_XDOUT(base, n)  (*(volatile uint8_t*)(base + \
+						NPCM4XX_XDOUT_OFFSET(n)))
+#define NPCM4XX_XDIN(base, n)   (*(volatile uint8_t*)(base + \
+						NPCM4XX_XDIN_OFFSET(n)))
+#define NPCM4XX_XEVCFG(base, n) (*(volatile uint16_t*)(base + \
+						NPCM4XX_XEVCFG_OFFSET(n)))
+#define NPCM4XX_XEVSTS(base, n) (*(volatile uint8_t*)(base + \
+						NPCM4XX_XEVSTS_OFFSET(n)))
 
 #endif /* _NUVOTON_NPCM4XX_REG_DEF_H */

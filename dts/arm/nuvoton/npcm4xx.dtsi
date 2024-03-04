@@ -504,6 +504,32 @@
 			status = "disabled";
 		};
 
+		sgpio0: sgpio@4001d000 {
+			compatible = "nuvoton,npcm4xx-sgpio";
+			reg = <0x4001d000 0x100>;
+			interrupts = <80 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL7 7>;
+			pinctrl-0 = <&pinctrl_sgpio0_default>;
+			nuvoton,input-ngpios = <64>;
+			nuvoton,output-ngpios = <64>;
+			nuvoton,bus-freq = <8000000>;
+			label = "SGPIO0";
+			status = "disabled";
+		};
+
+		sgpio1: sgpio@4001d100 {
+			compatible = "nuvoton,npcm4xx-sgpio";
+			reg = <0x4001d100 0x100>;
+			interrupts = <81 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL7 6>;
+			pinctrl-0 = <&pinctrl_sgpio1_default>;
+			nuvoton,input-ngpios = <64>;
+			nuvoton,output-ngpios = <64>;
+			nuvoton,bus-freq = <8000000>;
+			label = "SGPIO1";
+			status = "disabled";
+		};
+
 	};
 
 	soc-if {
