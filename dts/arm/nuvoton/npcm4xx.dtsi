@@ -301,11 +301,11 @@
 			label="GPIO_F";
 		};
 
-		i2c1a: i2c_a@40003000 {
+		i2c1a: i2c_a@40006000 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40003000 0x1000>;
+			reg = <0x40006000 0x200>;
 			interrupts = <35 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
 			pinctrl-0 = <&pinctrl_i2c1a_default>;
@@ -313,11 +313,11 @@
 			status = "disabled";
 		};
 
-		i2c3a: i2c_a@40005000 {
+		i2c3a: i2c_a@40006400 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40005000 0x1000>;
+			reg = <0x40006400 0x200>;
 			interrupts = <37 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 2>;
 			pinctrl-0 = <&pinctrl_i2c3a_default>;
@@ -325,11 +325,11 @@
 			status = "disabled";
 		};
 
-		i2c4a: i2c_a@40006000 {
+		i2c4a: i2c_a@40006600 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40006000 0x1000>;
+			reg = <0x40006600 0x200>;
 			interrupts = <38 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 3>;
 			pinctrl-0 = <&pinctrl_i2c4a_default>;
@@ -337,11 +337,11 @@
 			status = "disabled";
 		};
 
-		i2c5a: i2c_a@40007000 {
+		i2c5a: i2c_a@40006800 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40007000 0x1000>;
+			reg = <0x40006800 0x200>;
 			interrupts = <39 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 4>;
 			pinctrl-0 = <&pinctrl_i2c5a_default>;
@@ -349,11 +349,11 @@
 			status = "disabled";
 		};
 
-		i2c6a: i2c_a@40008000 {
+		i2c6a: i2c_a@40006a00 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40008000 0x1000>;
+			reg = <0x40006a00 0x200>;
 			interrupts = <20 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 5>;
 			pinctrl-0 = <&pinctrl_i2c6a_default>;
@@ -361,11 +361,11 @@
 			status = "disabled";
 		};
 
-		i2c1b: i2c_b@40003000 {
+		i2c1b: i2c_b@40006000 {
 			compatible = "nuvoton,npcm4xx-i2c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40003000 0x1000>;
+			reg = <0x40006000 0x200>;
 			interrupts = <35 3>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL3 0>;
 			pinctrl-0 = <&pinctrl_i2c1b_default>;
