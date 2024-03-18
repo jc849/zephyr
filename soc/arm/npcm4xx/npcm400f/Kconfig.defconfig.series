@@ -23,6 +23,21 @@ config ESPI_NPCM4XX
 	  https://www.intel.com/content/www/us/en/support/articles/000020952/
 	  software/chipset-software.html for more detail.
 
+choice GPIO_NPCM4XX_RESET_SL
+	prompt "Selects the GPIO reset to the corresponding reset source"
+	default GPIO_NPCM4XX_RESET_SL_CORE_DOMAIN
+
+config GPIO_NPCM4XX_RESET_SL_CORE_DOMAIN
+	bool "GPIO Reset by Core domain reset"
+	help
+	  GPIO port 0-9, A-F is reset by Core domain reset.
+
+config GPIO_NPCM4XX_RESET_SL_POWER_UP
+	bool "GPIO Reset by VSB Power-Up reset"
+	help
+	GPIO port 0-9, A-F is reset by VSB Power-Up reset.
+endchoice
+
 DT_CHOSEN_Z_FLASH := zephyr,flash
 
 config FLASH_SIZE
