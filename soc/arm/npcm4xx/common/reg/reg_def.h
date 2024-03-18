@@ -156,18 +156,22 @@ struct scfg_reg {
 	volatile uint8_t reserved1[3];
 	/* 0x006: Device Control 4 */
 	volatile uint8_t DEV_CTL4;
-	volatile uint8_t reserved2[9];
+        volatile uint8_t reserved2[4];
+	volatile uint8_t DEVALT10;
+	volatile uint8_t DEVALT11;
+	volatile uint8_t DEVALT12;
+	volatile uint8_t reserved3[2];
 	/* 0x010 - 1F: Device Alternate Function 0 - F */
 	volatile uint8_t DEVALT0[16];
-	volatile uint8_t reserved3[4];
+	volatile uint8_t reserved4[4];
 	/* 0x024: DEVALTCX */
 	volatile uint8_t DEVALTCX;
-	volatile uint8_t reserved4[3];
+	volatile uint8_t reserved5[3];
 	/* 0x028: Device Pull-Up Enable 0 */
 	volatile uint8_t DEVPU0;
 	/* 0x029: Device Pull-Down Enable 1 */
 	volatile uint8_t DEVPD1;
-	volatile uint8_t reserved5;
+	volatile uint8_t reserved6;
 	/* 0x02B: Low-Voltage Pins Control 1 */
 	volatile uint8_t LV_CTL1;
 };
@@ -202,6 +206,8 @@ struct scfg_reg {
 #define NPCM4XX_DEVPU0_I2C2_0_PUE                4
 #define NPCM4XX_DEVPU0_I2C3_0_PUE                6
 #define NPCM4XX_DEVPU1_F_SPI_PUD_EN              7
+#define NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_CORE   0
+#define NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_POWER  1
 #define NPCM4XX_DEVALTCX_GPIO_PULL_EN            7
 
 #define SCFG_BASE_ADDR (0x400C3000)

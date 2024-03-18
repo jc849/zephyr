@@ -12,8 +12,19 @@
 
 LOG_MODULE_REGISTER(soc, CONFIG_SOC_LOG_LEVEL);
 
+uintptr_t scfg_base = DT_REG_ADDR_BY_IDX(DT_NODELABEL(scfg), 0);
+
 void z_platform_init(void)
 {
+	struct scfg_reg *inst_scfg = (struct scfg_reg *)scfg_base;
+
+	if (scfg_base) {
+#if CONFIG_GPIO_NPCM4XX_RESET_SL_POWER_UP
+		inst_scfg->DEVALT10 = NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_POWER;
+#else
+		inst_scfg->DEVALT10 = NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_CORE;
+#endif
+	}
 }
 
 static int soc_init(const struct device *dev)
