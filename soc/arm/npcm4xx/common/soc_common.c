@@ -8,6 +8,37 @@
 #include <string.h>
 #include <arch/arm/aarch32/cortex_m/cmsis.h>
 #include <linker/linker-defs.h>
+#include <sys/sys_io.h>
+
+#define ROM_RESET_STATUS_ADDR		(0x100C7F00 + 0x84)
+#define ROM_RESET_VCC_POWERUP		0x01
+#define ROM_RESET_WDT_RST		0x02
+#define ROM_RESET_DEBUGGER_RST		0x04
+#define ROM_RESET_EXT_RST		0x08
+
+enum npcm4xx_reset_reason npcm4xx_get_reset_reason(void)
+{
+	uint8_t reason_value;
+	enum npcm4xx_reset_reason reset_reason = NPCM4XX_RESET_REASON_INVALID;
+
+	reason_value = sys_read8((mem_addr_t) ROM_RESET_STATUS_ADDR);
+
+	switch(reason_value) {
+		case ROM_RESET_VCC_POWERUP:
+			reset_reason = NPCM4XX_RESET_REASON_VCC_POWERUP;
+			break;
+		case ROM_RESET_WDT_RST:
+			reset_reason = NPCM4XX_RESET_REASON_WDT_RST;
+			break;
+		case ROM_RESET_DEBUGGER_RST:
+			reset_reason = NPCM4XX_RESET_REASON_DEBUGGER_RST;
+			break;
+		default:
+			break;
+	}
+
+	return reset_reason;
+}
 
 #ifdef CONFIG_XIP
 void (*npcm4xx_spi_nor_do_fw_update)(int type) = NULL;
