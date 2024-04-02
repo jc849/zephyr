@@ -12,6 +12,16 @@ struct npcm4xx_fw_write_bitmap
 	uint32_t bitmap_lists[BITMAP_LIST_SIZE];
 };
 
+enum npcm4xx_reset_reason {
+	NPCM4XX_RESET_REASON_VCC_POWERUP = 0,
+	NPCM4XX_RESET_REASON_WDT_RST,
+	NPCM4XX_RESET_REASON_DEBUGGER_RST,
+	NPCM4XX_RESET_REASON_INVALID = 0xff,
+};
+
+/* use to get reset reason */
+enum npcm4xx_reset_reason npcm4xx_get_reset_reason(void);
+
 /* use for set new firwmare image spi nor address and partial write bitmaps */
 uint8_t npcm4xx_set_update_fw_spi_nor_address(uint32_t fw_img_start,
 	uint32_t fw_img_size, struct npcm4xx_fw_write_bitmap *bitmap);
