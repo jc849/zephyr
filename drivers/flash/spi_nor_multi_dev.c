@@ -1475,6 +1475,26 @@ end:
 	return ret;
 }
 
+static int sfdp_broken_skip(const struct device *dev)
+{
+        int ret = 0;
+        struct spi_nor_data *data = dev->data;
+
+        switch (data->jedec_id[0]) {
+        case SPI_NOR_MFR_ID_WINBOND:
+		if (SPI_NOR_GET_JESDID(data->jedec_id) == 0x3013) {
+			data->flash_size = 0x80000;
+			return 1;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	return ret;
+}
+
 static int setup_pages_layout(const struct device *dev)
 {
 	int rv = 0;
@@ -1624,6 +1644,10 @@ static int spi_nor_configure(const struct device *dev)
 
 	if (!cfg->broken_sfdp) {
 		rc = spi_nor_process_sfdp(dev);
+
+		if ((rc != 0) && sfdp_broken_skip(dev))
+			goto broken_skip;
+
 		if (rc != 0) {
 			LOG_ERR("[%d]SFDP read failed: %d", __LINE__, rc);
 			ret = -ENODEV;
@@ -1631,6 +1655,7 @@ static int spi_nor_configure(const struct device *dev)
 		}
 	}
 
+broken_skip:
 	rc = sfdp_post_fixup(dev);
 	if (rc != 0) {
 		ret = -ENODEV;
