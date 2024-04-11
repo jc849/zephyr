@@ -2016,7 +2016,8 @@ def RemoveOTP():
 # 0 NOTEST, 10 DEBUG, 20 INFO, 30 WARNING, 40 ERROR, 50 CRITICAL
 logging.basicConfig(level=20, format='%(asctime)s - %(levelname)s : %(message)s',
                     filemode='w', filename='Log.txt')
-os.system('color')
+if sys.platform == "win32":
+    os.system('color')
 argv = sys.argv
 logging.info('User input : %s' % argv)
 
