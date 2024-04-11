@@ -12,7 +12,7 @@ zephyr_sources_ifdef(CONFIG_XIP
 )
 
 zephyr_linker_sources_ifdef(CONFIG_XIP
-  RAM_SECTIONS
+  SECTIONS
   SORT_KEY 0
   npcm4xx_sram_vector_table.ld
 )

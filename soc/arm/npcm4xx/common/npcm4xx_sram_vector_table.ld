@@ -3,8 +3,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-SECTION_PROLOGUE(.npcm4xx_sram_vector_table,,)
+SECTION_DATA_PROLOGUE(.npcm4xx_sram_vector_table,,)
 {
+_npcm4xx_sram_vector_begin = .;
 #if defined(CONFIG_CPU_CORTEX_M_HAS_VTOR)
 /*
  * In an MCU with VTOR, the VTOR.TBLOFF is set to the start address of the
@@ -29,6 +30,7 @@ SECTION_PROLOGUE(.npcm4xx_sram_vector_table,,)
 . = ALIGN( 1 << LOG2CEIL(4 * (16 + CONFIG_NUM_IRQS)) );
 #endif
 
+MPU_ALIGN(_npcm4xx_sram_vector_table_size);
 /* vector table from initial SP(0x00) to systick(0x3C) */
 _npcm4xx_sram_vector_start = .;
 KEEP(*(.npcm4xx_exc_sram_vector_table))
@@ -44,6 +46,7 @@ _npcm4xx_sram_irq_vector_end = .;
 _npcm4xx_sram_vector_func_start = .;
 KEEP(*(.npcm4xx_sram_vector_func))
 KEEP(*(".npcm4xx_sram_vector_func.*"))
+MPU_ALIGN(_npcm4xx_sram_vector_table_size);
 _npcm4xx_sram_vector_func_end = .;
 
 } GROUP_DATA_LINK_IN(RAMABLE_REGION, ROMABLE_REGION)
@@ -54,4 +57,4 @@ _npcm4xx_sram_vector_func_end = .;
 _npcm4xx_sram_vector_table_size = _npcm4xx_sram_vector_func_end - _npcm4xx_sram_vector_start;
 
 /* use for load code from rom to sram */
-_npcm4xx_rom_vector_table_start = LOADADDR(.npcm4xx_sram_vector_table);
+_npcm4xx_rom_vector_table_start = LOADADDR(.npcm4xx_sram_vector_table) + (_npcm4xx_sram_vector_start - _npcm4xx_sram_vector_begin);

@@ -22,13 +22,13 @@ void z_platform_init(void)
 #else
 	inst_scfg->DEVALT10 = NPCM4XX_DEVALT10_CRGPIO_SELECT_SL_CORE;
 #endif
+
+	npcm4xx_sram_vector_table_copy();
 }
 
 static int soc_init(const struct device *dev)
 {
 	ARG_UNUSED(dev);
-
-	npcm4xx_sram_vector_table_copy();
 
 	return 0;
 }
