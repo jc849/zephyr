@@ -41,6 +41,16 @@
 			label = "UART_0";
 		};
 
+		uart1: serial@400c4200 {
+			compatible = "nuvoton,npcm4xx-uart";
+			reg = <0x400c4200 0x100>;
+			interrupts = <76 3>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB2 NPCM4XX_PWDWN_CTL0 6>;
+			pinctrl-0 = <&pinctrl_uart1_default>;
+			status = "disabled";
+			label = "UART_1";
+		};
+
 		twd0: watchdog@400d8000 {
 			compatible = "nuvoton,npcm4xx-watchdog";
 			reg = <0x400d8000 0x1000>;
