@@ -60,6 +60,11 @@
 	current-speed = <115200>;
 };
 
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+};
+
 &peci0 {
 	status = "okay";
 	pinctrl-0 = <&pinctrl_peci0_default>;
