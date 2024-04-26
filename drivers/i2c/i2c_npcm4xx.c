@@ -851,6 +851,9 @@ static int i2c_npcm4xx_combine_msg(const struct device *dev,
 static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 				uint8_t num_msgs, uint16_t addr)
 {
+	uint8_t value;
+	struct i2c_reg *const inst = I2C_INSTANCE(dev);
+
 #if (CONFIG_MASTER_HW_TIMEOUT_EN == 'Y')
 	struct i2c_reg *const inst = I2C_INSTANCE(dev);
 #endif
@@ -861,6 +864,11 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 		return -EBUSY;
 	}
 
+	/* Disable slave addr 1 */
+	value = inst->SMBnADDR1;
+	value &= ~BIT(NPCM4XX_SMBnADDR_SAEN);
+	inst->SMBnADDR1 = value;
+
 	/* prepare data to transfer */
 	data->rx_cnt = 0;
 	data->tx_cnt = 0;
@@ -869,6 +877,10 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 	data->err_code = 0;
 	if (i2c_npcm4xx_combine_msg(dev, msgs, num_msgs) < 0) {
 		i2c_npcm4xx_mutex_unlock(dev);
+		/* Enable slave addr 1 */
+		value = inst->SMBnADDR1;
+		value |= BIT(NPCM4XX_SMBnADDR_SAEN);
+		inst->SMBnADDR1 = value;
 		return -EPROTONOSUPPORT;
 	}
 
@@ -877,6 +889,10 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 		if (num_msgs != 1) {
 			/* Quick command must have one msg */
 			i2c_npcm4xx_mutex_unlock(dev);
+			/* Enable slave addr 1 */
+			value = inst->SMBnADDR1;
+			value |= BIT(NPCM4XX_SMBnADDR_SAEN);
+			inst->SMBnADDR1 = value;
 			return -EPROTONOSUPPORT;
 		}
 		if ((msgs->flags & I2C_MSG_RW_MASK) == I2C_MSG_WRITE) {
@@ -907,6 +923,11 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 	}
 
 	i2c_npcm4xx_mutex_unlock(dev);
+
+	/* Enable slave addr 1 */
+	value = inst->SMBnADDR1;
+	value |= BIT(NPCM4XX_SMBnADDR_SAEN);
+	inst->SMBnADDR1 = value;
 
 	return ret;
 }
