@@ -95,7 +95,7 @@ struct i3c_device_info {
  * @param info the device information
  */
 struct i3c_dev_desc {
-	const struct device *bus;
+	const struct device *master_dev;
 	struct i3c_device_info info;
 	void *priv_data;
 };
