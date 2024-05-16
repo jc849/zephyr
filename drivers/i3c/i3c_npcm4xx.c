@@ -2381,6 +2381,23 @@ int i3c_npcm4xx_slave_register(const struct device *dev, struct i3c_slave_setup 
 	return 0;
 }
 
+int i3c_npcm4xx_slave_set_static_addr(const struct device *dev, uint8_t static_addr)
+{
+        struct i3c_npcm4xx_config *config = DEV_CFG(dev);
+	I3C_PORT_Enum port = config->inst_id;
+	I3C_DEVICE_INFO_t *pDevice;
+	uint32_t sconfig;
+
+	pDevice = &gI3c_dev_node_internal[port];
+	pDevice->staticAddr = static_addr;
+
+	sconfig = I3C_GET_REG_CONFIG(port);
+	SET_FIELD(sconfig, NPCM4XX_I3C_CONFIG_SADDR, static_addr);
+	I3C_SET_REG_CONFIG(port, sconfig);
+
+	return 0;
+}
+
 /*
  * slave send mdb
  */
@@ -2533,6 +2550,28 @@ int i3c_npcm4xx_slave_get_event_enabling(const struct device *dev, uint32_t *eve
 		*event_en |= I3C_SLAVE_EVENT_MR;
 	if ((status & I3C_STATUS_HJDIS_MASK) == 0)
 		*event_en |= I3C_SLAVE_EVENT_HJ;
+
+	return 0;
+}
+
+int i3c_npcm4xx_set_pid_extra_info(const struct device *dev, uint16_t extra_info)
+{
+	struct i3c_npcm4xx_config *config = DEV_CFG(dev);
+	I3C_PORT_Enum port = config->inst_id;
+	I3C_DEVICE_INFO_t *pDevice;
+	uint32_t partno;
+
+	partno = I3C_GET_REG_PARTNO(port);
+
+	SET_FIELD(partno, NPCM4XX_I3C_PARTNO_VENDOR_DEF, extra_info);
+	I3C_SET_REG_PARTNO(port, partno);
+
+	pDevice = &gI3c_dev_node_internal[port];
+	pDevice->partNumber = partno;
+
+	pDevice->pid[4] = ((port & 0x0F) << 4) |
+		((uint8_t)(extra_info >> 8) & 0x0F);
+	pDevice->pid[5] = (uint8_t)extra_info;
 
 	return 0;
 }
