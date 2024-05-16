@@ -233,6 +233,7 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 	}
 
 	ret = pTaskInfo->result;
+	xfer->rx_len = *pTask->pRdLen;
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
 	pBus->busState = I3C_BUS_STATE_IDLE;

@@ -69,6 +69,7 @@ struct i3c_npcm4xx_cmd {
 };
 struct i3c_npcm4xx_xfer {
 	int ret;
+	int rx_len;
 	int ncmds;
 	struct i3c_npcm4xx_cmd *cmds;
 	struct k_sem sem;

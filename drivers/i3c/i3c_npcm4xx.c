@@ -873,8 +873,6 @@ int8_t LoadBaudrateSetting(I3C_TRANSFER_TYPE_Enum type, uint32_t baudrate, uint3
  */
 void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 {
-	bool bBroadcast = FALSE;
-	bool bSlaveFound = FALSE;
 	uint32_t PPBAUD;
 	uint32_t PPLOW;
 	uint32_t ODBAUD;
@@ -884,14 +882,18 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 
 	uint32_t mconfig;
 	I3C_TRANSFER_TASK_t *pTask;
-	I3C_TRANSFER_PROTOCOL_Enum protocol;
 	I3C_TRANSFER_FRAME_t *pFrame;
-	I3C_DEVICE_INFO_SHORT_t *pSlaveDevInfo = NULL;
 
 	if (pTaskInfo == NULL)
 		return;
 
 	mconfig = I3C_GET_REG_MCONFIG(pTaskInfo->Port);
+
+	PPBAUD = (mconfig & I3C_MCONFIG_PPBAUD_MASK) >> I3C_MCONFIG_PPBAUD_SHIFT;
+	PPLOW = (mconfig & I3C_MCONFIG_PPLOW_MASK) >> I3C_MCONFIG_PPLOW_SHIFT;
+	ODBAUD = (mconfig & I3C_MCONFIG_ODBAUD_MASK) >> I3C_MCONFIG_ODBAUD_SHIFT;
+	I2CBAUD = (mconfig & I3C_MCONFIG_I2CBAUD_MASK) >> I3C_MCONFIG_I2CBAUD_SHIFT;
+
 	mconfig &= ~(I3C_MCONFIG_I2CBAUD_MASK | I3C_MCONFIG_ODHPP_MASK | I3C_MCONFIG_ODBAUD_MASK
 		| I3C_MCONFIG_PPLOW_MASK | I3C_MCONFIG_PPBAUD_MASK);
 
@@ -901,49 +903,131 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 	if (pTask->frame_idx != 0)
 		return;
 
-	protocol = pTask->protocol;
 	pFrame = &(pTask->pFrameList[pTask->frame_idx]);
 
-	bBroadcast = (pTask->address == I3C_BROADCAST_ADDR)
-		|| (protocol == I3C_TRANSFER_PROTOCOL_CCCb)
-		|| (protocol == I3C_TRANSFER_PROTOCOL_CCCw)
-		|| (protocol == I3C_TRANSFER_PROTOCOL_CCCr)
-		|| (protocol == I3C_TRANSFER_PROTOCOL_ENTDAA)
-		|| (protocol == I3C_TRANSFER_PROTOCOL_EVENT);
-
-	if (bBroadcast && (pFrame->type != I3C_TRANSFER_TYPE_I2C)
-		&& ((pFrame->flag & I3C_TRANSFER_REPEAT_START) == 0)) {
+	// update by frame setting
+	if ((pTask->frame_idx == 0) && ((pFrame->flag & I3C_TRANSFER_REPEAT_START) == 0) &&
+			(pFrame->type != I3C_TRANSFER_TYPE_I2C) && (pFrame->address == 0x7E)) {
 		ODHPP = 0;
 	}
 
-	if (!bBroadcast) {
-		pSlaveDevInfo = pMasterDevice->pOwner->pDevList;
-		while (pSlaveDevInfo != NULL) {
-			if (pSlaveDevInfo->attr.b.runI3C) {
-				if (pSlaveDevInfo->dynamicAddr == pTask->address)
-					break;
-			} else {
-				if (pSlaveDevInfo->staticAddr == pTask->address)
-					break;
-			}
-
-			pSlaveDevInfo = pSlaveDevInfo->pNextDev;
+	if (pFrame->type == I3C_TRANSFER_TYPE_I2C) {
+		switch(pFrame->baudrate) {
+			case I3C_TRANSFER_SPEED_I2C_1MHZ:
+				if (APB3_CLK == 96000000) { // 926 - 922 KHz
+					PPBAUD = 3;
+					PPLOW = 0;
+					ODBAUD = 12;
+					I2CBAUD = 0;
+				} else if (APB3_CLK == 48000000) { // 878 - 880 KHz
+					PPBAUD = 2;
+					PPLOW = 0;
+					ODBAUD = 8;
+					I2CBAUD = 0;
+				}
+				break;
+			case I3C_TRANSFER_SPEED_I2C_400KHZ:
+				if (APB3_CLK == 96000000) { // 371 - 369 KHz
+					PPBAUD = 9;
+					PPLOW = 0;
+					ODBAUD = 12;
+					I2CBAUD = 0;
+				} else if (APB3_CLK == 48000000) { // 340 - 338 KHz
+					PPBAUD = 9;
+					PPLOW = 0;
+					ODBAUD = 6;
+					I2CBAUD = 0;
+				}
+				break;
+			default:
+				if (APB3_CLK == 96000000) { // 98 - 96 KHz
+					PPBAUD = 15;
+					PPLOW = 0;
+					ODBAUD = 30;
+					I2CBAUD = 0;
+				} else if (APB3_CLK == 48000000) { // 98 - 97 KHz
+					PPBAUD = 2;
+					PPLOW = 0;
+					ODBAUD = 80;
+					I2CBAUD = 0;
+				}
+				break;
 		}
-
-		bSlaveFound = (pSlaveDevInfo != NULL);
 	}
-
-	if (bBroadcast) {
-		/* Can't make sure all slave device run in i3c mode ?*/
-		/* PP=4MHz, OD Freq = 1MHz for I3C device before get dynamic address */
-		PPBAUD = 5;
-		PPLOW = 0;
-		ODBAUD = 3;
-		I2CBAUD = 8;
-	} else if (bSlaveFound) {
-		if ((pSlaveDevInfo->attr.b.runI3C) == (pFrame->type != I3C_TRANSFER_TYPE_I2C)) {
-			LoadBaudrateSetting(pFrame->type, pFrame->baudrate, &PPBAUD, &PPLOW,
-			&ODBAUD, &I2CBAUD);
+	else
+	{
+		switch(pFrame->baudrate) {
+			case I3C_TRANSFER_SPEED_SDR_12p5MHZ:
+				// I3C PP=12.5MHz, OD Freq = 1MHz if ODHPP = 0
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 2;
+					PPLOW = 2;
+					ODBAUD = 15;
+				} else if (APB3_CLK == 48000000) {
+					PPBAUD = 0;
+					PPLOW = 2;
+					ODBAUD = 23;
+				}
+				break;
+			case I3C_TRANSFER_SPEED_SDR_8MHZ:
+				// I3C PP=8MHz, OD Freq = 1MHz if ODHPP = 0
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 2;
+					PPLOW = 6;
+					ODBAUD = 15;
+				} else if (APB3_CLK == 48000000) {
+					PPBAUD = 0;
+					PPLOW = 4;
+					ODBAUD = 23;
+				}
+				break;
+			case I3C_TRANSFER_SPEED_SDR_6MHZ:
+				// I3C PP=6MHz, OD Freq = 1MHz if ODHPP = 0
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 2;
+					PPLOW = 10;
+					ODBAUD = 15;
+				} else if (APB3_CLK == 48000000) {
+					PPBAUD = 1;
+					PPLOW = 4;
+					ODBAUD = 11;
+				}
+				break;
+			case I3C_TRANSFER_SPEED_SDR_4MHZ:
+				// I3C PP=4MHz, OD Freq = 1MHz if ODHPP = 0
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 5;
+					PPLOW = 12;
+					ODBAUD = 7;
+                                } else if (APB3_CLK == 48000000) {
+					PPBAUD = 0;
+					PPLOW = 10;
+					ODBAUD = 23;
+                                }
+				break;
+			case I3C_TRANSFER_SPEED_SDR_2MHZ:
+				// I3C PP=2MHz, OD Freq = 1MHz if ODHPP = 0
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 15;
+					PPLOW = 15;
+					ODBAUD = 2;
+				} else if (APB3_CLK == 48000000) {
+					PPBAUD = 4;
+					PPLOW = 14;
+					ODBAUD = 4;
+				}
+				break;
+			default:
+				if (APB3_CLK == 96000000) {
+					PPBAUD = 15;
+					PPLOW = 15;
+					ODBAUD = 5;
+				} else if (APB3_CLK == 48000000) {
+					PPBAUD = 15;
+					PPLOW = 15;
+					ODBAUD = 1;
+				}
+				break;
 		}
 	}
 
@@ -2940,7 +3024,7 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_t *pMaster;
-	I3C_DEVICE_INFO_SHORT_t *pSlaveDev;
+	struct i3c_dev_desc *pSlaveDev;
 
 	if (!nxfers) {
 		return 0;
@@ -2962,20 +3046,10 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 	}
 
 	Addr = obj->dev_addr_tbl[pos];
+	pSlaveDev = obj->dev_descs[pos];
 
-	/* find device node */
-	pSlaveDev = pBus->pDevList;
-	while (pSlaveDev != NULL) {
-		if ((pSlaveDev->dynamicAddr == Addr) && (pSlaveDev->attr.b.runI3C == TRUE))
-			break;
-		if ((pSlaveDev->staticAddr == Addr) && (pSlaveDev->attr.b.runI3C == FALSE))
-			break;
-		pSlaveDev = pSlaveDev->pNextDev;
-	}
-
-	if (pSlaveDev == NULL) {
+	if (pSlaveDev == NULL)
 		return DEVICE_COUNT_MAX;
-	}
 
 	cmds = (struct i3c_npcm4xx_cmd *)k_calloc(sizeof(struct i3c_npcm4xx_cmd), nxfers);
 	__ASSERT(cmds, "failed to allocat cmd\n");
@@ -3015,8 +3089,8 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 	for (i = 0; i < nxfers; i++) {
 		bWnR = (((i + 1) < nxfers) && (xfers[i].rnw == 0) && (xfers[i + 1].rnw == 1));
 
-		Baudrate = (pSlaveDev->attr.b.runI3C) ? I3C_TRANSFER_SPEED_SDR_12p5MHZ :
-			I3C_TRANSFER_SPEED_I2C_100KHZ;
+		Baudrate = (pSlaveDev->info.i2c_mode) ? I3C_TRANSFER_SPEED_I2C_100KHZ :
+			I3C_TRANSFER_SPEED_SDR_12p5MHZ;
 
 		/* Try to slow down for the fly line */
 		/* Baudrate = (pSlaveDev->attr.b.runI3C) ? I3C_TRANSFER_SPEED_SDR_6MHZ : */
@@ -3024,22 +3098,22 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 
 		if (!bWnR) {
 			if (xfers[i].rnw) {
-				Protocol = (pSlaveDev->attr.b.runI3C) ?
-					I3C_TRANSFER_PROTOCOL_I3C_READ :
-					I3C_TRANSFER_PROTOCOL_I2C_READ;
+				Protocol = (pSlaveDev->info.i2c_mode) ?
+					I3C_TRANSFER_PROTOCOL_I2C_READ :
+					I3C_TRANSFER_PROTOCOL_I3C_READ;
 				RxBuf = xfers[i].data.in;
 				RxLen = xfers[i].len;
 			} else {
-				Protocol = (pSlaveDev->attr.b.runI3C) ?
-					I3C_TRANSFER_PROTOCOL_I3C_WRITE :
-					I3C_TRANSFER_PROTOCOL_I2C_WRITE;
+				Protocol = (pSlaveDev->info.i2c_mode) ?
+					I3C_TRANSFER_PROTOCOL_I2C_WRITE :
+					I3C_TRANSFER_PROTOCOL_I3C_WRITE;
 				TxBuf = xfers[i].data.out;
 				TxLen = xfers[i].len;
 			}
 		} else {
-			Protocol = (pSlaveDev->attr.b.runI3C) ?
-				I3C_TRANSFER_PROTOCOL_I3C_WRITEnREAD :
-				I3C_TRANSFER_PROTOCOL_I2C_WRITEnREAD;
+			Protocol = (pSlaveDev->info.i2c_mode) ?
+				I3C_TRANSFER_PROTOCOL_I2C_WRITEnREAD :
+				I3C_TRANSFER_PROTOCOL_I3C_WRITEnREAD;
 			TxBuf = xfers[i].data.out;
 			TxLen = xfers[i].len;
 			RxBuf = xfers[i + 1].data.in;
@@ -3062,6 +3136,9 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 			if (bWnR) {
 				i++;
 			}
+
+			if (xfers[i].rnw == 1)
+				xfers[i].len = xfer.rx_len;
 		}
 	}
 
