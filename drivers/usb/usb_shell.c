@@ -130,7 +130,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(m_sub_usb,
 	SHELL_CMD(enable, NULL, SHELL_HELP_USB_ENABLE, cmd_usb_enable),
 	SHELL_CMD(clear, NULL, SHELL_HELP_USB_CLEAR, cmd_usb_clear),
 	SHELL_CMD_ARG(print, NULL, SHELL_HELP_USB_PRINT, cmd_usb_print, 2, 0),
-	SHELL_CMD_ARG(wait, NULL, SHELL_HELP_USB_WAIT, cmd_usb_wait, 2, 0)
+	SHELL_CMD_ARG(wait, NULL, SHELL_HELP_USB_WAIT, cmd_usb_wait, 2, 0),
+	SHELL_SUBCMD_SET_END
 );
 
 SHELL_CMD_REGISTER(usb, &m_sub_usb, SHELL_HELP_SHELL, NULL);
