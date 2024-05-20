@@ -12,7 +12,6 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/i2c/i2c.h>
 #include <dt-bindings/pwm/pwm.h>
-#include <dt-bindings/sensor/npcx_tach.h>
 #include <freq.h>
 
 /* NPCM4XX series mapping table between MIWU wui bits and source device */
@@ -36,14 +35,6 @@
 	};
 
 	soc {
-		bbram: bb-ram@400af000 {
-			compatible = "nuvoton,npcx-bbram";
-			reg = <0x400af000 0x80
-			       0x400af100 0x1>;
-			reg-names = "memory", "status";
-			label = "BBRAM";
-		};
-
 		pcc: clock-controller@4000d000 {
 			compatible = "nuvoton,npcm4xx-pcc";
 			/* Cells for bus type, clock control reg and bit */
@@ -481,22 +472,6 @@
 			status = "disabled";
 		};
 
-		tach1: tach@400e1000 {
-			compatible = "nuvoton,npcx-tach";
-			reg = <0x400e1000 0x2000>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL1 5>;
-			label = "TACH_1";
-			status = "disabled";
-		};
-
-		tach2: tach@400e3000 {
-			compatible = "nuvoton,npcx-tach";
-			reg = <0x400e3000 0x2000>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_LFCLK NPCM4XX_PWDWN_CTL1 6>;
-			label = "TACH_2";
-			status = "disabled";
-		};
-
 		spi_spim0: spi@40017000 {
 			compatible = "nuvoton,npcm4xx-spi-spim";
 			#address-cells = <1>;
@@ -657,15 +632,6 @@
 		 * 'reg' prop. Please overwrite 'status' prop. to 'okay' if you
 		 * want to switch the interface from io to specific peripheral.
 		 */
-	};
-
-	soc-id {
-		compatible = "nuvoton,npcx-soc-id";
-		family-id = <0x20>;
-	};
-
-	booter-variant {
-		compatible = "nuvoton,npcx-booter-variant";
 	};
 };
 
