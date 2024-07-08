@@ -2182,7 +2182,7 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 		pBus = pDevice->pOwner;
 
 		/* assign dev as slave's bus controller */
-		slave->master_dev = dev;
+		slave->bus = dev;
 
 		/* find a free position from master's hw_dat_free_pos */
 		for (i = 0; i < DEVICE_COUNT_MAX; i++) {
@@ -2232,13 +2232,13 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 		pBus = pDeviceSlv->pOwner;
 
 		/* bus owner outside the devicetree */
-		slave->master_dev = NULL;
+		slave->bus = NULL;
 	}
 
 	if (pBus == NULL)
 		return -ENXIO;
 
-	if (slave->master_dev == NULL)
+	if (slave->bus == NULL)
 		return 0;
 
 	if ((slave->info.static_addr == 0x6A) || (slave->info.static_addr == 0x6B)) {
@@ -2368,7 +2368,7 @@ int i3c_npcm4xx_master_request_ibi(struct i3c_dev_desc *i3cdev, struct i3c_ibi_c
 
 int i3c_npcm4xx_master_enable_ibi(struct i3c_dev_desc *i3cdev)
 {
-	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->master_dev);
+	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->bus);
 	/* struct i3c_register_s *i3c_register = obj->config->base; */
 	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(i3cdev);
 	/* union i3c_dev_addr_tbl_s dat; */
@@ -2447,7 +2447,7 @@ int i3c_npcm4xx_master_enable_ibi(struct i3c_dev_desc *i3cdev)
 	 * i3c_register->intr_signal_en.value = intr_reg.value;
 	 */
 
-	return i3c_master_send_enec(i3cdev->master_dev, i3cdev->info.dynamic_addr, I3C_CCC_EVT_SIR);
+	return i3c_master_send_enec(i3cdev->bus, i3cdev->info.dynamic_addr, I3C_CCC_EVT_SIR);
 }
 
 int i3c_npcm4xx_slave_register(const struct device *dev, struct i3c_slave_setup *slave_data)
@@ -2999,7 +2999,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xfer *xfers,
 	int nxfers)
 {
-	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->master_dev);
+	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->bus);
 	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(i3cdev);
 	struct i3c_npcm4xx_xfer xfer;
 	struct i3c_npcm4xx_cmd *cmds, *cmd;
@@ -3156,10 +3156,10 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	uint16_t rxlen = 63;
 	uint8_t RxBuf_expected[63];
 
-	config = DEV_CFG(i3cdev->master_dev);
+	config = DEV_CFG(i3cdev->bus);
 	port = config->inst_id;
 
-	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->master_dev);
+	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->bus);
 	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(i3cdev);
 	struct i3c_npcm4xx_xfer xfer;
 	struct i3c_npcm4xx_cmd cmd;
