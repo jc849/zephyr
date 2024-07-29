@@ -2603,6 +2603,19 @@ int i3c_npcm4xx_slave_send_sir(const struct device *dev, struct i3c_ibi_payload 
 	return -ENOSYS;
 }
 
+int i3c_npcm4xx_slave_hj_req(const struct device *dev)
+{
+	struct i3c_npcm4xx_config *config = DEV_CFG(dev);
+	I3C_PORT_Enum port;
+
+	port = config->inst_id;
+	I3C_Slave_Insert_Task_HotJoin(port);
+
+	k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
+
+	return 0;
+}
+
 int i3c_npcm4xx_slave_get_dynamic_addr(const struct device *dev, uint8_t *dynamic_addr)
 {
 	struct i3c_npcm4xx_config *config = DEV_CFG(dev);

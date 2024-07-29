@@ -195,6 +195,14 @@ int i3c_npcm4xx_slave_get_event_enabling(const struct device *dev, uint32_t *eve
 int i3c_npcm4xx_slave_send_sir(const struct device *dev, struct i3c_ibi_payload *payload);
 
 /**
+ * @brief slave device sends Hot-join request
+ *
+ * @param dev the I3C controller in slave mode
+ * @return int 0 = success
+ */
+int i3c_npcm4xx_slave_hj_req(const struct device *dev);
+
+/**
  * @brief set the static address of the i3c controller in slave mode
  * @param dev the I3C controller in slave mode
  * @param static_addr the new static address
@@ -249,6 +257,7 @@ int i3c_master_send_getbcr(const struct device *master, uint8_t addr, uint8_t *b
 #define i3c_slave_register		i3c_npcm4xx_slave_register
 #define i3c_slave_set_static_addr	i3c_npcm4xx_slave_set_static_addr
 #define i3c_slave_send_sir		i3c_npcm4xx_slave_send_sir
+#define i3c_slave_hj_req		i3c_npcm4xx_slave_hj_req
 #define i3c_slave_put_read_data		i3c_npcm4xx_slave_put_read_data
 #define i3c_slave_get_dynamic_addr	i3c_npcm4xx_slave_get_dynamic_addr
 #define i3c_slave_get_event_enabling	i3c_npcm4xx_slave_get_event_enabling

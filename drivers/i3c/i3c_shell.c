@@ -63,6 +63,19 @@ static uint32_t args_to_wdata(char *arg, uint8_t *buf)
 	return len;
 }
 
+static const char hj_req_helper[] = "i3c hj_req <dev>";
+static int cmd_hj_req(const struct shell *shell, size_t argc, char **argv)
+{
+	const struct device *dev;
+
+	dev = device_get_binding(argv[1]);
+	if (!dev) {
+		shell_error(shell, "I3C: Device %s not found.", argv[1]);
+		return -ENODEV;
+	}
+	return i3c_slave_hj_req(dev);
+}
+
 static const char priv_xfer_helper[] = "i3c xfer <dev> -a <addr> -w <wdata> -r <read length>";
 static int cmd_priv_xfer(const struct shell *shell, size_t argc, char **argv)
 {
@@ -586,6 +599,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_i3c_cmds,
 	SHELL_CMD(attach, &dsub_device_name, attach_helper, cmd_attach),
 	SHELL_CMD(ccc, &dsub_device_name, send_ccc_helper, cmd_send_ccc),
 	SHELL_CMD(xfer, &dsub_device_name, priv_xfer_helper, cmd_priv_xfer),
+	SHELL_CMD(hj_req, &dsub_device_name, hj_req_helper, cmd_hj_req),
 #ifdef CONFIG_I3C_SLAVE_MQUEUE
 	SHELL_CMD(smq, &dsub_device_name, smq_xfer_helper, cmd_smq_xfer),
 	SHELL_CMD(stress, &dsub_device_name, do_stress_helper, cmd_do_stress),
