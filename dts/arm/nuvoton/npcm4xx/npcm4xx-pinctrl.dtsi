@@ -50,4 +50,5 @@
 	pinctrl_usbd_phy_xclk: usbd_phy_xclk {};
 	pinctrl_sgpio0_default: sgpio0_default {};
 	pinctrl_sgpio1_default: sgpio1_default {};
+	pinctrl_emac_default: emac_default{};
 };

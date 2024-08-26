@@ -1,0 +1,18 @@
+# Copyright (c) 2024 Nuvoton Technology Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+description: NUVOTON NPCM4XX Ethernet
+
+compatible: "nuvoton,npcm4xx-ethernet"
+
+include: ["ethernet.yaml", "nuvoton-pinctrl.yaml"]
+
+properties:
+    reg:
+      required: true
+    interrupts:
+      required: true
+    pinctrl-0:
+        type: phandles
+        required: true
+        description: configurations of pinmux controllers

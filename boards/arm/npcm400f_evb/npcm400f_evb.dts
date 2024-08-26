@@ -233,7 +233,7 @@
 	tdi-gpios = <&gpio0 1 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
 	tdo-gpios = <&gpio0 2 (GPIO_ACTIVE_HIGH)>;
 	tms-gpios = <&gpio0 3 (GPIO_PUSH_PULL | GPIO_ACTIVE_HIGH)>;
-	status = "okay";
+	status = "disabled";
 };
 
 &i3c4 {
@@ -607,4 +607,8 @@
 		label = "SGPIO1_f";
 		pin-offset = <120>;
 	};
+};
+
+&emac {
+	status = "okay";
 };

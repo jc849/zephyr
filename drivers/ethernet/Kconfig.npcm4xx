@@ -1,0 +1,71 @@
+# Nuvoton Ethernet driver configuration options
+
+# SPDX-License-Identifier: Apache-2.0
+
+DT_COMPAT_NUVOTON_NPCM4XX_ETHERNET := nuvoton,npcm4xx-ethernet
+
+config ETH_NPCM4XX
+	bool "Nuvoton NPCM4XX Ethernet driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the ethernet driver for NPCM4XX family of
+	  processors.
+	  Say y if you wish to use ethernet on NPCM4XX MCU.
+
+config ETH_NPCM4XX_RX_THREAD_STACK_SIZE
+	int "RX thread stack size"
+	default 4096
+	help
+	  RX thread stack size
+
+config ETH_NPCM4XX_RX_THREAD_PRIO
+	int "RX thread priority"
+	default 3
+	help
+	  RX thread priority
+
+config ETH_NPCM4XX_PHY_ADDRESS
+	int "Phy address"
+	default 1
+	help
+	  The phy address to use.
+
+config ETH_NPCM4XX_RANDOM_MAC
+	bool "Random MAC address"
+	depends on ENTROPY_GENERATOR
+	default y
+	help
+	  Generate a random MAC address dynamically.
+
+if !ETH_NPCM4XX_RANDOM_MAC
+
+config ETH_NPCM4XX_MAC3
+	hex "MAC Address Byte 3"
+	default 0
+	range 0 0xff
+	help
+	  This is the byte 3 of the MAC address.
+
+config ETH_NPCM4XX_MAC4
+	hex "MAC Address Byte 4"
+	default 0
+	range 0 0xff
+	help
+	  This is the byte 4 of the MAC address.
+
+config ETH_NPCM4XX_MAC5
+	hex "MAC Address Byte 5"
+	default 0
+	range 0 0xff
+	help
+	  This is the byte 5 of the MAC address.
+
+endif # !ETH_NPCM4XX_RANDOM_MAC
+
+config ETH_NPCM4XX_CARRIER_CHECK_RX_IDLE_TIMEOUT_MS
+	int "Carrier check timeout period (ms)"
+	default 500
+	range 100 30000
+	help
+	  Set the RX idle timeout period in milliseconds after which the
+	  PHY's carrier status is re-evaluated.

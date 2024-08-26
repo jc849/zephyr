@@ -625,6 +625,15 @@
 			status = "disabled";
 		};
 
+		emac: ethernet@40018000 {
+			compatible = "nuvoton,npcm4xx-ethernet";
+			reg = <0x40018000 0x2000>;
+			label = "ETH";
+			pinctrl-0 = <&pinctrl_emac_default>;
+			interrupts = <36 3>;
+			status = "disabled";
+		};
+
 	};
 
 	soc-if {
