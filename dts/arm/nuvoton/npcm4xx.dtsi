@@ -35,6 +35,22 @@
 	};
 
 	soc {
+
+		shm: shm@40010000 {
+			compatible = "nuvoton,npcm4xx-shm";
+			/* First reg region is System Configuration Device */
+			/* Second reg region is System Glue Device */
+			reg = <0x40010000 0x100>;
+			reg-names = "shm";
+		};
+
+		snoop: snoop {
+			compatible = "nuvoton,npcm4xx-snoop";
+			interrupts = <10 3>;
+			label = "SNOOP";
+			status = "disabled";
+		};
+
 		pcc: clock-controller@4000d000 {
 			compatible = "nuvoton,npcm4xx-pcc";
 			/* Cells for bus type, clock control reg and bit */

@@ -9,4 +9,6 @@ source "drivers/misc/ft8xx/Kconfig"
 
 source "drivers/misc/aspeed/Kconfig"
 
+source "drivers/misc/npcm/Kconfig"
+
 endmenu

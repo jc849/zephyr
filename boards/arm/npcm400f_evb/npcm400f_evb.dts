@@ -616,3 +616,7 @@
 &emac {
 	status = "okay";
 };
+
+&snoop {
+	status = "okay";
+};

@@ -2,3 +2,4 @@
 
 add_subdirectory_ifdef(CONFIG_FT800 ft8xx)
 add_subdirectory_ifdef(CONFIG_SOC_FAMILY_ASPEED aspeed)
+add_subdirectory_ifdef(CONFIG_SOC_FAMILY_NPCM4XX npcm)

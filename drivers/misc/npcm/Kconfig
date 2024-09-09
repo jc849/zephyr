@@ -1,0 +1,13 @@
+# NPCM misc. driver options
+
+# Copyright (c) 2024 Nuvoton
+# SPDX-License-Identifier: Apache-2.0
+
+config SNOOP_NPCM
+	bool "NPCM SNOOP driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the snoop driver for NPCM
+	  SoCs.
+	  Say y if you wish to use P80 data byte snooping
+	  on NPCM SMC.
