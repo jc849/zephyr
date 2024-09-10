@@ -94,6 +94,8 @@ struct i3c_npcm4xx_config {
 	int dma_tx_channel;
 	int dma_rx_channel;
 	struct i3c_reg *base;
+	uintptr_t pmc_base;
+	uint32_t irq;
 	bool slave;
 	bool secondary;
 	uint32_t i3c_scl_hz;

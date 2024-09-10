@@ -1745,6 +1745,40 @@ I3C_ErrCode_Enum hal_I3C_Stop(I3C_PORT_Enum port)
 	return I3C_ERR_OK;
 }
 
+static void i3c_npcm4xx_reset(I3C_PORT_Enum port)
+{
+	struct i3c_npcm4xx_obj *obj;
+	struct i3c_npcm4xx_config *config;
+	struct pmc_reg *pmc_base;
+	uint8_t sw_rst;
+
+	obj = gObj[port];
+	config = obj->config;
+
+	/* disable i3c interrupt */
+	irq_disable(config->irq);
+
+	pmc_base = (struct pmc_reg *)config->pmc_base;
+
+	/* save reset value */
+	sw_rst = pmc_base->SW_RST1;
+
+	/* trigger sw reset */
+	pmc_base->SW_RST1 = (sw_rst | BIT(port));
+
+	/* after reset done, partno become zero */
+	while(I3C_GET_REG_PARTNO(port));
+
+	/* restore reset value */
+	pmc_base->SW_RST1 = sw_rst;
+
+	/* re-init device configuration */
+	hal_I3C_Config_Device(api_I3C_Get_INODE(port));
+
+	/* enable irq interrupt */
+	irq_enable(config->irq);
+}
+
 I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_PORT_Enum port;
@@ -4452,7 +4486,9 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		.busno = DT_INST_PROP_OR(n, busno, I3C_BUS_COUNT_MAX),\
 		.i2c_scl_hz = DT_INST_PROP_OR(n, i2c_scl_hz, 0),\
 		.i3c_scl_hz = DT_INST_PROP_OR(n, i3c_scl_hz, 0),\
-		.base = (struct i3c_reg *)DT_INST_REG_ADDR(n),\
+		.base = (struct i3c_reg *)DT_INST_REG_ADDR_BY_NAME(n, i3c),\
+		.pmc_base = DT_INST_REG_ADDR_BY_NAME(n, pmc),\
+		.irq = DT_INST_IRQN(n),\
 	};\
 	static struct i3c_npcm4xx_obj i3c_npcm4xx_obj##n;\
 	DEVICE_DT_INST_DEFINE(n, &i3c_npcm4xx_config_func_##n, NULL, &i3c_npcm4xx_obj##n,\
