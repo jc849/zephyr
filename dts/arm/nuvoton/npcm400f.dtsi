@@ -173,7 +173,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004000 0x200>;
+			reg = <0x40004000 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <64 3>;
 			instance-id = <0>;
 			status = "disabled";
@@ -184,7 +186,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004200 0x200>;
+			reg = <0x40004200 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <65 3>;
 			instance-id = <1>;
 			status = "disabled";
@@ -195,7 +199,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004400 0x200>;
+			reg = <0x40004400 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <66 3>;
 			instance-id = <2>;
 			status = "disabled";
@@ -206,7 +212,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004600 0x200>;
+			reg = <0x40004600 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <67 3>;
 			instance-id = <3>;
 			status = "disabled";
@@ -217,7 +225,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004800 0x200>;
+			reg = <0x40004800 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <68 3>;
 			instance-id = <4>;
 			status = "disabled";
@@ -228,7 +238,9 @@
 			compatible = "nuvoton,npcm4xx-i3c";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0x40004a00 0x200>;
+			reg = <0x40004a00 0x200
+			       0x4000d000 0x20>;
+			reg-names = "i3c", "pmc";
 			interrupts = <69 3>;
 			instance-id = <5>;
 			status = "disabled";

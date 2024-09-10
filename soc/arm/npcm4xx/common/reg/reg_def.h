@@ -116,19 +116,38 @@ struct pmc_reg {
 	volatile uint8_t DISIDL_CTL;
 	/* 0x005: Disable in Idle Control 1 */
 	volatile uint8_t DISIDL_CTL1;
-	volatile uint8_t reserved2[2];
-	/* 0x008 - 0D: Power-Down Control 1 - 6 */
-	volatile uint8_t PWDWN_CTL1[6];
-	volatile uint8_t reserved3[18];
-	/* 0x020 - 21: Power-Down Control 1 - 2 */
-	volatile uint8_t RAM_PD[2];
-	volatile uint8_t reserved4[2];
-	/* 0x024: Power-Down Control 7 */
-	volatile uint8_t PWDWN_CTL7[1];
+	volatile uint8_t reserved2;
+	/* 0x007: Power-Down Control 0 */
+	volatile uint8_t PWDWN_CTL0;
+	/* 0x008: Power-Down Control 1 */
+	volatile uint8_t PWDWN_CTL1;
+	/* 0x009: Power-Down Control 2 */
+	volatile uint8_t PWDWN_CTL2;
+	/* 0x00A: Power-Down Control 3 */
+	volatile uint8_t PWDWN_CTL3;
+	/* 0x00B: Power-Down Control 4 */
+	volatile uint8_t PWDWN_CTL4;
+	/* 0x00C: Power-Down Control 5 */
+	volatile uint8_t PWDWN_CTL5;
+	/* 0x00D: Power-Down Control 6 */
+	volatile uint8_t PWDWN_CTL6;
+	volatile uint8_t reserved3[3];
+	/* 0x011: RAM Power-Down Control 1 */
+	volatile uint8_t RAM_PD1;
+	/* 0x012: RAM Power-Down Control 2 */
+	volatile uint8_t RAM_PD2;
+	/* 0x013: Software Reset 1 */
+	volatile uint8_t SW_RST1;
+	/* 0x014: RAM Power-Down Control 3  */
+	volatile uint8_t RAM_PD3;
+	/* 0x015: Power-Down Control 7 */
+	volatile uint8_t PWDWN_CTL7;
+	/* 0x016: Power-Down Control 8 */
+	volatile uint8_t PWDWN_CTL8;
 };
 
 /* PMC multi-registers */
-#define NPCM4XX_PWDWN_CTL_OFFSET(n) (((n) < 7) ? (0x007 + n) : (0x024 + (n - 7)))
+#define NPCM4XX_PWDWN_CTL_OFFSET(n) (((n) < 7) ? (0x007 + n) : (0x015 + (n - 7)))
 #define NPCM4XX_PWDWN_CTL(base, n) (*(volatile uint8_t *)(base + \
 						NPCM4XX_PWDWN_CTL_OFFSET(n)))
 
