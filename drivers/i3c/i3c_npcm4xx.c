@@ -34,6 +34,9 @@ static struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 #define NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE 1024
 #define NPCM4XX_I3C_WORK_QUEUE_PRIORITY -2
 
+#define NPCM4XX_I3C_HJ_RETRY_MAX 0x5
+#define NPCM4XX_I3C_HJ_CHECK_MAX 0x3
+
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area0, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
 #endif
@@ -1826,7 +1829,7 @@ I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 		}
 	}
 
-	ctrl |= I3C_CTRL_EVENT(1);
+	ctrl |= I3C_CTRL_EVENT(I3C_CTRL_EVENT_IBI);
 	I3C_SET_REG_CTRL(port, ctrl);
 
 	return I3C_ERR_OK;
@@ -1862,7 +1865,7 @@ I3C_ErrCode_Enum hal_I3C_Start_Master_Request(I3C_TASK_INFO_t *pTaskInfo)
 	pDevice->rxOffset = 0;
 
 	ctrl = I3C_GET_REG_CTRL(port);
-	ctrl |= I3C_CTRL_EVENT(2);
+	ctrl |= I3C_CTRL_EVENT(I3C_CTRL_EVENT_MstReq);
 	I3C_SET_REG_CTRL(port, ctrl);
 	return I3C_ERR_OK;
 }
@@ -1871,20 +1874,60 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
+	I3C_TRANSFER_TASK_t *pTask;
+	I3C_ErrCode_Enum ret = I3C_ERR_OK;
+	struct i3c_npcm4xx_obj *obj;
 	__u8 pdma_ch;
 	uint32_t ctrl;
+	uint8_t retry;
+	uint8_t check_count;
 
-	if (pTaskInfo == NULL)
-		return I3C_ERR_PARAMETER_INVALID;
+	if (pTaskInfo == NULL) {
+		LOG_ERR("HotJoin: pTaskInfo NULL\n");
+		ret = I3C_ERR_PARAMETER_INVALID;
+		goto hj_exit;
+	}
 
 	port = pTaskInfo->Port;
-	if (port >= I3C_PORT_MAX)
-		return I3C_ERR_PARAMETER_INVALID;
+	if (port >= I3C_PORT_MAX) {
+		LOG_ERR("HotJoin: Port not valid = 0x%x\n", port);
+		ret = I3C_ERR_PARAMETER_INVALID;
+		goto hj_exit;
+	}
+
+	obj = gObj[port];
+
+	pTask = pTaskInfo->pTask;
+
+	/* check dynamic address already present or not */
+	if (I3C_Update_Dynamic_Address(port)) {
+		LOG_WRN("HotJoin: DA present before generate Hot-Join\n");
+		if (pTask) {
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+		}
+
+		ret = I3C_ERR_OK;
+		goto hj_exit;
+	}
+
+	/* check daa is under progress or not */
+	if (I3C_GET_REG_STATUS(port) & I3C_STATUS_STDAA_MASK) {
+		LOG_WRN("HotJoin: STDAA work in progress.\n");
+		if (pTask) {
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+		}
+
+		ret = I3C_ERR_OK;
+		goto hj_exit;
+	}
 
 	pDevice = api_I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
-		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
-		return I3C_ERR_PARAMETER_INVALID;
+		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER))) {
+		LOG_ERR("HotJoin: Only support slave or secondary master\n");
+		ret = I3C_ERR_PARAMETER_INVALID;
+		goto hj_exit;
+	}
 
 	pdma_ch = Get_PDMA_Channel(port, I3C_TRANSFER_DIR_WRITE);
 	PDMA->CHCTL &= ~MaskBit(PDMA_OFFSET + pdma_ch);
@@ -1898,12 +1941,88 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 
 	ctrl = I3C_GET_REG_CTRL(port);
 	ctrl &= ~(I3C_CTRL_IBIDATA_MASK | I3C_CTRL_EXTDATA_MASK | I3C_CTRL_EVENT_MASK);
-	ctrl |= I3C_CTRL_EVENT(3);
+	ctrl |= I3C_CTRL_EVENT(I3C_CTRL_EVENT_HotJoin);
 
-	I3C_SET_REG_CONFIG(port, I3C_GET_REG_CONFIG(port) & ~I3C_CONFIG_SLVENA_MASK);
+	/* initial retry and check count */
+        retry = 0x0;
+        check_count = 0x0;
+
+hj_retry:
+	/* wait util bus idle */
+	while(I3C_GET_REG_STATUS(port) & I3C_STATUS_STNOTSTOP_MASK);
+
+	/* if daa already done, exit hot-join progress */
+	if (I3C_Update_Dynamic_Address(port)) {
+		LOG_WRN("HotJoin: Bus BUS idle and DA present\n");
+		if (pTask) {
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+		}
+
+		ret = I3C_ERR_OK;
+		goto hj_exit;
+	}
+
+	/* HotJoin only could generate when bus idle, otherwise hw may stuck. */
 	I3C_SET_REG_CTRL(port, ctrl);
 	I3C_SET_REG_CONFIG(port, I3C_GET_REG_CONFIG(port) | I3C_CONFIG_SLVENA_MASK);
-	return I3C_ERR_OK;
+
+	do {
+		/* wait 1ms */
+		k_busy_wait(1000);
+
+		if ((I3C_GET_REG_CTRL(port) & I3C_CTRL_EVENT_MASK) ==
+				I3C_CTRL_EVENT_None) {
+			LOG_WRN("HotJoin: Send successful\n");
+			ret = I3C_ERR_OK;
+			goto hj_exit;
+		} else {
+			check_count++;
+		}
+
+		if (check_count >= NPCM4XX_I3C_HJ_CHECK_MAX)
+			break;
+
+	} while(true);
+
+	if (I3C_Update_Dynamic_Address(port)) {
+		LOG_WRN("HotJoin: Try to generate event but DA=0x%x present\n",
+				I3C_Update_Dynamic_Address(port));
+
+		/* Disable generate event */
+		I3C_SET_REG_CTRL(port, I3C_CTRL_EVENT_None);
+
+		if (pTask) {
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+		}
+
+		ret = I3C_ERR_OK;
+		goto hj_exit;
+	}
+
+	/* reset i3c hw since there is no dynamic address present */
+	i3c_npcm4xx_reset(port);
+
+	/* add retry count */
+	retry++;
+
+	if (retry >= NPCM4XX_I3C_HJ_RETRY_MAX) {
+		LOG_ERR("HotJoin: Send event failed\n");
+		if (pTask) {
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+		}
+
+		ret = I3C_ERR_BUS_ERROR;
+		goto hj_exit;
+	} else {
+		/* re-initial check count */
+		check_count = 0x0;
+		/* retry again */
+		goto hj_retry;
+	}
+
+hj_exit:
+
+	return ret;
 }
 
 I3C_ErrCode_Enum hal_I3C_Slave_TX_Free(I3C_PORT_Enum port)
@@ -2641,8 +2760,17 @@ int i3c_npcm4xx_slave_hj_req(const struct device *dev)
 {
 	struct i3c_npcm4xx_config *config = DEV_CFG(dev);
 	I3C_PORT_Enum port;
+	uint8_t addr;
 
 	port = config->inst_id;
+
+	addr = I3C_Update_Dynamic_Address((uint32_t) port);
+
+	if (addr) {
+		LOG_ERR("Dynamic address present = 0x%x\n", addr);
+		return -1;
+	}
+
 	I3C_Slave_Insert_Task_HotJoin(port);
 
 	k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
