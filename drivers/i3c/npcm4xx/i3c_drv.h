@@ -8,6 +8,7 @@
 
 #include <errno.h>
 #include <soc.h>
+#include <soc_common.h>
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/i3c/i3c.h>
@@ -98,6 +99,8 @@ struct i3c_npcm4xx_config {
 	uint32_t irq;
 	bool slave;
 	bool secondary;
+	uint8_t hj_req;
+	enum npcm4xx_reset_reason rst_reason;
 	uint32_t i3c_scl_hz;
 	uint32_t i2c_scl_hz;
 	/* uint16_t manufacture-id; PID[5:4] */
@@ -387,6 +390,12 @@ enum I3C_MSTATUS_IBITYPE_Enum {
 	I3C_MSTATUS_IBITYPE_IBI = 1,
 	I3C_MSTATUS_IBITYPE_MstReq = 2,
 	I3C_MSTATUS_IBITYPE_HotJoin = 3,
+};
+
+enum I3C_HOT_JOIN_STATE_Enum {
+	I3C_HOT_JOIN_STATE_None = 0,
+	I3C_HOT_JOIN_STATE_Request = 1,
+	I3C_HOT_JOIN_STATE_Queue = 2,
 };
 
 enum I3C_MSTATUS_STATE_Enum {

@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef _NUVOTON_NPCM4XX_SOC_COMMON_H_
+#define _NUVOTON_NPCM4XX_SOC_COMMON_H_
+
 /* one bit per 4K, total 32 * 8 * 4K = 1024K MAX */
 #define BITMAP_ARRAY_PER_SIZE	0x20
 #define BITMAP_LIST_SIZE	0x8
@@ -39,3 +42,5 @@ void npcm4xx_sram_vector_table_copy(void);
 /* use for replace/restore VTOR */
 uintptr_t npcm4xx_vector_table_save(void);
 void npcm4xx_vector_table_restore(uintptr_t vtor);
+
+#endif /* _NUVOTON_NPCM4XX_SOC_COMMON_H_ */
