@@ -34,8 +34,10 @@ static struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 #define NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE 1024
 #define NPCM4XX_I3C_WORK_QUEUE_PRIORITY -2
 
-#define NPCM4XX_I3C_HJ_RETRY_MAX 0x5
-#define NPCM4XX_I3C_HJ_CHECK_MAX 0x3
+/* current set 10ms * 5 * 3 => 0.15 seconds */
+#define NPCM4XX_I3C_HJ_RETRY_MAX	3
+#define NPCM4XX_I3C_HJ_CHECK_MAX	5
+#define NPCM4XX_I3C_HJ_UDELAY		10000
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area0, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
@@ -581,6 +583,7 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 {
 	I3C_PORT_Enum port = api_I3C_Get_IPORT(pDevice);
 	I3C_ErrCode_Enum result = I3C_ERR_OK;
+	struct i3c_npcm4xx_obj *obj;
 	uint32_t mconfig;
 	uint32_t sconfig;
 
@@ -709,8 +712,10 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 		sconfig |= I3C_CONFIG_SADDR(pDevice->staticAddr);
 
 	sconfig &= ~I3C_CONFIG_S0IGNORE_MASK;
-	/* sconfig &= ~I3C_CONFIG_MATCHSS_MASK; */
-	sconfig |= I3C_CONFIG_MATCHSS_MASK;
+
+	obj = gObj[port];
+
+	sconfig &= ~I3C_CONFIG_MATCHSS_MASK;
 	sconfig &= ~I3C_CONFIG_NACK_MASK;
 
 	/* 0: Fixed, 1: Random */
@@ -1876,7 +1881,7 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_ErrCode_Enum ret = I3C_ERR_OK;
-	struct i3c_npcm4xx_obj *obj;
+	struct i3c_npcm4xx_obj *obj = NULL;
 	__u8 pdma_ch;
 	uint32_t ctrl;
 	uint8_t retry;
@@ -1967,8 +1972,7 @@ hj_retry:
 	I3C_SET_REG_CONFIG(port, I3C_GET_REG_CONFIG(port) | I3C_CONFIG_SLVENA_MASK);
 
 	do {
-		/* wait 1ms */
-		k_busy_wait(1000);
+		k_busy_wait(NPCM4XX_I3C_HJ_UDELAY);
 
 		if ((I3C_GET_REG_CTRL(port) & I3C_CTRL_EVENT_MASK) ==
 				I3C_CTRL_EVENT_None) {
@@ -2021,6 +2025,9 @@ hj_retry:
 	}
 
 hj_exit:
+	if (obj) {
+		obj->config->hj_req = I3C_HOT_JOIN_STATE_None;
+	}
 
 	return ret;
 }
@@ -2771,9 +2778,21 @@ int i3c_npcm4xx_slave_hj_req(const struct device *dev)
 		return -1;
 	}
 
-	I3C_Slave_Insert_Task_HotJoin(port);
-
-	k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
+	if (config->hj_req == I3C_HOT_JOIN_STATE_None) {
+		if (config->rst_reason == NPCM4XX_RESET_REASON_VCC_POWERUP) {
+			LOG_WRN("Auto Hot-Join\n");
+			config->hj_req = I3C_HOT_JOIN_STATE_Request;
+			/* change reset reason to sw-rst, direct hot-join next time */
+			config->rst_reason = NPCM4XX_RESET_REASON_DEBUGGER_RST;
+		} else {
+			LOG_WRN("Direct Hot-Join\n");
+			I3C_Slave_Insert_Task_HotJoin(port);
+			k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
+			config->hj_req = I3C_HOT_JOIN_STATE_Queue;
+		}
+	} else {
+		LOG_WRN("Hot-Join request progress, state = %d\n", config->hj_req);
+	}
 
 	return 0;
 }
@@ -3801,12 +3820,15 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 	I3C_TASK_INFO_t *pTaskInfo = NULL;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_FRAME_t *pFrame;
+	struct i3c_npcm4xx_obj *obj;
 	uint32_t intmasked;
 	uint32_t status;
 	uint32_t ctrl;
 	uint8_t evdet;
 	uint32_t errwarn;
 	bool bMATCHSS;
+	uint8_t addr;
+	uint32_t sconfig;
 
 	ENTER_SLAVE_ISR();
 
@@ -3820,6 +3842,30 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 	bMATCHSS = (I3C_GET_REG_CONFIG(I3C_IF) & I3C_CONFIG_MATCHSS_MASK) ? TRUE : FALSE;
 
 	pDevice = api_I3C_Get_INODE(I3C_IF);
+
+	obj = gObj[I3C_IF];
+
+	if (bMATCHSS == false) {
+		if (obj->config->hj_req == I3C_HOT_JOIN_STATE_Request) {
+			if (intmasked & I3C_INTMASKED_STOP_MASK) {
+				I3C_Slave_Insert_Task_HotJoin(I3C_IF);
+				k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
+						&work_send_ibi[I3C_IF]);
+				obj->config->hj_req = I3C_HOT_JOIN_STATE_Queue;
+			}
+		}
+
+		if (status & I3C_STATUS_MATCHED_MASK) {
+			LOG_WRN("Status matched before set MATCHSS, set bMATCHSS as true\n");
+			bMATCHSS = true;
+		}
+	} else {
+		if (obj->config->hj_req != I3C_HOT_JOIN_STATE_None) {
+			LOG_WRN("MATCHSS set. DA=0x%x\n",
+					I3C_Update_Dynamic_Address((uint32_t) I3C_IF));
+			obj->config->hj_req = I3C_HOT_JOIN_STATE_None;
+		}
+	}
 
 	if (bMATCHSS && (intmasked & I3C_INTMASKED_EVENT_MASK)) {
 		evdet = (uint8_t)((status & I3C_STATUS_EVDET_MASK) >> I3C_STATUS_EVDET_SHIFT);
@@ -3848,20 +3894,34 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 			EXIT_SLAVE_ISR();
 			return;
 		}
+	} else if (intmasked & I3C_INTMASKED_EVENT_MASK){
+		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_EVENT_MASK);
+
+		intmasked &= ~I3C_INTMASKED_EVENT_MASK;
+		if (!intmasked) {
+			EXIT_SLAVE_ISR();
+			return;
+		}
 	}
 
 	if (intmasked & I3C_INTMASKED_DACHG_MASK) {
 		/* LOG_INF("dynamic address changed\n"); */
-		uint8_t addr;
-		struct i3c_npcm4xx_obj *obj;
 		addr = I3C_Update_Dynamic_Address((uint32_t) I3C_IF);
-		obj = gObj[I3C_IF];
+		sconfig = I3C_GET_REG_CONFIG(I3C_IF);
 		if (addr) {
 			obj->sir_allowed_by_sw = 1;
 			LOG_WRN("dyn addr = %X\n", addr);
+			if (!(sconfig & I3C_CONFIG_MATCHSS_MASK)) {
+				sconfig |= I3C_CONFIG_MATCHSS_MASK;
+				I3C_SET_REG_CONFIG(I3C_IF, sconfig);
+			}
 		} else {
 			obj->sir_allowed_by_sw = 0;
 			LOG_WRN("reset dyn addr\n");
+			if (sconfig & I3C_CONFIG_MATCHSS_MASK) {
+				sconfig &= ~I3C_CONFIG_MATCHSS_MASK;
+				I3C_SET_REG_CONFIG(I3C_IF, sconfig);
+			}
 		}
 
 		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DACHG_MASK);
@@ -3958,11 +4018,26 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 			EXIT_SLAVE_ISR();
 			return;
 		}
+	} else if (intmasked & I3C_INTMASKED_CHANDLED_MASK){
+		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_CHANDLED_MASK);
+
+		intmasked &= ~I3C_INTMASKED_CHANDLED_MASK;
+		if (!intmasked) {
+			EXIT_SLAVE_ISR();
+			return;
+		}
 	}
 
 	if (bMATCHSS && (intmasked & I3C_INTMASKED_DDRMATCHED_MASK)) {
 		LOG_WRN("Not support DDR, yet\n");
 
+		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DDRMATCH_MASK);
+
+		if (!intmasked) {
+			EXIT_SLAVE_ISR();
+			return;
+		}
+	} else if (intmasked & I3C_INTMASKED_DDRMATCHED_MASK){
 		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DDRMATCH_MASK);
 
 		if (!intmasked) {
@@ -4053,23 +4128,6 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 			pFrame = &pTask->pFrameList[pTask->frame_idx];
 		}
 
-		I3C_Slave_Handle_DMA((uint32_t) pDevice);
-
-		if (pDevice->stopSplitRead) {
-			I3C_SET_REG_DMACTRL(I3C_IF, I3C_GET_REG_DMACTRL(I3C_IF) &
-				~I3C_DMACTRL_DMATB_MASK);
-			PDMA->CHCTL &= ~MaskBit(PDMA_OFFSET + I3C_IF);
-
-			if (PDMA->TDSTS & MaskBit(PDMA_OFFSET + I3C_IF)) {
-				PDMA->TDSTS = MaskBit(PDMA_OFFSET + I3C_IF);
-			} else {
-			}
-
-			I3C_SET_REG_DATACTRL(I3C_IF, I3C_GET_REG_DATACTRL(I3C_IF) |
-				I3C_DATACTRL_FLUSHTB_MASK);
-		} else {
-		}
-
 		/* IBI and Hot-Join only */
 		/* Master Request handled in NOWMASTER */
 		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_EVENT_MASK) {
@@ -4096,6 +4154,25 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 
 				pTaskInfo->result = I3C_ERR_NACK;
 				api_I3C_Slave_End_Request((uint32_t)pTask);
+			}
+		}
+
+		if (bMATCHSS) {
+			I3C_Slave_Handle_DMA((uint32_t) pDevice);
+
+			if (pDevice->stopSplitRead) {
+				I3C_SET_REG_DMACTRL(I3C_IF, I3C_GET_REG_DMACTRL(I3C_IF) &
+						~I3C_DMACTRL_DMATB_MASK);
+				PDMA->CHCTL &= ~MaskBit(PDMA_OFFSET + I3C_IF);
+
+				if (PDMA->TDSTS & MaskBit(PDMA_OFFSET + I3C_IF)) {
+					PDMA->TDSTS = MaskBit(PDMA_OFFSET + I3C_IF);
+				} else {
+				}
+
+				I3C_SET_REG_DATACTRL(I3C_IF, I3C_GET_REG_DATACTRL(I3C_IF) |
+						I3C_DATACTRL_FLUSHTB_MASK);
+			} else {
 			}
 		}
 
@@ -4596,6 +4673,12 @@ static int i3c_npcm4xx_init(const struct device *dev)
 	api_I3C_connect_bus(port, config->busno);
 
 	hal_I3C_Config_Device(pDevice);
+
+	/* set hj req as false */
+	config->hj_req = I3C_HOT_JOIN_STATE_None;
+
+	config->rst_reason = npcm4xx_get_reset_reason();
+
 	return 0;
 }
 
