@@ -1787,6 +1787,35 @@ static void i3c_npcm4xx_reset(I3C_PORT_Enum port)
 	irq_enable(config->irq);
 }
 
+I3C_ErrCode_Enum hal_I3C_Stop_SlaveEvent(I3C_TASK_INFO_t *pTaskInfo)
+{
+	I3C_PORT_Enum port;
+	I3C_DEVICE_INFO_t *pDevice;
+	uint32_t ctrl;
+
+	if (pTaskInfo == NULL)
+		return I3C_ERR_PARAMETER_INVALID;
+
+	port = pTaskInfo->Port;
+
+	if (port >= I3C_PORT_MAX)
+		return I3C_ERR_PARAMETER_INVALID;
+
+	pDevice = api_I3C_Get_INODE(port);
+	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
+			((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
+		return I3C_ERR_PARAMETER_INVALID;
+
+	ctrl = I3C_GET_REG_CTRL(port);
+
+	/* clean up ibi data, extdata and event mask */
+	ctrl &= ~(I3C_CTRL_IBIDATA_MASK | I3C_CTRL_EXTDATA_MASK | I3C_CTRL_EVENT_MASK);
+
+	I3C_SET_REG_CTRL(port, ctrl);
+
+	return I3C_ERR_OK;
+}
+
 I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_PORT_Enum port;
@@ -1809,6 +1838,12 @@ I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 
 	pTask = pTaskInfo->pTask;
 	pFrame = &pTask->pFrameList[pTask->frame_idx];
+
+	if (I3C_GET_REG_CTRL(port) & I3C_CTRL_EVENT_MASK) {
+		LOG_WRN("Generarte IBI but CTRL in Progress: 0x%x\n",
+				I3C_GET_REG_CTRL(port));
+		hal_I3C_Stop_SlaveEvent(pTaskInfo);
+	}
 
 	ctrl = I3C_GET_REG_CTRL(port);
 	ctrl &= ~(I3C_CTRL_IBIDATA_MASK | I3C_CTRL_EXTDATA_MASK | I3C_CTRL_EVENT_MASK);
@@ -1835,6 +1870,7 @@ I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 	}
 
 	ctrl |= I3C_CTRL_EVENT(I3C_CTRL_EVENT_IBI);
+
 	I3C_SET_REG_CTRL(port, ctrl);
 
 	return I3C_ERR_OK;
@@ -1859,6 +1895,12 @@ I3C_ErrCode_Enum hal_I3C_Start_Master_Request(I3C_TASK_INFO_t *pTaskInfo)
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
 
+	if (I3C_GET_REG_CTRL(port) & I3C_CTRL_EVENT_MASK) {
+		LOG_WRN("Generarte Master REQ but CTRL in Progress: 0x%x\n",
+				I3C_GET_REG_CTRL(port));
+		hal_I3C_Stop_SlaveEvent(pTaskInfo);
+	}
+
 	pdma_ch = Get_PDMA_Channel(port, I3C_TRANSFER_DIR_WRITE);
 	PDMA->CHCTL &= ~MaskBit(PDMA_OFFSET + pdma_ch);
 	I3C_SET_REG_DMACTRL(port, I3C_GET_REG_DMACTRL(port) & I3C_DMACTRL_DMATB_MASK);
@@ -1871,6 +1913,7 @@ I3C_ErrCode_Enum hal_I3C_Start_Master_Request(I3C_TASK_INFO_t *pTaskInfo)
 
 	ctrl = I3C_GET_REG_CTRL(port);
 	ctrl |= I3C_CTRL_EVENT(I3C_CTRL_EVENT_MstReq);
+
 	I3C_SET_REG_CTRL(port, ctrl);
 	return I3C_ERR_OK;
 }
@@ -1932,6 +1975,12 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 		LOG_ERR("HotJoin: Only support slave or secondary master\n");
 		ret = I3C_ERR_PARAMETER_INVALID;
 		goto hj_exit;
+	}
+
+	if (I3C_GET_REG_CTRL(port) & I3C_CTRL_EVENT_MASK) {
+		LOG_WRN("Generarte HJ but CTRL in Progress: 0x%x\n",
+				I3C_GET_REG_CTRL(port));
+		hal_I3C_Stop_SlaveEvent(pTaskInfo);
 	}
 
 	pdma_ch = Get_PDMA_Channel(port, I3C_TRANSFER_DIR_WRITE);
@@ -2086,7 +2135,7 @@ I3C_ErrCode_Enum hal_I3C_Stop_Slave_TX(I3C_DEVICE_INFO_t *pDevice)
 	PDMA->TDSTS = MaskBit(PDMA_OFFSET + pDevice->port);
 	PDMA->CHCTL &= ~MaskBit(PDMA_OFFSET + pDevice->port);
 
-	datactrl |= I3C_MDATACTRL_FLUSHFB_MASK;
+	datactrl |= I3C_DATACTRL_FLUSHTB_MASK;
 	I3C_SET_REG_DATACTRL(pDevice->port, datactrl);
 	return I3C_ERR_OK;
 }
@@ -2650,6 +2699,8 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 {
 	struct i3c_npcm4xx_config *config;
 	struct i3c_npcm4xx_obj *obj;
+	I3C_TASK_INFO_t *pTaskInfo;
+	I3C_TRANSFER_TASK_t *pTask;
 	I3C_PORT_Enum port;
 	uint32_t event_en;
 	int ret;
@@ -2730,7 +2781,7 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 		}
 
 		/* let slave drive SLVSTART until bus idle */
-		api_I3C_Slave_Create_Task(protocol, txlen, &txlen, &rxlen, TxBuf, NULL,
+		pTaskInfo = api_I3C_Slave_Create_Task(protocol, txlen, &txlen, &rxlen, TxBuf, NULL,
 			timeout, NULL, port, NOT_HIF);
 		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
 
@@ -2739,6 +2790,17 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 
 		if (iRet != 0) {
 			LOG_ERR("wait master read timeout %d", iRet);
+			pTask = pTaskInfo->pTask;
+			/* cancel slave event */
+			hal_I3C_Stop_SlaveEvent(pTaskInfo);
+			/* remove ibi task from queue */
+			api_I3C_Slave_End_Request((uint32_t)pTask);
+			/* stop TX and DMA */
+			hal_I3C_Stop_Slave_TX(pDevice);
+			/* release memory resource */
+			api_I3C_Slave_Finish_Response(pDevice);
+			k_mutex_unlock(&pDevice->lock);
+			return iRet;
 		}
 	}
 
