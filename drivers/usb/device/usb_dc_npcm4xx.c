@@ -17,7 +17,7 @@ LOG_MODULE_REGISTER(usb_dc_npcm4xx);
 /* Timeout for USB PHY clock ready. (Unit:ms) */
 #define NPCM4XX_USB_PHY_TIMEOUT         (50)
 /* Timeout for USB Write Data to Host. (Unit:ms) */
-#define NPCM4XX_USB_WRITE_TIMEOUT       (50)
+#define NPCM4XX_USB_WRITE_TIMEOUT       (200)
 
 #define NUM_OF_EP_MAX                   (DT_INST_PROP(0, num_bidir_endpoints))
 #define USB_RAM_SIZE                    (DT_INST_PROP(0, usbd_ram_size))
@@ -63,6 +63,7 @@ struct usb_device_data {
 	volatile uint32_t ram_offset;
 	volatile uint32_t ep_status;
 	volatile uint32_t req_type;
+	volatile uint32_t req_len;
 	volatile uint32_t set_addr_req;
 	volatile uint32_t new_addr;
 	usb_dc_status_callback status_cb;
@@ -144,7 +145,7 @@ static inline void usbd_flush_all_ep(void)
 	uint8_t i;
 
 	for (i = EPA; i <= EPL; i++) {
-		USBD->EP[i].USBD_EPRSPCTL = BIT(NPCM4XX_USBD_EPRSPCTL_FLUSH);
+		USBD->EP[i].USBD_EPRSPCTL = BIT(NPCM4XX_USBD_EPRSPCTL_FLUSH) | BIT(1);
 	}
 }
 
@@ -189,8 +190,7 @@ static void usb_dc_cep_isr(void)
 
 	/* Setup Packet */
 	if (IS_BIT_SET(IrqSt, NPCM4XX_USBD_CEPINTSTS_SETUPPKIF)) {
-		/* Clear CEP interrupt flag */
-		USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
+
 
 		LOG_DBG("\r\n\r\nSETUP pkt");
 
@@ -272,8 +272,6 @@ static void usb_dc_cep_isr(void)
 
 	/* Status Completion */
 	if (IS_BIT_SET(IrqSt, NPCM4XX_USBD_CEPINTSTS_STSDONEIF)) {
-		/* Clear CEP interrupt flag */
-		USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_STSDONEIF);
 		/* Enable CEP Interrupt */
 		USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_SETUPPKIEN);
 
@@ -450,6 +448,7 @@ static void usb_dc_isr(void)
 										USB_DC_EP_DATA_IN);
 					} else {
 						LOG_DBG("\r\n\r\nEP_OUT %d", ep_idx);
+						USBD->EP[ep_idx].USBD_EPINTEN = 0;
 						ep = ep_idx | USB_EP_DIR_OUT;
 						dev_data.ep_data[1 + ep_idx].cb_out(1 + ep,
 										USB_DC_EP_DATA_OUT);
@@ -657,7 +656,9 @@ int usb_dc_ep_set_stall(const uint8_t ep)
 	}
 
 	if (type == USB_DC_EP_CONTROL) {
+		USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
 		USBD_SET_CEP_STATE(USBD_CEPCTL_STALL);
+		USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_SETUPPKIEN);
 	} else {
 		USBD->EP[ep_idx - 1].USBD_EPRSPCTL = (USBD->EP[ep_idx - 1].USBD_EPRSPCTL & 0xf7ul) |
 						     BIT(NPCM4XX_USBD_EPRSPCTL_HALT);
@@ -681,7 +682,7 @@ int usb_dc_ep_clear_stall(const uint8_t ep)
 	if (type == USB_DC_EP_CONTROL) {
 		USBD_SET_CEP_STATE(USBD_CEPCTL_NAKCLR);
 	} else {
-		USBD->EP[ep_idx - 1].USBD_EPRSPCTL = BIT(NPCM4XX_USBD_EPRSPCTL_TOGGLE);
+		USBD->EP[ep_idx - 1].USBD_EPRSPCTL = BIT(NPCM4XX_USBD_EPRSPCTL_TOGGLE) | BIT(1);
 	}
 
 	LOG_DBG("ep 0x%x", ep);
@@ -788,7 +789,7 @@ int usb_dc_ep_flush(const uint8_t ep)
 	if (type == USB_DC_EP_CONTROL) {
 		USBD->USBD_CEPCTL |= BIT(NPCM4XX_USBD_CEPCTL_FLUSH);
 	} else {
-		USBD->EP[ep_idx - 1].USBD_EPRSPCTL |= BIT(NPCM4XX_USBD_EPRSPCTL_FLUSH);
+		USBD->EP[ep_idx - 1].USBD_EPRSPCTL |= BIT(NPCM4XX_USBD_EPRSPCTL_FLUSH) | BIT(1);
 	}
 
 	LOG_DBG("flush ep 0x%x", ep);
@@ -851,8 +852,6 @@ int usb_dc_ep_write(const uint8_t ep, const uint8_t *const data,
 					break;
 				}
 			}
-			/* Clear NAK */
-			USBD_SET_CEP_STATE(USBD_CEPCTL_NAKCLR);
 
 			/* Has more data to send */
 			if (data_len > packet_len) {
@@ -861,16 +860,20 @@ int usb_dc_ep_write(const uint8_t ep, const uint8_t *const data,
 				/* Enable CEP IN Interrupt */
 				USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_INTKIEN);
 			} else {
-				/* Clear CEP interrupt flag */
+				/* Status Stage */
+				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
 				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_STSDONEIF);
-				/* Enable CEP Interrupt */
-				USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_SETUPPKIEN);
+				USBD_SET_CEP_STATE(USBD_CEPCTL_NAKCLR);
+				USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_STSDONEIEN);
 			}
 		} else {
 			/* data_len=0 */
-			/* Status Stage */
 			if ((data == NULL) && ret_bytes == NULL) {
-				USBD_SET_CEP_STATE(USBD_CEPCTL_ZEROLEN);
+				/* Status Stage */
+				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
+				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_STSDONEIF);
+				USBD_SET_CEP_STATE(USBD_CEPCTL_ZEROLEN|USBD_CEPCTL_NAKCLR);
+				USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_STSDONEIEN);
 				LOG_DBG("Zero Len");
 			}
 		}
@@ -915,8 +918,6 @@ int usb_dc_ep_read(const uint8_t ep, uint8_t *const data,
 		   const uint32_t max_data_len, uint32_t *const read_bytes)
 {
 	int ret;
-	uint8_t ep_idx = USB_EP_GET_IDX(ep);
-	uint32_t type = dev_data.ep_data[ep_idx].type;
 
 	ret = usb_dc_ep_read_wait(ep, data, max_data_len, read_bytes);
 	if (ret < 0) {
@@ -931,11 +932,9 @@ int usb_dc_ep_read(const uint8_t ep, uint8_t *const data,
 	}
 
 	/* Clear NAK */
-	if (type == USB_DC_EP_CONTROL) {
-		ret = usb_dc_ep_read_continue(ep);
-		if (ret < 0) {
-			return -EINVAL;
-		}
+	ret = usb_dc_ep_read_continue(ep);
+	if (ret < 0) {
+		return -EINVAL;
 	}
 
 	LOG_DBG("ep 0x%x", ep);
@@ -1028,12 +1027,19 @@ int usb_dc_ep_read_wait(uint8_t ep, uint8_t *data, uint32_t max_data_len,
 				*data++ = (uint8_t)((USBD->USBD_SETUP3_2 >> 8) & 0xfful);
 				*data++ = (uint8_t)(USBD->USBD_SETUP5_4 & 0xfful);
 				*data++ = (uint8_t)((USBD->USBD_SETUP5_4 >> 8) & 0xfful);
-				*data++ = (uint8_t)(USBD->USBD_SETUP7_6 & 0xfful);
-				*data++ = (uint8_t)((USBD->USBD_SETUP7_6 >> 8) & 0xfful);
+				dev_data.req_len = USBD->USBD_SETUP7_6 & 0xfffful;
+				*data++ = (uint8_t)(dev_data.req_len & 0xfful);
+				*data++ = (uint8_t)((dev_data.req_len >> 8) & 0xfful);
 			} else {
 				/* CEP OUT */
 				for (i = 0; i < data_len; i++) {
 					*data++ = USBD->USBD_CEPDAT_BYTE;
+				}
+				if (dev_data.req_len >= data_len) {
+					dev_data.req_len -= data_len;
+				} else {
+					LOG_WRN("Too more data in buffer!!");
+					dev_data.req_len = 0;
 				}
 			}
 		} else {
@@ -1041,9 +1047,7 @@ int usb_dc_ep_read_wait(uint8_t ep, uint8_t *data, uint32_t max_data_len,
 			for (i = 0; i < data_len; i++) {
 				*data++ = USBD->EP[ep_idx - 1].USBD_EPDAT_BYTE;
 			}
-			if (USB_EP_GET_DIR(ep) == USB_EP_DIR_OUT) {
-				USBD->EP[ep_idx - 1].USBD_EPINTEN = 0;
-			}
+
 		}
 	}
 
@@ -1060,6 +1064,7 @@ int usb_dc_ep_read_continue(uint8_t ep)
 {
 	uint8_t ep_idx = USB_EP_GET_IDX(ep);
 	uint32_t type = dev_data.ep_data[ep_idx].type;
+	uint32_t ep_status = dev_data.ep_status;
 
 	if (ep_idx >= NUM_OF_EP_MAX) {
 		LOG_ERR("wrong endpoint index/address");
@@ -1079,18 +1084,34 @@ int usb_dc_ep_read_continue(uint8_t ep)
 	}
 
 	if (type == USB_DC_EP_CONTROL) {
-		/* Check CEP has data or not */
-		if (USBD->USBD_CEPDATCNT == 0) {
+		if (ep_status == USB_DC_EP_SETUP) {
 			if (REQTYPE_GET_DIR(dev_data.req_type) == REQTYPE_DIR_TO_HOST) {
-				LOG_DBG("get");
+				USBD->USBD_CEPINTEN = 0;
 			} else {
+				/* Check CEP has data or not */
+				if (dev_data.req_len == 0) {
+					/* Status Stage */
+					USBD->USBD_CEPINTSTS =
+						BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
+					USBD->USBD_CEPINTSTS =
+						BIT(NPCM4XX_USBD_CEPINTSTS_STSDONEIF);
+					USBD_SET_CEP_STATE(USBD_CEPCTL_NAKCLR);
+					USBD->USBD_CEPINTEN =
+						BIT(NPCM4XX_USBD_CEPINTEN_STSDONEIEN);
+				} else {
+					/* Enable CEP OUT Interrupt and wait Receive CEP OUT data */
+					USBD->USBD_CEPINTEN =
+						BIT(NPCM4XX_USBD_CEPINTEN_RXPKIEN);
+				}
+			}
+		} else {
+			if (dev_data.req_len == 0) {
+				/* Status Stage */
+				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_SETUPPKIF);
 				USBD->USBD_CEPINTSTS = BIT(NPCM4XX_USBD_CEPINTSTS_STSDONEIF);
 				USBD_SET_CEP_STATE(USBD_CEPCTL_NAKCLR);
 				USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_STSDONEIEN);
 			}
-		} else {
-			/* Enable CEP OUT Interrupt and wait Receive CEP OUT data */
-			USBD->USBD_CEPINTEN = BIT(NPCM4XX_USBD_CEPINTEN_RXPKIEN);
 		}
 	} else {
 		/* Enable Interrupt to ack OUT */
