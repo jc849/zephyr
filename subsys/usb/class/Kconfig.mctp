@@ -1,0 +1,27 @@
+# Copyright (c)
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig USB_DEVICE_MCTP
+	bool "USB MCTP Class support"
+	help
+	  USB MCTP device class support. Default device name
+	  is "MCTP_0".
+
+if USB_DEVICE_MCTP
+
+config USB_MCTP_DEVICE_NAME
+	string "USB MCTP device name template"
+	default "MCTP"
+	help
+	  Device name template for the MCTP Devices. First device would have
+	  name $(USB_MCTP_DEVICE_NAME)_0, etc.
+
+module = USB_MCTP
+default-count = 1
+source "subsys/usb/class/Kconfig.template.composite_device_number"
+
+module = USB_MCTP
+module-str = usb mctp
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # USB_DEVICE_MCTP
