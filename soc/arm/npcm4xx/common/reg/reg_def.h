@@ -984,8 +984,12 @@ struct espi_reg {
 	volatile uint8_t reserved4[24];
 	/* 0x0140 Virtual Wire Event Master-to-Slave 0-11 */
 	volatile uint32_t VWEVMS[12];
-	volatile uint8_t  reserved5[144];
-	/* 0x0200 Virtual Wire Event Master-toSlave Status */
+	volatile uint8_t  reserved5[16];
+	/* 0x0180 Virtual Wire GPIO Slave-to-Master 0-15 */
+	volatile uint32_t VWGPSM[16];
+	/* 0x01C0 Virtual Wire GPIO Master-to-Slave 0-15 */
+	volatile uint32_t VWGPMS[16];
+	/* 0x0200 Virtual Wire Event Master-to-Slave Status */
 	volatile uint32_t VWEVMS_STS;
 	volatile uint8_t  reserved6[4];
 	/* 0x0208 Virtual Wire Event Slave-to-Master Type */
@@ -1104,6 +1108,14 @@ struct espi_reg {
 #define NPCM4XX_VWEVSM_VALID                FIELD(4, 4)
 #define NPCM4XX_VWEVSM_BIT_VALID(n)         (4+n)
 #define NPCM4XX_VWEVSM_HW_WIRE              FIELD(24, 4)
+#define NPCM4XX_VWGPSM_WIRE                 FIELD(0, 4)
+#define NPCM4XX_VWGPSM_VALID                FIELD(4, 4)
+#define NPCM4XX_VWGPSM_INDEX_EN             15
+#define NPCM4XX_VWGPSM_IE                   18
+#define NPCM4XX_VWGPMS_WIRE                 FIELD(0, 4)
+#define NPCM4XX_VWGPMS_VALID                FIELD(4, 4)
+#define NPCM4XX_VWGPMS_INDEX_EN             15
+#define NPCM4XX_VWGPMS_IE                   18
 #define NPCM4XX_OOBCTL_OOB_FREE             0
 #define NPCM4XX_OOBCTL_OOB_AVAIL            1
 #define NPCM4XX_OOBCTL_RSTBUFHEADS          2
