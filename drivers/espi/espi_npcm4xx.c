@@ -913,6 +913,14 @@ static int espi_npcm4xx_init(const struct device *dev)
 	espi_init_wui_callback(dev, &espi_rst_callback,
 				&config->espi_rst_wui, espi_vw_espi_rst_isr);
 
+	for (i = 0; i < ARRAY_SIZE(inst->VWGPMS); i++) {
+		inst->VWGPMS[i] |= (BIT(NPCM4XX_VWGPMS_INDEX_EN) | BIT(NPCM4XX_VWGPMS_IE));
+	}
+
+	for (i = 0; i < ARRAY_SIZE(inst->VWGPSM); i++) {
+		inst->VWGPSM[i] |= (BIT(NPCM4XX_VWGPSM_INDEX_EN) | BIT(NPCM4XX_VWGPSM_IE));
+	}
+
 	espi_npcm4xx_configure(dev, &cfg);
 	/* Configure host sub-modules which HW blocks belong to core domain */
 	npcm4xx_host_init_subs_core_domain(dev, &data->callbacks);
