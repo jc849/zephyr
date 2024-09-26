@@ -35,6 +35,7 @@ struct uart_npcm4xx_data {
 #ifdef CONFIG_PM_DEVICE
 	uint32_t pm_state;
 #endif
+	uint8_t ext_loopback;
 };
 
 /* Driver convenience defines */
@@ -359,7 +360,6 @@ static int uart_npcm4xx_init(const struct device *dev)
 	inst->UFRS = 0x00;
 #if CONFIG_UART_INTERRUPT_DRIVEN
 	inst->UFCTRL |= BIT(NPCM4XX_UFCTRL_FIFOEN);
-
 	/* Disable all UART tx FIFO interrupts */
 	uart_npcm4xx_dis_all_tx_interrupts(dev);
 
@@ -369,6 +369,9 @@ static int uart_npcm4xx_init(const struct device *dev)
 	/* Configure UART interrupts */
 	config->uconf.irq_config_func(dev);
 #endif
+
+	if (data->ext_loopback)
+		inst->UFCTRL  |= BIT(NPCM4XX_UFCTRL_EXT_LOOPBACK);
 
 	return 0;
 }
@@ -467,6 +470,7 @@ static int uart_npcm4xx_pm_control(const struct device *dev, uint32_t ctrl_comma
 												   \
 	static struct uart_npcm4xx_data uart_npcm4xx_data_##inst = {                               \
 		.ucfg = { .baudrate = DT_INST_PROP(inst, current_speed) },                         \
+		.ext_loopback = DT_INST_PROP(inst, ext_loopback) 									\
 	};                                                                                         \
 												   \
 	DEVICE_DT_INST_DEFINE(inst, &uart_npcm4xx_init, NULL, &uart_npcm4xx_data_##inst,           \

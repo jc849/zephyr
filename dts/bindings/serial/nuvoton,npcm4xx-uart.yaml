@@ -9,3 +9,6 @@ properties:
         required: true
     clocks:
         required: true
+    ext-loopback:
+      type: boolean
+      required: false

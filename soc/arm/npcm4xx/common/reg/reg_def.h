@@ -319,6 +319,7 @@ struct uart_reg {
 #define NPCM4XX_UFRS_PSEL_FIELD                  FIELD(4, 2)
 #define NPCM4XX_UFRS_PEN                         6
 #define NPCM4XX_UFCTRL_FIFOEN                    0
+#define NPCM4XX_UFCTRL_EXT_LOOPBACK 1
 //#define NPCM4XX_UMDSL_FIFO_MD                    0
 #define NPCM4XX_UTXFLV_TFL                       FIELD(0, 5)
 #define NPCM4XX_URXFLV_RFL                       FIELD(0, 5)
