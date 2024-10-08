@@ -177,7 +177,7 @@ static void kcs_handle_cmd(const struct device *dev)
 	kcs_write_data(dev, KCS_DUMMY_ZERO);
 
 	cmd = kcs_read_data(dev);
-	printk("cmd: 0x%x\r\n", cmd);
+
 	switch (cmd) {
 	case KCS_CMD_WRITE_START:
 		kcs->phase = KCS_PHASE_WRITE_START;
@@ -221,7 +221,6 @@ static void kcs_handle_data(const struct device *dev)
 			kcs_set_state(dev, KCS_STATE_WRITE);
 			kcs_write_data(dev, KCS_DUMMY_ZERO);
 			kcs->ibuf[kcs->ibuf_idx] = kcs_read_data(dev);
-			printk("data: 0x%x\r\n", kcs->ibuf[kcs->ibuf_idx]);
 			kcs->ibuf_idx++;
 		} else {
 			kcs_force_abort(dev);
@@ -292,7 +291,6 @@ void kcs_npcm4xx_isr(const struct device *dev)
 	struct kcs_npcm4xx_config *cfg = (struct kcs_npcm4xx_config *)dev->config;
 
 	stat = sys_read8(cfg->base + kcs->str);
-	printk("stat:0x%x\r\n", stat);
 	if (stat & KCS_STR_IBF) {
 		if (stat & KCS_STR_CMD_DAT) {
 			kcs_handle_cmd(dev);
