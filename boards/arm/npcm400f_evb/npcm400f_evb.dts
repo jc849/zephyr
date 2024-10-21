@@ -65,6 +65,10 @@
 	current-speed = <115200>;
 };
 
+&twd0 {
+	status = "okay";
+};
+
 &peci0 {
 	status = "okay";
 	pinctrl-0 = <&pinctrl_peci0_default>;
