@@ -359,8 +359,11 @@ static const struct wdt_driver_api wdt_npcm4xx_driver_api = {
 	.feed = wdt_npcm4xx_feed,
 };
 
-DEVICE_DT_INST_DEFINE(0, wdt_npcm4xx_init, NULL,
-		      &wdt_npcm4xx_data_0, &wdt_npcm4xx_cfg_0,
-		      PRE_KERNEL_1,
-		      CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,
-		      &wdt_npcm4xx_driver_api);
+#define NPCM4XX_WDT_INIT(inst)							\
+	DEVICE_DT_INST_DEFINE(inst, wdt_npcm4xx_init, NULL, 			\
+			&wdt_npcm4xx_data_##inst, &wdt_npcm4xx_cfg_##inst, 	\
+			PRE_KERNEL_1, 						\
+			CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, 			\
+			&wdt_npcm4xx_driver_api);
+
+DT_INST_FOREACH_STATUS_OKAY(NPCM4XX_WDT_INIT)
