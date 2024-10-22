@@ -4,3 +4,5 @@
 if(CONFIG_PINMUX_NPCM4XX)
     zephyr_include_directories(.)
 endif()
+
+set_property(GLOBAL PROPERTY CSTD c11)
