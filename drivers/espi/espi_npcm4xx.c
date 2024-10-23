@@ -75,6 +75,7 @@ struct espi_npcm4xx_data {
 #define ESPI_OOB_GET_CYCLE_TYPE      0x21
 #define ESPI_OOB_TAG                 0x00
 #define ESPI_OOB_MAX_TIMEOUT         500ul /* 500 ms */
+#define VWGPMS_DIRECTION	7
 
 /* eSPI bus interrupt configuration structure and macro function */
 struct espi_bus_isr {
@@ -247,6 +248,26 @@ static void espi_bus_cfg_update_isr(const struct device *dev)
 	}
 }
 
+static void espi_bus_vw_update_isr(const struct device *dev)
+{
+	LOG_DBG("ESPI VW Updated!");
+
+	struct espi_reg *const inst = HAL_INSTANCE(dev);
+	struct espi_npcm4xx_data *const data = DRV_DATA(dev);
+	uint8_t i;
+	struct espi_event evt = { ESPI_BUS_EVENT_VWIRE_RECEIVED, 0, 0 };
+
+
+	for (i = 0; i < ARRAY_SIZE(inst->VWGPMS); i++) {
+		if (IS_BIT_SET(inst->VWGPMS[i], NPCM4XX_VWGPMS_MODIFIED)) {
+			inst->VWGPMS[i] |= BIT(NPCM4XX_VWGPMS_MODIFIED);
+			evt.evt_details = (NPCM4XX_VWGP_M_TO_S << VWGPMS_DIRECTION) | i;
+			evt.evt_data = (uint8_t)(inst->VWGPMS[i] & 0xFF);
+			espi_send_callbacks(&data->callbacks, dev, evt);
+		}
+	}
+}
+
 #if defined(CONFIG_ESPI_OOB_CHANNEL)
 static void espi_bus_oob_rx_isr(const struct device *dev)
 {
@@ -262,6 +283,7 @@ const struct espi_bus_isr espi_bus_isr_tbl[] = {
 	NPCM4XX_ESPI_BUS_INT_ITEM(IBRST, espi_bus_inband_rst_isr),
 	NPCM4XX_ESPI_BUS_INT_ITEM(ESPIRST, espi_bus_reset_isr),
 	NPCM4XX_ESPI_BUS_INT_ITEM(CFGUPD, espi_bus_cfg_update_isr),
+	NPCM4XX_ESPI_BUS_INT_ITEM(VWUPD, espi_bus_vw_update_isr),
 #if defined(CONFIG_ESPI_OOB_CHANNEL)
 	NPCM4XX_ESPI_BUS_INT_ITEM(OOBRX, espi_bus_oob_rx_isr),
 #endif
@@ -337,7 +359,7 @@ static void espi_vw_notify_system_state(const struct device *dev,
 				enum espi_vwire_signal signal)
 {
 	struct espi_npcm4xx_data *const data = DRV_DATA(dev);
-	struct espi_event evt = { ESPI_BUS_EVENT_VWIRE_RECEIVED, 0, 0 };
+	//struct espi_event evt = { ESPI_BUS_EVENT_VWIRE_RECEIVED, 0, 0 };
 	uint8_t wire = 0;
 
 	espi_npcm4xx_receive_vwire(dev, signal, &wire);
@@ -345,9 +367,9 @@ static void espi_vw_notify_system_state(const struct device *dev,
 		data->sx_state = signal;
 	}
 
-	evt.evt_details = signal;
-	evt.evt_data = wire;
-	espi_send_callbacks(&data->callbacks, dev, evt);
+	//evt.evt_details = signal;
+	//evt.evt_data = wire;
+	//espi_send_callbacks(&data->callbacks, dev, evt);
 }
 
 static void espi_vw_notify_host_warning(const struct device *dev,
@@ -381,9 +403,9 @@ static void espi_vw_notify_plt_rst(const struct device *dev)
 {
 	struct espi_npcm4xx_data *const data = DRV_DATA(dev);
 	struct espi_reg *const inst = HAL_INSTANCE(dev);
-	struct espi_event evt = { ESPI_BUS_EVENT_VWIRE_RECEIVED,
-		ESPI_VWIRE_SIGNAL_PLTRST, 0
-	};
+	//struct espi_event evt = { ESPI_BUS_EVENT_VWIRE_RECEIVED,
+	//	ESPI_VWIRE_SIGNAL_PLTRST, 0
+	//};
 	uint8_t wire = 0;
 
 	espi_npcm4xx_receive_vwire(dev, ESPI_VWIRE_SIGNAL_PLTRST, &wire);
@@ -398,8 +420,8 @@ static void espi_vw_notify_plt_rst(const struct device *dev)
 	/* PLT_RST will be received several times */
 	if (wire != data->plt_rst_asserted) {
 		data->plt_rst_asserted = wire;
-		evt.evt_data = wire;
-		espi_send_callbacks(&data->callbacks, dev, evt);
+		//evt.evt_data = wire;
+		//espi_send_callbacks(&data->callbacks, dev, evt);
 	}
 }
 
@@ -915,6 +937,7 @@ static int espi_npcm4xx_init(const struct device *dev)
 
 	for (i = 0; i < ARRAY_SIZE(inst->VWGPMS); i++) {
 		inst->VWGPMS[i] |= (BIT(NPCM4XX_VWGPMS_INDEX_EN) | BIT(NPCM4XX_VWGPMS_IE));
+		inst->VWGPMS[i] &= ~BIT(NPCM4XX_VWGPMS_ENESPIRST);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(inst->VWGPSM); i++) {
