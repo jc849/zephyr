@@ -26,6 +26,9 @@ LOG_MODULE_REGISTER(i2c_npcm4xx, LOG_LEVEL_ERR);
 /* Default max waiting time for i2c ready (unit:ms) */
 #define I2C_WAITING_TIME K_MSEC(1000)
 
+/* Default expecting time for bus to be free (unit:us) */
+#define I2C_WAITING_FREE_TIME 100
+
 /* Hardware Timeout configuration (unit:ms) */
 #define CONFIG_MASTER_HW_TIMEOUT_EN 'N'
 #define CONFIG_MASTER_HW_TIMEOUT_CLK_LOW_TIME 25
@@ -851,7 +854,8 @@ static int i2c_npcm4xx_combine_msg(const struct device *dev,
 static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 				uint8_t num_msgs, uint16_t addr)
 {
-	uint8_t value;
+	uint8_t value, i;
+	bool bus_busy;
 	struct i2c_reg *const inst = I2C_INSTANCE(dev);
 
 #if (CONFIG_MASTER_HW_TIMEOUT_EN == 'Y')
@@ -860,14 +864,26 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 	struct i2c_npcm4xx_data *const data = I2C_DRV_DATA(dev);
 	int ret;
 
-	if (i2c_npcm4xx_mutex_lock(dev, I2C_WAITING_TIME) != 0) {
+	if (i2c_npcm4xx_mutex_lock(dev, I2C_WAITING_TIME) != 0)
 		return -EBUSY;
+
+	for (i = 0; i < 3; i++) {
+		bus_busy = inst->SMBnCST & BIT(NPCM4XX_SMBnCST_BB);
+		if (!bus_busy) {
+			/* Disable slave addr 1 */
+			value = inst->SMBnADDR1;
+			value &= ~BIT(NPCM4XX_SMBnADDR_SAEN);
+			inst->SMBnADDR1 = value;
+			break;
+		}
+		k_busy_wait(I2C_WAITING_FREE_TIME);
 	}
 
-	/* Disable slave addr 1 */
-	value = inst->SMBnADDR1;
-	value &= ~BIT(NPCM4XX_SMBnADDR_SAEN);
-	inst->SMBnADDR1 = value;
+	if (bus_busy) {
+		inst->SMBnCST &= ~BIT(NPCM4XX_SMBnCST_BB);
+		i2c_npcm4xx_mutex_unlock(dev);
+		return -EAGAIN;
+	}
 
 	/* prepare data to transfer */
 	data->rx_cnt = 0;
