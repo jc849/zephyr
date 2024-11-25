@@ -20,7 +20,6 @@
 #include "i3c_slave.h"
 #include "hal_I3C.h"
 #include "i3c_drv.h"
-#include "api_i3c.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -81,11 +80,11 @@ void work_stop_fun(struct k_work *item)
 	if (i == I3C_PORT_MAX)
 		return;
 
-	pDevice = api_I3C_Get_Current_Master_From_Port(i);
+	pDevice = Get_Current_Master_From_Port(i);
 	if (pDevice == NULL)
 		return;
 
-	pBus = api_I3C_Get_Bus_From_Port(i);
+	pBus = Get_Bus_From_Port(i);
 	if (pBus == NULL)
 		return;
 
@@ -93,7 +92,7 @@ void work_stop_fun(struct k_work *item)
 	if (pTask == NULL)
 		return;
 
-	api_I3C_Master_Stop((uint32_t)pTask);
+	I3C_Master_Stop_Request((uint32_t)pTask);
 }
 
 void work_next_fun(struct k_work *item)
@@ -111,11 +110,11 @@ void work_next_fun(struct k_work *item)
 	if (i == I3C_PORT_MAX)
 		return;
 
-	pDevice = api_I3C_Get_Current_Master_From_Port(i);
+	pDevice = Get_Current_Master_From_Port(i);
 	if (pDevice == NULL)
 		return;
 
-	pBus = api_I3C_Get_Bus_From_Port(i);
+	pBus = Get_Bus_From_Port(i);
 	if (pBus == NULL)
 		return;
 
@@ -123,7 +122,7 @@ void work_next_fun(struct k_work *item)
 	if (pTask == NULL)
 		return;
 
-	api_I3C_Master_Run_Next_Frame((uint32_t)pTask);
+	I3C_Master_Run_Next_Frame((uint32_t)pTask);
 }
 
 void work_retry_fun(struct k_work *item)
@@ -141,11 +140,11 @@ void work_retry_fun(struct k_work *item)
 	if (i == I3C_PORT_MAX)
 		return;
 
-	pDevice = api_I3C_Get_Current_Master_From_Port(i);
+	pDevice = Get_Current_Master_From_Port(i);
 	if (pDevice == NULL)
 		return;
 
-	pBus = api_I3C_Get_Bus_From_Port(i);
+	pBus = Get_Bus_From_Port(i);
 	if (pBus == NULL)
 		return;
 
@@ -153,7 +152,7 @@ void work_retry_fun(struct k_work *item)
 	if (pTask == NULL)
 		return;
 
-	api_I3C_Master_Retry((uint32_t)pTask);
+	I3C_Master_Retry_Frame((uint32_t)pTask);
 }
 
 void work_send_ibi_fun(struct k_work *item)
@@ -172,7 +171,7 @@ void work_send_ibi_fun(struct k_work *item)
 	if (i == I3C_PORT_MAX)
 		return;
 
-	pBus = api_I3C_Get_Bus_From_Port(i);
+	pBus = Get_Bus_From_Port(i);
 	if (pBus == NULL)
 		return;
 
@@ -181,7 +180,7 @@ void work_send_ibi_fun(struct k_work *item)
 		return;
 	}
 
-	pDeviceSlv = api_I3C_Get_INODE(i);
+	pDeviceSlv = I3C_Get_INODE(i);
 
 	pTask = pDeviceSlv->pTaskListHead;
 	if (pTask == NULL)
@@ -211,7 +210,7 @@ void work_rcv_ibi_fun(struct k_work *item)
 	if (i == I3C_PORT_MAX)
 		return;
 
-	pBus = api_I3C_Get_Bus_From_Port(i);
+	pBus = Get_Bus_From_Port(i);
 	if (pBus == NULL)
 		return;
 
@@ -221,7 +220,7 @@ void work_rcv_ibi_fun(struct k_work *item)
 		return;
 	}
 
-	pDeviceMst = api_I3C_Get_INODE(i);
+	pDeviceMst = I3C_Get_INODE(i);
 	pTask = pDeviceMst->pTaskListHead;
 	if (pTask == NULL)
 		return;
@@ -581,7 +580,7 @@ void hal_I3C_Config_Internal_Device(I3C_PORT_Enum port, I3C_DEVICE_INFO_t *pDevi
 /*--------------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 {
-	I3C_PORT_Enum port = api_I3C_Get_IPORT(pDevice);
+	I3C_PORT_Enum port = I3C_Get_IPORT(pDevice);
 	I3C_ErrCode_Enum result = I3C_ERR_OK;
 	struct i3c_npcm4xx_obj *obj;
 	uint32_t mconfig;
@@ -905,7 +904,7 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 	mconfig &= ~(I3C_MCONFIG_I2CBAUD_MASK | I3C_MCONFIG_ODHPP_MASK | I3C_MCONFIG_ODBAUD_MASK
 		| I3C_MCONFIG_PPLOW_MASK | I3C_MCONFIG_PPBAUD_MASK);
 
-	pMasterDevice = api_I3C_Get_INODE(pTaskInfo->Port);
+	pMasterDevice = I3C_Get_INODE(pTaskInfo->Port);
 
 	pTask = pTaskInfo->pTask;
 	if (pTask->frame_idx != 0)
@@ -1236,7 +1235,7 @@ uint8_t Get_PDMA_Channel(I3C_PORT_Enum port, I3C_TRANSFER_DIR_Enum direction)
 	 * 6: I3C1_RX, 7: I3C2_RX, 8: I3C3_RX, 9: I3C4_RX, 10: I3C5_RX, 11: I3C6_RX,
 	 */
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 
 	if (port >= I3C_PORT_MAX)
 		return 0xFF;
@@ -1668,7 +1667,7 @@ I3C_ErrCode_Enum hal_I3C_Process_Task(I3C_TASK_INFO_t *pTaskInfo)
 
 	protocol = pTask->protocol;
 	pFrame = &pTask->pFrameList[pTask->frame_idx];
-	pDevice = api_I3C_Get_Current_Master_From_Port(pTaskInfo->Port);
+	pDevice = Get_Current_Master_From_Port(pTaskInfo->Port);
 
 	mctrl = I3C_MCTRL_ADDR(pFrame->address) | I3C_MCTRL_DIR(pFrame->direction) |
 		I3C_MCTRL_TYPE(pFrame->type) | I3C_MCTRL_IBIRESP(3);
@@ -1699,7 +1698,7 @@ I3C_ErrCode_Enum hal_I3C_Process_Task(I3C_TASK_INFO_t *pTaskInfo)
 			}
 
 			if ((I3C_GET_REG_MDMACTRL(pTaskInfo->Port) & I3C_MDMACTRL_DMAFB_MASK) == 0)
-				api_I3C_Setup_Master_Read_DMA(pDevice);
+				Setup_Master_Read_DMA(pDevice);
 		}
 
 		mctrl |= I3C_MCTRL_REQUEST(I3C_MCTRL_REQUEST_EMIT_START);
@@ -1781,7 +1780,7 @@ static void i3c_npcm4xx_reset(I3C_PORT_Enum port)
 	pmc_base->SW_RST1 = sw_rst;
 
 	/* re-init device configuration */
-	hal_I3C_Config_Device(api_I3C_Get_INODE(port));
+	hal_I3C_Config_Device(I3C_Get_INODE(port));
 
 	/* enable irq interrupt */
 	irq_enable(config->irq);
@@ -1801,7 +1800,7 @@ I3C_ErrCode_Enum hal_I3C_Stop_SlaveEvent(I3C_TASK_INFO_t *pTaskInfo)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 			((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
@@ -1831,7 +1830,7 @@ I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
@@ -1858,14 +1857,14 @@ I3C_ErrCode_Enum hal_I3C_Start_IBI(I3C_TASK_INFO_t *pTaskInfo)
 			((pFrame->access_len - pFrame->access_idx) > 7)) {
 			ctrl |= I3C_CTRL_EXTDATA(0);
 			I3C_SET_REG_IBIEXT1(port, I3C_IBIEXT1_MAX(0));
-			api_I3C_Setup_Slave_IBI_DMA(pDevice);
+			Setup_Slave_IBI_DMA(pDevice);
 		} else {
 			ctrl |= I3C_CTRL_EXTDATA(1);
 
 			/* MAX = data len, CNT = 0 -> use TX FIFO */
 			I3C_SET_REG_IBIEXT1(port,
 				I3C_IBIEXT1_MAX(pFrame->access_len - pFrame->access_idx));
-			api_I3C_Setup_Slave_IBI_DMA(pDevice);
+			Setup_Slave_IBI_DMA(pDevice);
 		}
 	}
 
@@ -1890,7 +1889,7 @@ I3C_ErrCode_Enum hal_I3C_Start_Master_Request(I3C_TASK_INFO_t *pTaskInfo)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
@@ -1951,7 +1950,7 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 	if (I3C_Update_Dynamic_Address(port)) {
 		LOG_WRN("HotJoin: DA present before generate Hot-Join\n");
 		if (pTask) {
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		ret = I3C_ERR_OK;
@@ -1962,14 +1961,14 @@ I3C_ErrCode_Enum hal_I3C_Start_HotJoin(I3C_TASK_INFO_t *pTaskInfo)
 	if (I3C_GET_REG_STATUS(port) & I3C_STATUS_STDAA_MASK) {
 		LOG_WRN("HotJoin: STDAA work in progress.\n");
 		if (pTask) {
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		ret = I3C_ERR_OK;
 		goto hj_exit;
 	}
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER))) {
 		LOG_ERR("HotJoin: Only support slave or secondary master\n");
@@ -2009,7 +2008,7 @@ hj_retry:
 	if (I3C_Update_Dynamic_Address(port)) {
 		LOG_WRN("HotJoin: Bus BUS idle and DA present\n");
 		if (pTask) {
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		ret = I3C_ERR_OK;
@@ -2045,7 +2044,7 @@ hj_retry:
 		I3C_SET_REG_CTRL(port, I3C_CTRL_EVENT_None);
 
 		if (pTask) {
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		ret = I3C_ERR_OK;
@@ -2061,7 +2060,7 @@ hj_retry:
 	if (retry >= NPCM4XX_I3C_HJ_RETRY_MAX) {
 		LOG_ERR("HotJoin: Send event failed\n");
 		if (pTask) {
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		ret = I3C_ERR_BUS_ERROR;
@@ -2089,7 +2088,7 @@ I3C_ErrCode_Enum hal_I3C_Slave_TX_Free(I3C_PORT_Enum port)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
@@ -2110,7 +2109,7 @@ I3C_ErrCode_Enum hal_I3C_Slave_Query_TxLen(I3C_PORT_Enum port, uint16_t *txLen)
 	if (txLen == NULL)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	if ((pDevice->mode != I3C_DEVICE_MODE_SLAVE_ONLY) &&
 		((pDevice->mode != I3C_DEVICE_MODE_SECONDARY_MASTER)))
 		return I3C_ERR_PARAMETER_INVALID;
@@ -2297,9 +2296,9 @@ static void i3c_npcm4xx_wr_tx_fifo(struct i3c_npcm4xx_obj *obj, uint8_t *bytes, 
 
 	config = obj->config;
 	port = config->inst_id;
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 
-	ret = api_I3C_Slave_Prepare_Response(pDevice, nbytes, bytes);
+	ret = I3C_Slave_Prepare_Response(pDevice, nbytes, bytes);
 }
 
 static void i3c_npcm4xx_start_xfer(struct i3c_npcm4xx_obj *obj, struct i3c_npcm4xx_xfer *xfer)
@@ -2314,8 +2313,8 @@ static void i3c_npcm4xx_start_xfer(struct i3c_npcm4xx_obj *obj, struct i3c_npcm4
 
 	config = obj->config;
 	port = config->inst_id;
-	pDevice = api_I3C_Get_INODE(port);
-	pBus = api_I3C_Get_Bus_From_Port(port);
+	pDevice = I3C_Get_INODE(port);
+	pBus = Get_Bus_From_Port(port);
 
 	while (pDevice->pTaskListHead != NULL) {
 		if (pBus->pCurrentTask == NULL) {
@@ -2385,7 +2384,7 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 		obj = DEV_DATA(dev);
 		config = obj->config;
 		port = config->inst_id;
-		pDevice = api_I3C_Get_INODE(port);
+		pDevice = I3C_Get_INODE(port);
 		if (pDevice == NULL)
 			return -ENODEV;
 		pBus = pDevice->pOwner;
@@ -2418,7 +2417,7 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 	} else {
 		/* slave device must be internal device, and match pid */
 		for (i = 0; i < I3C_PORT_MAX; i++) {
-			pDeviceSlv = api_I3C_Get_INODE(i);
+			pDeviceSlv = I3C_Get_INODE(i);
 			if (pDeviceSlv->pid[5] != (uint8_t) slave->info.pid)
 				continue;
 			if (pDeviceSlv->pid[4] != (uint8_t)(slave->info.pid >> 8))
@@ -2714,7 +2713,7 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 
 	config = DEV_CFG(dev);
 	port = config->inst_id;
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 
 	k_mutex_lock(&pDevice->lock, K_FOREVER);
 
@@ -2751,7 +2750,7 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 		ret = i3c_slave_get_event_enabling(dev, &event_en);
 		if (ret || !(event_en & I3C_SLAVE_EVENT_SIR)) {
 			/* master should polling pending interrupt by GetSTATUS */
-			api_I3C_Slave_Update_Pending(pDevice, 0x01);
+			I3C_Slave_Update_Pending(pDevice, 0x01);
 			k_mutex_unlock(&pDevice->lock);
 			return 0;
 		}
@@ -2781,7 +2780,7 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 		}
 
 		/* let slave drive SLVSTART until bus idle */
-		pTaskInfo = api_I3C_Slave_Create_Task(protocol, txlen, &txlen, &rxlen, TxBuf, NULL,
+		pTaskInfo = I3C_Slave_Create_Task(protocol, txlen, &txlen, &rxlen, TxBuf, NULL,
 			timeout, NULL, port, NOT_HIF);
 		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_send_ibi[port]);
 
@@ -2794,11 +2793,11 @@ int i3c_npcm4xx_slave_put_read_data(const struct device *dev, struct i3c_slave_p
 			/* cancel slave event */
 			hal_I3C_Stop_SlaveEvent(pTaskInfo);
 			/* remove ibi task from queue */
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 			/* stop TX and DMA */
 			hal_I3C_Stop_Slave_TX(pDevice);
 			/* release memory resource */
-			api_I3C_Slave_Finish_Response(pDevice);
+			I3C_Slave_Finish_Response(pDevice);
 			k_mutex_unlock(&pDevice->lock);
 			return iRet;
 		}
@@ -2943,7 +2942,7 @@ static void i3c_npcm4xx_master_rx_ibi(struct i3c_npcm4xx_obj *obj)
 	/* get return data structure, payload from private data */
 	payload = priv->ibi.callbacks->write_requested(priv->ibi.context);
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	pTask = pDevice->pTaskListHead;
 	payload->size = *pTask->pRdLen;
 	memcpy(payload->buf, pTask->pRdBuf, payload->size);
@@ -3286,7 +3285,7 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 		return 0;
 	}
 
-	pBus = api_I3C_Get_Bus_From_Port(PortId);
+	pBus = Get_Bus_From_Port(PortId);
 	pMaster = pBus->pCurrentMaster;
 
 	/* get target address from master->dev_addr_tbl[pos],
@@ -3438,7 +3437,7 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	cmd.rx_length = 0;
 	cmd.tx_length = 0;
 
-	api_I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, I3C_TRANSFER_SPEED_SDR_1MHZ,
+	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, I3C_TRANSFER_SPEED_SDR_1MHZ,
 		TIMEOUT_TYPICAL, NULL, port, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
 
 	k_sem_init(&xfer.sem, 0, 1);
@@ -3510,8 +3509,8 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 
 	ENTER_MASTER_ISR();
 
-	pDevice = api_I3C_Get_Current_Master_From_Port(I3C_IF);
-	pBus = api_I3C_Get_Bus_From_Port(I3C_IF);
+	pDevice = Get_Current_Master_From_Port(I3C_IF);
+	pBus = Get_Bus_From_Port(I3C_IF);
 
 	mintmask = I3C_GET_REG_MINTMASKED(I3C_IF);
 	if (mintmask == 0) {
@@ -3587,27 +3586,27 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 			I3C_MSTATUS_COMPLETE_MASK | I3C_MSTATUS_MCTRLDONE_MASK);
 
 			if (pDevice->ackIBI == FALSE) {
-				api_I3C_Master_Insert_DISEC_After_IbiNack((uint32_t) pTask);
+				I3C_Master_Insert_DISEC_After_IbiNack((uint32_t) pTask);
 				EXIT_MASTER_ISR();
 				return;
 			}
 
 			/* To prevent ERRWARN.SPAR, we must ack/nak IBI ASAP */
 			if (ibi_type == I3C_MSTATUS_IBITYPE_IBI) {
-				api_I3C_Master_IBIACK((uint32_t) pTask);
+				I3C_Master_IBIACK((uint32_t) pTask);
 				EXIT_MASTER_ISR();
 				return;
 			} else if (ibi_type == I3C_MSTATUS_IBITYPE_MstReq) {
-				api_I3C_Master_Insert_GETACCMST_After_IbiAckMR((uint32_t) pTask);
+				I3C_Master_Insert_GETACCMST_After_IbiAckMR((uint32_t) pTask);
 				EXIT_MASTER_ISR();
 				return;
 			} else if (ibi_type == I3C_MSTATUS_IBITYPE_HotJoin) {
-				api_I3C_Master_Insert_ENTDAA_After_IbiAckHJ((uint32_t) pTask);
+				I3C_Master_Insert_ENTDAA_After_IbiAckHJ((uint32_t) pTask);
 				EXIT_MASTER_ISR();
 				return;
 			}
 
-			api_I3C_Master_Insert_DISEC_After_IbiNack((uint32_t) pTask);
+			I3C_Master_Insert_DISEC_After_IbiNack((uint32_t) pTask);
 			EXIT_MASTER_ISR();
 			return;
 		}
@@ -3707,7 +3706,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 
 				if (pFrame->type == I3C_TRANSFER_TYPE_DDR)
 					I3C_SET_REG_MWDATAB1(I3C_IF, pFrame->hdrcmd);
-				api_I3C_Setup_Master_Write_DMA(pDevice);
+				Setup_Master_Write_DMA(pDevice);
 			}
 		} else {
 			if (pFrame->type == I3C_TRANSFER_TYPE_DDR) {
@@ -3794,7 +3793,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 			*pTask->pRdLen = pTask->frame_idx * 9;
 
 			pTaskInfo->result = I3C_ERR_OK;
-			api_I3C_Master_End_Request((uint32_t) pTask);
+			I3C_Master_End_Request((uint32_t) pTask);
 			EXIT_MASTER_ISR();
 			return;
 		}
@@ -3813,7 +3812,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 			if ((pFrame->address == I3C_BROADCAST_ADDR) &&
 				(pFrame->direction == I3C_TRANSFER_DIR_WRITE) &&
 				(pFrame->access_buf[0] == CCC_DIRECT_GETACCMST)) {
-				api_I3C_Master_End_Request((uint32_t) pTask);
+				I3C_Master_End_Request((uint32_t) pTask);
 
 				I3C_SET_REG_MCONFIG(I3C_IF, I3C_GET_REG_MCONFIG(I3C_IF) &
 					~I3C_MCONFIG_MSTENA_MASK);
@@ -3837,7 +3836,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 	if (mintmask & I3C_MINTMASKED_NOWMASTER_MASK) {
 		I3C_SET_REG_MSTATUS(I3C_IF, I3C_MSTATUS_NOWMASTER_MASK | I3C_MSTATUS_SLVSTART_MASK);
 
-		pDevice = api_I3C_Get_INODE(I3C_IF);
+		pDevice = I3C_Get_INODE(I3C_IF);
 		pDevice->mode = I3C_DEVICE_MODE_CURRENT_MASTER;
 		pBus->pCurrentMaster = pDevice;
 
@@ -3854,7 +3853,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 		pFrame = &pTask->pFrameList[pTask->frame_idx];
 
 		pTaskInfo->result = I3C_ERR_OK;
-		api_I3C_Master_End_Request((uint32_t) pTask);
+		I3C_Master_End_Request((uint32_t) pTask);
 	}
 
 	/* SLVSTART might asserted right after the current task has complete (STOP).
@@ -3870,7 +3869,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 			pDevice->bAbort = TRUE;
 		}
 
-		api_I3C_Master_New_Request((uint32_t)I3C_IF);
+		I3C_Master_New_Request((uint32_t)I3C_IF);
 	}
 
 	EXIT_MASTER_ISR();
@@ -3903,7 +3902,7 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 	status = I3C_GET_REG_STATUS(I3C_IF);
 	bMATCHSS = (I3C_GET_REG_CONFIG(I3C_IF) & I3C_CONFIG_MATCHSS_MASK) ? TRUE : FALSE;
 
-	pDevice = api_I3C_Get_INODE(I3C_IF);
+	pDevice = I3C_Get_INODE(I3C_IF);
 
 	obj = gObj[I3C_IF];
 
@@ -3948,7 +3947,7 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 			}
 
 			pTaskInfo->result = I3C_ERR_OK;
-			api_I3C_Slave_End_Request((uint32_t)pTask);
+			I3C_Slave_End_Request((uint32_t)pTask);
 		}
 
 		intmasked &= ~I3C_INTMASKED_EVENT_MASK;
@@ -4071,7 +4070,7 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 					}
 				}
 
-				api_I3C_Slave_End_Request((uint32_t)pTask);
+				I3C_Slave_End_Request((uint32_t)pTask);
 			}
 		}
 
@@ -4201,7 +4200,7 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 				/* Ack IBI or Hot-Join */
 				if (pTaskInfo != NULL) {
 					pTaskInfo->result = I3C_ERR_OK;
-					api_I3C_Slave_End_Request((uint32_t)pTask);
+					I3C_Slave_End_Request((uint32_t)pTask);
 				}
 			}
 		} else if ((pTask != NULL) && ((I3C_GET_REG_STATUS(I3C_IF) &
@@ -4210,12 +4209,12 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 			if ((pFrame->flag & I3C_TRANSFER_RETRY_ENABLE) &&
 				(pFrame->retry_count >= 1)) {
 				pFrame->retry_count--;
-				api_I3C_Slave_Start_Request((uint32_t)pTaskInfo);
+				I3C_Slave_Start_Request((uint32_t)pTaskInfo);
 			} else {
 				I3C_SET_REG_CTRL(I3C_IF, I3C_MCTRL_REQUEST_NONE);
 
 				pTaskInfo->result = I3C_ERR_NACK;
-				api_I3C_Slave_End_Request((uint32_t)pTask);
+				I3C_Slave_End_Request((uint32_t)pTask);
 			}
 		}
 
@@ -4387,7 +4386,7 @@ void I3C_Slave_Handle_DMA(__u32 Parm)
 		hal_I3C_Slave_Query_TxLen(port, &txDataLen);
 		if (txDataLen == 0) {
 			/* call tx send complete hook */
-			api_I3C_Slave_Finish_Response(pDevice);
+			I3C_Slave_Finish_Response(pDevice);
 
 			/* master read ibi data done */
 			k_sem_give(&pDevice->ibi_complete);
@@ -4499,7 +4498,7 @@ uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t 
 	I3C_ErrCode_Enum result;
 	uint32_t tmp32;
 
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 
 	hdrCmd1 = 0;
 	if (bHDR) {
@@ -4572,10 +4571,10 @@ uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t 
 	}
 
 	if (pDevice->pReg[pDevice->cmdIndex].attr.read) {
-		api_I3C_Slave_Prepare_Response(pDevice, pDevice->pReg[pDevice->cmdIndex].len,
+		I3C_Slave_Prepare_Response(pDevice, pDevice->pReg[pDevice->cmdIndex].len,
 			pDevice->pReg[pDevice->cmdIndex].buf);
 	} else {
-		api_I3C_Slave_Prepare_Response(pDevice, 0, NULL);
+		I3C_Slave_Prepare_Response(pDevice, 0, NULL);
 	}
 
 	return 0;
@@ -4645,6 +4644,57 @@ static void sir_allowed_worker(struct k_work *work)
 
 	/* k_msleep(1000); */
 	obj->sir_allowed_by_sw = 1;
+}
+
+I3C_ErrCode_Enum I3C_connect_bus(I3C_PORT_Enum port, __u8 busNo)
+{
+	I3C_DEVICE_ATTRIB_t attr;
+
+	if (port >= I3C_PORT_MAX) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+	if (busNo >= I3C_BUS_COUNT_MAX) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+
+	I3C_DEVICE_INFO_t *pDevice;
+	I3C_BUS_INFO_t *pBus;
+
+	pDevice = &gI3c_dev_node_internal[port];
+	pBus = &gBus[busNo];
+
+	/* Build DevInfo for Bus */
+	if (pDevice->mode != I3C_DEVICE_MODE_DISABLE) {
+		attr.U16 = 0;
+		attr.b.present = 1;
+
+		if (pDevice->mode == I3C_DEVICE_MODE_CURRENT_MASTER) {
+			if (pBus->pCurrentMaster == NULL) {
+				pBus->pCurrentMaster = pDevice;
+			}
+
+			attr.b.suppMST = 1;
+			attr.b.defaultMST = 1;
+
+			pDevice->pDevInfo = NewDevInfo(pBus, pDevice, attr, pDevice->staticAddr,
+				pDevice->dynamicAddr, pDevice->pid, pDevice->bcr, pDevice->dcr);
+		} else   {
+			attr.b.suppSLV = 1;
+
+			attr.b.suppENTDAA = 1;
+			if (pDevice->staticAddr != I2C_STATIC_ADDR_DEFAULT_7BIT) {
+				attr.b.reqSETDASA = 1;
+			}
+
+			pDevice->pDevInfo = NewDevInfo(pBus, pDevice, attr, pDevice->staticAddr,
+				I3C_DYNAMIC_ADDR_DEFAULT_7BIT, pDevice->pid, pDevice->bcr,
+				pDevice->dcr);
+		}
+	}
+
+	pDevice->pOwner = pBus;
+
+	return I3C_ERR_OK;
 }
 
 static int i3c_npcm4xx_init(const struct device *dev)
@@ -4732,7 +4782,7 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		pDevice->callback = I3C_Master_Callback;
 	}
 
-	api_I3C_connect_bus(port, config->busno);
+	I3C_connect_bus(port, config->busno);
 
 	hal_I3C_Config_Device(pDevice);
 

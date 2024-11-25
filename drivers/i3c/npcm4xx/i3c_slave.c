@@ -9,7 +9,6 @@
 #include "i3c_slave.h"
 #include "hal_I3C.h"
 #include "i3c_drv.h"
-#include "api_i3c.h"
 
 I3C_REG_ITEM_t *pSlaveReg[I3C_PORT_MAX] = {
 	NULL,
@@ -388,7 +387,7 @@ uint8_t I3C_Update_Dynamic_Address(__u32 Parm)
 	I3C_DEVICE_INFO_t *pDevice;
 
 	port = (I3C_PORT_Enum)Parm;
-	pDevice = api_I3C_Get_INODE(port);
+	pDevice = I3C_Get_INODE(port);
 	pDevice->dynamicAddr = hal_i3c_get_dynamic_address(port);
 	pDevice->bRunI3C = (pDevice->dynamicAddr) ? TRUE : FALSE;
 	return pDevice->dynamicAddr;
@@ -403,7 +402,7 @@ void I3C_Prepare_To_Read_Command(__u32 Parm)
 		return;
 
 	I3C_PORT_Enum port = (I3C_PORT_Enum) Parm;
-	I3C_DEVICE_INFO_t *pDevice = api_I3C_Get_INODE(port);
+	I3C_DEVICE_INFO_t *pDevice = I3C_Get_INODE(port);
 
 	/* Prepare the other rx buffer to receive data from master
 	 * during processing the last received data
