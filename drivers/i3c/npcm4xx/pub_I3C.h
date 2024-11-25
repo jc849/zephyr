@@ -17,46 +17,6 @@
 
 #define WAIT_SLAVE_PREPARE_RESPONSE_TIME 10 /* unit: us */
 
-/* generic data type used in lib source for compatibility */
-typedef uint8_t		__u8;
-typedef uint16_t	__u16;
-typedef uint32_t	__u32;
-typedef int8_t		__s8;
-typedef int16_t		__s16;
-typedef int32_t		__s32;
-
-/*typedef struct i3c_reg	I3C_T;*/
-#define I3C_T struct i3c_reg
-
-#define	FALSE	false
-#define TRUE	true
-
-#define LSByte(word)	((__u8)((word) & 0xFF))
-#define LSHalf(word)	((__u16)((word) & 0xFFFF))
-#define MSByte(word)	((__u8)((word) >> 24))
-#define MSHalf(word)	((__u16)((word) >> 16))
-
-#ifndef MaskBit
-#define MaskBit(x)  ((__u32) 0x1 << (x))
-#endif
-
-#ifndef make32
-#define make32(whi, wlo) ((__u32)(((__u16)(wlo)) | (((__u32)(whi)) << 16)))
-#endif
-
-#ifndef make16
-#define make16(bhi, blo) ((__u16)(((__u8)(blo)) | (((__u16)(bhi)) << 8)))
-#endif
-
-#ifndef BIT
-#define BIT(b)			(1 << (b))
-#endif
-
-#ifndef IS_BIT_SET
-#define IS_BIT_SET(reg, bit)        (((reg >> bit) & (0x1)) != 0)
-#endif
-
-
 /*----------------------------- I3C --------------------------------*/
 #define I3C_TRANSFER_SPEED_SDR_12p5MHZ  12500000
 #define I3C_TRANSFER_SPEED_SDR_8MHZ     8000000
@@ -147,15 +107,15 @@ enum I3C_VERSION {
 #define I3C_VERSION_Enum enum I3C_VERSION
 
 struct I3C_BAUDRATE {
-	__u32 i3cI2c;
-	__u32 i3cSdr;
+	uint32_t i3cI2c;
+	uint32_t i3cSdr;
 
-	__u16 tHmax;
-	__u16 tHmin;
-	__u16 tLmax;
-	__u16 tLmin;
-	__u16 tTimeout;
-	_Bool bRunI3C;
+	uint16_t tHmax;
+	uint16_t tHmin;
+	uint16_t tLmax;
+	uint16_t tLmin;
+	uint16_t tTimeout;
+	bool bRunI3C;
 };
 
 #define I3C_BAUDRATE_t struct I3C_BAUDRATE
@@ -164,15 +124,15 @@ struct I3C_DEVICE_INFO;
 struct I3C_DEVICE_INFO_SHORT;
 
 /*typedef */struct I3C_BUS_INFO {
-	__u8 busno;
+	uint8_t busno;
 
 	I3C_BUS_TYPE_Enum busType;
 	I3C_VERSION_Enum busVersion;
 	I3C_BUS_STATE_Enum busState;
 	struct I3C_TRANSFER_TASK *pCurrentTask;
-	__u16 timer_ms;
+	uint16_t timer_ms;
 
-	__u8 DevCount;
+	uint8_t DevCount;
 	struct I3C_DEVICE_INFO_SHORT *pDevList;
 	struct I3C_DEVICE_INFO *pCurrentMaster;
 } /* I3C_BUS_INFO_t*/;
@@ -181,39 +141,39 @@ struct I3C_DEVICE_INFO_SHORT;
 
 /*typedef */union I3C_DEVICE_ATTRIB_t {
 	struct {
-		__u16 reqSETAASA : 1;
-		__u16 reqSETDASA : 1;
-		__u16 reqRSTDAA : 1;
-		__u16 reqSETHID : 1;
-		__u16 reqHotJoin : 1;
-		__u16 reqPostInit : 1;
+		uint16_t reqSETAASA : 1;
+		uint16_t reqSETDASA : 1;
+		uint16_t reqRSTDAA : 1;
+		uint16_t reqSETHID : 1;
+		uint16_t reqHotJoin : 1;
+		uint16_t reqPostInit : 1;
 
-		__u16 doneSETAASA : 1;
-		__u16 doneSETDASA : 1;
-		__u16 doneRSTDAA : 1;
-		__u16 doneSETHID : 1;
-		__u16 doneHotJoin : 1;
-		__u16 donePostInit : 1;
+		uint16_t doneSETAASA : 1;
+		uint16_t doneSETDASA : 1;
+		uint16_t doneRSTDAA : 1;
+		uint16_t doneSETHID : 1;
+		uint16_t doneHotJoin : 1;
+		uint16_t donePostInit : 1;
 
-		__u16 suppMST : 1;
-		__u16 suppSLV : 1;
-		__u16 defaultMST : 1;
+		uint16_t suppMST : 1;
+		uint16_t suppSLV : 1;
+		uint16_t defaultMST : 1;
 
-		__u16 suppENTDAA : 1;
-		__u16 present: 1;
-		__u16 runI3C: 1;
+		uint16_t suppENTDAA : 1;
+		uint16_t present: 1;
+		uint16_t runI3C: 1;
 	} b;
-	__u16 U16;
+	uint16_t U16;
 } /* I3C_DEVICE_ATTRIB_t */;
 
 #define I3C_DEVICE_ATTRIB_t union I3C_DEVICE_ATTRIB_t
 
 /*typedef */struct I3C_DEVICE_INFO_SHORT {
-	__u8 staticAddr;
-	__u8 dynamicAddr;
-	__u8 pid[6];
-	__u8 bcr;
-	__u8 dcr;
+	uint8_t staticAddr;
+	uint8_t dynamicAddr;
+	uint8_t pid[6];
+	uint8_t bcr;
+	uint8_t dcr;
 
 	I3C_DEVICE_ATTRIB_t attr;
 	struct I3C_DEVICE_INFO_SHORT *pNextDev;
@@ -230,21 +190,21 @@ struct I3C_DEVICE_INFO_SHORT;
 
 #define TIMEOUT_TYPICAL	10
 
-#define NOT_HIF FALSE
-#define IS_HIF TRUE
+#define NOT_HIF false
+#define IS_HIF true
 
 /*typedef */union cmd_t {
-	__u8 cmd8;
-	__u16 cmd16;
+	uint8_t cmd8;
+	uint16_t cmd16;
 } /* cmd_t*/;
 
 #define cmd_t union cmd_t
 
 /*typedef */struct cmd_attrib {
-	__u8 endian	: 1;    /* 0b: little, 1b: bigh endian, if width != 0 */
-	__u8 width : 1;     /* 0b = 1, 1b = 2 */
-	__u8 write : 1;     /* wrtiable */
-	__u8 read  : 1;     /* readable */
+	uint8_t endian	: 1;    /* 0b: little, 1b: bigh endian, if width != 0 */
+	uint8_t width : 1;     /* 0b = 1, 1b = 2 */
+	uint8_t write : 1;     /* wrtiable */
+	uint8_t read  : 1;     /* readable */
 } /* cmd_attrib_t */;
 
 #define cmd_attrib_t struct cmd_attrib
@@ -253,12 +213,12 @@ struct I3C_DEVICE_INFO_SHORT;
 	cmd_t cmd;
 
 	union {
-		__u8 rw;
+		uint8_t rw;
 		cmd_attrib_t attr;
 	};
 
-	__u16 len;
-	__u8 *buf;
+	uint16_t len;
+	uint8_t *buf;
 } /* I3C_REG_ITEM_t*/;
 
 #define I3C_REG_ITEM_t struct I3C_REG_ITEM
@@ -407,21 +367,21 @@ enum I3C_TRANSFER_PROTOCOL {
 
 #define I3C_TRANSFER_PROTOCOL_Enum enum I3C_TRANSFER_PROTOCOL
 
-#define I2C_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x00) ? TRUE : FALSE)
-#define I3C_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x10) ? TRUE : FALSE)
-#define DDR_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x20) ? TRUE : FALSE)
-#define CCC_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x40) ? TRUE : FALSE)
-	#define CCC_BROADCAST(CCC) (((CCC >= 0) && (CCC <= 0x7F)) ? TRUE : FALSE)
-	#define CCC_DIRECT(CCC) (((CCC >= 0x80) && (CCC <= 0xFE)) ? TRUE : FALSE)
-#define EVENT_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x80) ? TRUE : FALSE)
-#define SLAVE_TRANSFER_PROTOCOL(x) (((x == 0x81) || (x == 0x82) || (x == 0x84)) ? TRUE : FALSE)
+#define I2C_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x00) ? true : false)
+#define I3C_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x10) ? true : false)
+#define DDR_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x20) ? true : false)
+#define CCC_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x40) ? true : false)
+	#define CCC_BROADCAST(CCC) (((CCC >= 0) && (CCC <= 0x7F)) ? true : false)
+	#define CCC_DIRECT(CCC) (((CCC >= 0x80) && (CCC <= 0xFE)) ? true : false)
+#define EVENT_TRANSFER_PROTOCOL(x) (((x & 0xF0) == 0x80) ? true : false)
+#define SLAVE_TRANSFER_PROTOCOL(x) (((x == 0x81) || (x == 0x82) || (x == 0x84)) ? true : false)
 
-#define WRITE_TRANSFER_PROTOCOL(x)      (((x & 0xCF) == 0x00) ? TRUE : FALSE)
-#define READ_TRANSFER_PROTOCOL(x)       (((x & 0xCF) == 0x01) ? TRUE : FALSE)
-#define WRITEnREAD_TRANSFER_PROTOCOL(x) (((x & 0xCF) == 0x02) ? TRUE : FALSE)
-#define W7E_TRANSFER_PROTOCOL(x)        (((x & 0xCF) == 0x03) ? TRUE : FALSE)
-#define R7E_TRANSFER_PROTOCOL(x)        (((x & 0xCF) == 0x04) ? TRUE : FALSE)
-#define W7EnREAD_TRANSFER_PROTOCOL(x)   (((x & 0xCF) == 0x05) ? TRUE : FALSE)
+#define WRITE_TRANSFER_PROTOCOL(x)      (((x & 0xCF) == 0x00) ? true : false)
+#define READ_TRANSFER_PROTOCOL(x)       (((x & 0xCF) == 0x01) ? true : false)
+#define WRITEnREAD_TRANSFER_PROTOCOL(x) (((x & 0xCF) == 0x02) ? true : false)
+#define W7E_TRANSFER_PROTOCOL(x)        (((x & 0xCF) == 0x03) ? true : false)
+#define R7E_TRANSFER_PROTOCOL(x)        (((x & 0xCF) == 0x04) ? true : false)
+#define W7EnREAD_TRANSFER_PROTOCOL(x)   (((x & 0xCF) == 0x05) ? true : false)
 
 enum I3C_TASK_POLICY {
 	I3C_TASK_POLICY_INSERT_FIRST,
@@ -468,36 +428,36 @@ enum I3C_IBITYPE {
 
 #define I3C_IBITYPE_Enum enum I3C_IBITYPE
 
-typedef __u32 (*ptrI3C_RetFunc)(__u32 TaskInfo, __u32 ErrDetail);
+typedef uint32_t (*ptrI3C_RetFunc)(uint32_t TaskInfo, uint32_t ErrDetail);
 
 struct I3C_CAPABILITY_INFO {
-	__u8	MASTER : 1;
-	__u8	SLAVE : 1;
+	uint8_t	MASTER : 1;
+	uint8_t	SLAVE : 1;
 
-	__u8	INT : 1;
-	__u8	DMA : 1;
-	__u8	OFFLINE : 1;
+	uint8_t	INT : 1;
+	uint8_t	DMA : 1;
+	uint8_t	OFFLINE : 1;
 
-	__u8	HDR_DDR : 1;
-	__u8	HDR_TSP : 1;
-	__u8	HDR_TSL : 1;
-	__u8	IBI : 1;
-	__u8	HOT_JOIN : 1;
-	__u8	MASTER_REQUEST : 1;
+	uint8_t	HDR_DDR : 1;
+	uint8_t	HDR_TSP : 1;
+	uint8_t	HDR_TSL : 1;
+	uint8_t	IBI : 1;
+	uint8_t	HOT_JOIN : 1;
+	uint8_t	MASTER_REQUEST : 1;
 
 	/* Time Control */
-	__u8	SYNC : 1;
-	__u8	ASYNC0 : 1;
-	__u8	ASYNC1 : 1;
-	__u8	ASYNC2 : 1;
-	__u8	ASYNC3 : 1;
+	uint8_t	SYNC : 1;
+	uint8_t	ASYNC0 : 1;
+	uint8_t	ASYNC1 : 1;
+	uint8_t	ASYNC2 : 1;
+	uint8_t	ASYNC3 : 1;
 
 	/* Version */
-	__u8 I3C_VER_1p0 : 1;
-	__u8 I3C_VER_1p1 : 1;
+	uint8_t I3C_VER_1p0 : 1;
+	uint8_t I3C_VER_1p1 : 1;
 
-	__u8 FIFO_TX_LEN;
-	__u8 FIFO_RX_LEN;
+	uint8_t FIFO_TX_LEN;
+	uint8_t FIFO_RX_LEN;
 };
 
 #define I3C_CAPABILITY_INFO_t struct I3C_CAPABILITY_INFO
@@ -509,46 +469,46 @@ struct I3C_DEVICE_INFO {
 	struct I3C_DEVICE_INFO_SHORT *pDevInfo;
 
 	I3C_DEVICE_MODE_Enum mode;  /* off, master on, slave only, master capable */
-	_Bool bRunI3C;              /* current slave device working mode, 0:i2c, 1:i3c */
+	bool bRunI3C;              /* current slave device working mode, 0:i2c, 1:i3c */
 
 	/* common */
-	__u8 dynamicAddr;
-	__u8 pid[6];
-	__u8 dcr;                /* Device characteristics register information.*/
-	__u8 bcr;                /* Bus characteristics register information.*/
-	__u16 vendorID;          /* Device vendor ID (manufacture ID).*/
-	__u32 partNumber;        /* Device part number info */
+	uint8_t dynamicAddr;
+	uint8_t pid[6];
+	uint8_t dcr;                /* Device characteristics register information.*/
+	uint8_t bcr;                /* Bus characteristics register information.*/
+	uint16_t vendorID;          /* Device vendor ID (manufacture ID).*/
+	uint32_t partNumber;        /* Device part number info */
 
-	__u32 max_rd_len;
-	__u32 max_wr_len;
+	uint32_t max_rd_len;
+	uint32_t max_wr_len;
 
 	/* master config */
-	_Bool enableOpenDrainHigh;
-	_Bool enableOpenDrainStop;
-	_Bool disableTimeout;
-	_Bool ackIBI; /* For master, used to define master should ack or nack the slave request */
+	bool enableOpenDrainHigh;
+	bool enableOpenDrainStop;
+	bool disableTimeout;
+	bool ackIBI; /* For master, used to define master should ack or nack the slave request */
 				  /* For slave, used to set correct protocol (with 7E)*/
 	struct I3C_BAUDRATE baudrate;
 
-	__u8 *pRxBuf;
-	__u8 *pTxBuf;
+	uint8_t *pRxBuf;
+	uint8_t *pTxBuf;
 
-	__u16 rxOffset;
-	__u16 txOffset;
+	uint16_t rxOffset;
+	uint16_t txOffset;
 
-	__u16 rxLen;
-	__u16 txLen;
+	uint16_t rxLen;
+	uint16_t txLen;
 
 	/* slave config */
-	__u8 staticAddr; /* 7-bit */
-	_Bool stopSplitRead; /* 1b: master can read un-read data after STOP */
+	uint8_t staticAddr; /* 7-bit */
+	bool stopSplitRead; /* 1b: master can read un-read data after STOP */
 						 /* 0b: slave should reset command, RX DMA/FIFO */
-	__u8 cmdIndex;
+	uint8_t cmdIndex;
 	I3C_REG_ITEM_t *pReg;
 	uint8_t regCnt;
 
-	_Bool bAbort;
-	volatile __u8 task_count;
+	bool bAbort;
+	volatile uint8_t task_count;
 	struct I3C_TRANSFER_TASK *pTaskListHead;
 	ptrI3C_RetFunc callback;
 
@@ -582,17 +542,17 @@ struct I3C_TASK_INFO {
 	I3C_ErrCode_Enum result;
 	ptrI3C_RetFunc callback;
 
-	__u8 MasterRequest : 1;
-	__u8 bHIF : 1;
+	uint8_t MasterRequest : 1;
+	uint8_t bHIF : 1;
 	I3C_PORT_Enum Port;
 
-	__u32 u32SwTimeout;
+	uint32_t SwTimeout;
 
 	void *pParentTaskInfo;
 
 	/* used for Sensor module */
-	__u8 idx;
-	__u8 fmt;
+	uint8_t idx;
+	uint8_t fmt;
 };
 
 #define I3C_TASK_INFO_t struct I3C_TASK_INFO
@@ -601,18 +561,18 @@ struct I3C_TRANSFER_TASK {
 	struct I3C_TASK_INFO *pTaskInfo;
 
 	I3C_TRANSFER_PROTOCOL_Enum protocol;
-	__u32 baudrate;
-	__u8 address;
+	uint32_t baudrate;
+	uint8_t address;
 
-	__u8 *pWrBuf;
-	__u16 *pWrLen;
+	uint8_t *pWrBuf;
+	uint16_t *pWrLen;
 
-	__u8 *pRdBuf;
-	__u16 *pRdLen;
+	uint8_t *pRdBuf;
+	uint16_t *pRdLen;
 
 	struct I3C_TRANSFER_FRAME *pFrameList;
-	__u8 frame_count;
-	__u8 frame_idx;
+	uint8_t frame_count;
+	uint8_t frame_idx;
 
 	struct I3C_TRANSFER_TASK *pNextTask;
 };
@@ -624,16 +584,16 @@ struct I3C_TRANSFER_FRAME {
 
 	I3C_TRANSFER_FLAG_Enum flag;
 	I3C_TRANSFER_TYPE_Enum type;
-	__u32 baudrate;
+	uint32_t baudrate;
 
-	__u8 address;
+	uint8_t address;
 	I3C_TRANSFER_DIR_Enum direction;
-	__u8 hdrcmd;
+	uint8_t hdrcmd;
 
-	__u16 access_len;
-	__u16 access_idx;
-	__u8 *access_buf;
-	__u8 retry_count;
+	uint16_t access_len;
+	uint16_t access_idx;
+	uint8_t *access_buf;
+	uint8_t retry_count;
 
 	struct I3C_TRANSFER_FRAME *pNextFrame;
 };
@@ -674,13 +634,13 @@ enum LSM6DSO_POST_INIT_STATE {
 
 struct LSM6DSO_DEVICE_INFO {
 	I3C_DEVICE_INFO_t i3c_device;
-	__u32 baudrate;
+	uint32_t baudrate;
 	I3C_LSM6DSO_STATE_Enum state;
 	LSM6DSO_POST_INIT_STATE_Enum post_init_state;
-	__u16 initMode;
-	__u16 rxLen;
-	__u8 rxBuf[16];
-	__u8 temp_val;
+	uint16_t initMode;
+	uint16_t rxLen;
+	uint8_t rxBuf[16];
+	uint8_t temp_val;
 };
 
 #define SPD5118_POST_INIT_STATE_Enum enum SPD5118_POST_INIT_STATE
@@ -795,77 +755,77 @@ struct SPD5118_TASK {
 	struct SPD5118_TASK *pNextTask;
 
 	/* used to store task parameters */
-	__u8 address;
+	uint8_t address;
 	SPD5118_OP_Enum op;
-	_Bool bPEC;
-	_Bool b2B;
-	_Bool bRunI3C;   /* optional, used to switch i2c and i3c*/
-	__u16 offset;
-	__u8 *pWrBuf, *pRdBuf;
-	__u16 *pWrLen, *pRdLen;
+	bool bPEC;
+	bool b2B;
+	bool bRunI3C;   /* optional, used to switch i2c and i3c*/
+	uint16_t offset;
+	uint8_t *pWrBuf, *pRdBuf;
+	uint16_t *pWrLen, *pRdLen;
 
-	__u16 retry_cnt;     /* used to retry */
-	__u16 timeout;       /* used to validate task timeout */
-	__u16 access_offset; /* used to record status for long read/write */
-	__u8 access_size;    /* used to validate read length */
+	uint16_t retry_cnt;     /* used to retry */
+	uint16_t timeout;       /* used to validate task timeout */
+	uint16_t access_offset; /* used to record status for long read/write */
+	uint8_t access_size;    /* used to validate read length */
 };
 
 #define SPD5118_DEVICE_INFO_t struct SPD5118_DEVICE_INFO
 
 struct SPD5118_DEVICE_INFO {
 	I3C_DEVICE_INFO_t i3c_device;
-	__u32 baudrate;
+	uint32_t baudrate;
 
-	__u8 bPEC : 1;
+	uint8_t bPEC : 1;
 
 	SPD5118_POST_INIT_STATE_Enum post_init_state;
 	SPD5118_STATE_Enum state;
-	__u8 checkMask;
-	__u16 reset_timeout;
+	uint8_t checkMask;
+	uint16_t reset_timeout;
 
-	__u8 MR0;    /* Device Type, MSB */
-	__u8 MR1;    /* Device Type, LSB */
-	__u8 MR2;    /* Revision */
-	__u8 MR3;    /* Vendor ID, Byte 0 */
-	__u8 MR4;    /* Vendor ID, Byte 1 */
-	__u8 MR5;    /* Device Capability */
+	uint8_t MR0;    /* Device Type, MSB */
+	uint8_t MR1;    /* Device Type, LSB */
+	uint8_t MR2;    /* Revision */
+	uint8_t MR3;    /* Vendor ID, Byte 0 */
+	uint8_t MR4;    /* Vendor ID, Byte 1 */
+	uint8_t MR5;    /* Device Capability */
 		/* [1] Internal Temperature Sensor Support */
 		/* [0] Hub function support */
-	__u8 MR6;    /* Device Write Recovery Time Capability */
+	uint8_t MR6;    /* Device Write Recovery Time Capability */
 		/* [7:4]: 0, .., 10, 50, 100, 200, 500 */
 		/* [1:0] == 00b, ns */
 		/*       == 01b, us */
 		/*       == 10b, ms */
 		/*       == 11b, Reserved */
-	__u8 MR11;   /* I2C Legacy Mode Device Configuration*/
+	uint8_t MR11;   /* I2C Legacy Mode Device Configuration*/
 		/* [3] == 0b, 1 Byte addressing */
 		/*     == 1b, 2 Byte addressing */
 		/* [2:0], Non Volatile Memory Address Page Pointer in I2C Legacy Mode */
-	__u8 MR12;   /* Write Protection For NVM Blocks [7:0] */
-	__u8 MR13;   /* Write Protection for NVM Blocks [15:8] */
-	__u8 MR14;   /* Device Configuration - Host and Local Interface IO; */
+	uint8_t MR12;   /* Write Protection For NVM Blocks [7:0] */
+	uint8_t MR13;   /* Write Protection for NVM Blocks [15:8] */
+	uint8_t MR14;   /* Device Configuration - Host and Local Interface IO; */
 		/* [5] Local Interface Pull Up Resistor Configuration */
-	__u8 MR18;   /* Device Configuration */
+	uint8_t MR18;   /* Device Configuration */
 		/* [7] PEC, I3C mode only */
 		/* [6] T bit Disable, I3C mode only */
 		/* [5] Interface Selection */
 		/* [4] Default Read Address Pointer Enable */
 		/* [3:2], Default Read Pointer Starting Address */
 		/* [1], Burst Length for Default Read Pointer Address for PEC Calculation */
-	__u8 MR19;   /* Clear Register MR51 Temperature Status Command */
+	uint8_t MR19;   /* Clear Register MR51 Temperature Status Command */
 		/* [3] CRIT_LOW, clear MR51[3] */
 		/* [2] CRIT_HIGH, clear MR51[2] */
 		/* [1] LOW, clear MR51[1] */
 		/* [0] HIGH, clear MR51[0] */
-	__u8 MR20;   /* Clear Register MR52 Error Status Command */
+	uint8_t MR20;   /* Clear Register MR52 Error Status Command */
 		/* [7]  Write or Read Attempt while SPD Device Busy Error, Clear MR52[7] */
 		/* [6]  Write Attempt to Protected NVM Block Error, Clear MR52[6] */
 		/* [5]  Write Attempt to NVM Protection Register Error, Clear MR52[5] */
 		/* [1]  PEC Error, Clear MR52[1] */
 		/* [0]  Parity Error, Clear MR52[0] */
-	__u8 MR26;   /* TS Configuration */
+	uint8_t MR26;   /* TS Configuration */
 		/* [0] Disable thermal sensor */
-	__u8 MR27;   /* Interrupt Configurations */
+	uint8_t MR27;   /* Interrupt Configurations */
 		/* [7] Clear MR48[8], MR51[3:0], MR52[7:5,3,1:0] */
 		/* [4] IBI enabled for MR52[7:5, 1:0] */
 		/* [3] MR27[4] = 1 & MR27[3] = 1 & MR51[3] = 1 generate IBI for CRIT_LOW */
@@ -873,27 +833,27 @@ struct SPD5118_DEVICE_INFO {
 		/* [1] MR27[4] = 1 & MR27[1] = 1 & MR51[1] = 1 generate IBI for LOW */
 		/* [0] MR27[4] = 1 & MR27[0] = 1 & MR51[0] = 1 generate IBI for HIGH */
 
-	__u8 MR28;   /* TS Temperature High Limit Configuration - Low Byte */
-	__u8 MR29;   /* TS Temperature High Limit Configuration - High Byte */
-	__u8 MR30;   /* TS Temperature Low Limit Configuration - Low Byte */
-	__u8 MR31;   /* TS Temperature Low Limit Configuration - High Byte */
-	__u8 MR32;   /* TS Critical Temperature High Limit Configuration - Low Byte */
-	__u8 MR33;   /* TS Critical Temperature High Limit Configuration - High Byte */
-	__u8 MR34;   /* TS Critical Temperature Low Limit Configuration - Low Byte */
-	__u8 MR35;   /* TS Critical Temperature Low Limit Configuration - High Byte */
+	uint8_t MR28;   /* TS Temperature High Limit Configuration - Low Byte */
+	uint8_t MR29;   /* TS Temperature High Limit Configuration - High Byte */
+	uint8_t MR30;   /* TS Temperature Low Limit Configuration - Low Byte */
+	uint8_t MR31;   /* TS Temperature Low Limit Configuration - High Byte */
+	uint8_t MR32;   /* TS Critical Temperature High Limit Configuration - Low Byte */
+	uint8_t MR33;   /* TS Critical Temperature High Limit Configuration - High Byte */
+	uint8_t MR34;   /* TS Critical Temperature Low Limit Configuration - Low Byte */
+	uint8_t MR35;   /* TS Critical Temperature Low Limit Configuration - High Byte */
 
-	__u8 MR48;   /* Device Status */
+	uint8_t MR48;   /* Device Status */
 		/* [7] Pending IBI */
 		/* [3] Write Operation Status */
 		/* [2] Write Protect Override Status */
-	__u8 MR49;   /* TS Current Sensed Temperature - Low Byte */
-	__u8 MR50;   /* TS Current Sensed Temperature - High Byte */
-	__u8 MR51;   /* TS Temperature Status */
+	uint8_t MR49;   /* TS Current Sensed Temperature - Low Byte */
+	uint8_t MR50;   /* TS Current Sensed Temperature - High Byte */
+	uint8_t MR51;   /* TS Temperature Status */
 		/* [3] TS < CRIT_LOW */
 		/* [2] TS > CRIT_HIGH */
 		/* [1] TS < LOW */
 		/* [0] TS > HIGH */
-	__u8 MR52;   /* Hub, Thermal and NVM Error Status */
+	uint8_t MR52;   /* Hub, Thermal and NVM Error Status */
 		/* [7] BUSY_ERROR */
 		/* [6] WR_NVM_BLK_ERROR */
 		/* [5] WR_NVM_PRO_REG_ERROR */
@@ -902,7 +862,7 @@ struct SPD5118_DEVICE_INFO {
 
 	SPD5118_TASK_t *pOpListHead; /* op list for a specified device */
 
-	__u16 initMode;
+	uint16_t initMode;
 };
 
 

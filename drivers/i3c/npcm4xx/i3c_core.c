@@ -75,18 +75,18 @@ void I3C_Setup_Internal_Device(void)
 
 		/* validate mode setting */
 		if ((pDevice->mode == I3C_DEVICE_MODE_CURRENT_MASTER) &&
-			(pDevice->capability.MASTER == FALSE)) {
+			(pDevice->capability.MASTER == false)) {
 			return;
 		}
 
 		if ((pDevice->mode == I3C_DEVICE_MODE_SLAVE_ONLY) &&
-			(pDevice->capability.SLAVE == FALSE)) {
+			(pDevice->capability.SLAVE == false)) {
 			return;
 		}
 
 		if ((pDevice->mode == I3C_DEVICE_MODE_SECONDARY_MASTER) &&
-			((pDevice->capability.MASTER == FALSE) ||
-			 (pDevice->capability.SLAVE == FALSE))) {
+			((pDevice->capability.MASTER == false) ||
+			 (pDevice->capability.SLAVE == false))) {
 			return;
 		}
 
@@ -104,9 +104,9 @@ void I3C_Setup_Internal_Device(void)
 		if (pDevice->mode == I3C_DEVICE_MODE_DISABLE) {
 			pDevice->callback = NULL;
 		} else if (pDevice->mode == I3C_DEVICE_MODE_CURRENT_MASTER) {
-			pDevice->disableTimeout = TRUE;
-			pDevice->enableOpenDrainHigh = TRUE;
-			pDevice->enableOpenDrainStop = FALSE;
+			pDevice->disableTimeout = true;
+			pDevice->enableOpenDrainHigh = true;
+			pDevice->enableOpenDrainStop = false;
 			pDevice->callback = I3C_Master_Callback;
 		} else if (pDevice->mode == I3C_DEVICE_MODE_SLAVE_ONLY) {
 			pDevice->callback = I3C_Slave_Callback;
@@ -159,6 +159,57 @@ I3C_ErrCode_Enum I3C_Setup_Bus(void)
 			}
 		}
 	}
+
+	return I3C_ERR_OK;
+}
+
+I3C_ErrCode_Enum I3C_connect_bus(I3C_PORT_Enum port, uint8_t busNo)
+{
+	I3C_DEVICE_ATTRIB_t attr;
+
+	if (port >= I3C_PORT_MAX) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+	if (busNo >= I3C_BUS_COUNT_MAX) {
+		return I3C_ERR_PARAMETER_INVALID;
+	}
+
+	I3C_DEVICE_INFO_t *pDevice;
+	I3C_BUS_INFO_t *pBus;
+
+	pDevice = &gI3c_dev_node_internal[port];
+	pBus = &gBus[busNo];
+
+	/* Build DevInfo for Bus */
+	if (pDevice->mode != I3C_DEVICE_MODE_DISABLE) {
+		attr.U16 = 0;
+		attr.b.present = 1;
+
+		if (pDevice->mode == I3C_DEVICE_MODE_CURRENT_MASTER) {
+			if (pBus->pCurrentMaster == NULL) {
+				pBus->pCurrentMaster = pDevice;
+			}
+
+			attr.b.suppMST = 1;
+			attr.b.defaultMST = 1;
+
+			pDevice->pDevInfo = NewDevInfo(pBus, pDevice, attr, pDevice->staticAddr,
+				pDevice->dynamicAddr, pDevice->pid, pDevice->bcr, pDevice->dcr);
+		} else   {
+			attr.b.suppSLV = 1;
+
+			attr.b.suppENTDAA = 1;
+			if (pDevice->staticAddr != I2C_STATIC_ADDR_DEFAULT_7BIT) {
+				attr.b.reqSETDASA = 1;
+			}
+
+			pDevice->pDevInfo = NewDevInfo(pBus, pDevice, attr, pDevice->staticAddr,
+				I3C_DYNAMIC_ADDR_DEFAULT_7BIT, pDevice->pid, pDevice->bcr,
+				pDevice->dcr);
+		}
+	}
+
+	pDevice->pOwner = pBus;
 
 	return I3C_ERR_OK;
 }
@@ -222,29 +273,29 @@ I3C_PORT_Enum I3C_Get_IPORT(I3C_DEVICE_INFO_t *pDevice)
  * @return                          None
  */
 /*------------------------------------------------------------------------------*/
-_Bool IsValidDynamicAddress(__u8 addr)
+bool IsValidDynamicAddress(uint8_t addr)
 {
 	if ((addr >= 0x08) && (addr <= 0x3D)) {
-		return TRUE;
+		return true;
 	}
 
 	if ((addr >= 0x3F) && (addr <= 0x5D)) {
-		return TRUE;
+		return true;
 	}
 
 	if ((addr >= 0x5F) && (addr <= 0x6D)) {
-		return TRUE;
+		return true;
 	}
 
 	if ((addr >= 0x6F) && (addr <= 0x75)) {
-		return TRUE;
+		return true;
 	}
 
 	if (addr == 0x77) {
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -253,13 +304,13 @@ _Bool IsValidDynamicAddress(__u8 addr)
  * @return                          None
  */
 /*------------------------------------------------------------------------------*/
-_Bool IsValidStaticAddress(__u8 addr)
+bool IsValidStaticAddress(uint8_t addr)
 {
 	if (addr == 0x7E) {
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -301,7 +352,7 @@ I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port)
 
 	pDevice->mode = I3C_DEVICE_MODE_DISABLE;
 	pDevice->callback = NULL;
-	pDevice->bRunI3C = FALSE;
+	pDevice->bRunI3C = false;
 
 	pDevice->staticAddr = I2C_STATIC_ADDR_DEFAULT_7BIT;
 	pDevice->dynamicAddr = I3C_DYNAMIC_ADDR_DEFAULT_7BIT;
@@ -319,12 +370,12 @@ I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port)
 	pDevice->regCnt = 0;
 	pDevice->pReg = NULL;
 	pDevice->cmdIndex = CMD_DEFAULT;
-	pDevice->stopSplitRead = FALSE;
+	pDevice->stopSplitRead = false;
 
-	pDevice->enableOpenDrainHigh = FALSE;
-	pDevice->enableOpenDrainStop = FALSE;
-	pDevice->disableTimeout = TRUE;
-	pDevice->ackIBI = FALSE;
+	pDevice->enableOpenDrainHigh = false;
+	pDevice->enableOpenDrainStop = false;
+	pDevice->disableTimeout = true;
+	pDevice->ackIBI = false;
 
 	/* pDevice->maxDataRate = 0; */
 
@@ -351,7 +402,7 @@ I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port)
  * @return                          pointer to the bus object specified by the bus no
  */
 /*------------------------------------------------------------------------------*/
-I3C_BUS_INFO_t *Get_Bus_From_BusNo(__u8 busno)
+I3C_BUS_INFO_t *Get_Bus_From_BusNo(uint8_t busno)
 {
 	if (busno >= I3C_BUS_COUNT_MAX) {
 		return NULL;
@@ -386,13 +437,13 @@ I3C_BUS_INFO_t *Get_Bus_From_Port(I3C_PORT_Enum port)
  * @return                true, if the bus is idle or STOP
  */
 /*------------------------------------------------------------------------------*/
-_Bool I3C_IS_BUS_KEEP_IDLE(I3C_BUS_INFO_t *pBus)
+bool I3C_IS_BUS_KEEP_IDLE(I3C_BUS_INFO_t *pBus)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	if (pBus->pCurrentMaster != NULL) {
@@ -407,7 +458,7 @@ _Bool I3C_IS_BUS_KEEP_IDLE(I3C_BUS_INFO_t *pBus)
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -417,13 +468,13 @@ _Bool I3C_IS_BUS_KEEP_IDLE(I3C_BUS_INFO_t *pBus)
  * @return                       true, if the bus is during DAA
  */
 /*------------------------------------------------------------------------------*/
-_Bool I3C_IS_BUS_DURING_DAA(I3C_BUS_INFO_t *pBus)
+bool I3C_IS_BUS_DURING_DAA(I3C_BUS_INFO_t *pBus)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	if (pBus->pCurrentMaster != NULL) {
@@ -438,7 +489,7 @@ _Bool I3C_IS_BUS_DURING_DAA(I3C_BUS_INFO_t *pBus)
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -448,13 +499,13 @@ _Bool I3C_IS_BUS_DURING_DAA(I3C_BUS_INFO_t *pBus)
  * @return                       true, if the SLVSTART is detected
  */
 /*------------------------------------------------------------------------------*/
-_Bool I3C_IS_BUS_DETECT_SLVSTART(I3C_BUS_INFO_t *pBus)
+bool I3C_IS_BUS_DETECT_SLVSTART(I3C_BUS_INFO_t *pBus)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	if (pBus->pCurrentMaster != NULL) {
@@ -469,7 +520,7 @@ _Bool I3C_IS_BUS_DETECT_SLVSTART(I3C_BUS_INFO_t *pBus)
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -479,13 +530,13 @@ _Bool I3C_IS_BUS_DETECT_SLVSTART(I3C_BUS_INFO_t *pBus)
  * @return                       true, if bus is waiting for the STOP or RESTART
  */
 /*------------------------------------------------------------------------------*/
-_Bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus)
+bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus)
 {
 	I3C_PORT_Enum port;
 	I3C_DEVICE_INFO_t *pDevice;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	if (pBus->pCurrentMaster != NULL) {
@@ -494,7 +545,7 @@ _Bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus)
 		return hal_I3C_Is_Master_NORMAL(port);
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -513,7 +564,7 @@ _Bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus)
  */
 /*------------------------------------------------------------------------------*/
 I3C_DEVICE_INFO_SHORT_t *NewDevInfo(I3C_BUS_INFO_t *pBus, void *pDevice, I3C_DEVICE_ATTRIB_t attr,
-	__u8 prefferedAddr, __u8 dynamicAddr, __u8 pid[], __u8 bcr, __u8 dcr)
+	uint8_t prefferedAddr, uint8_t dynamicAddr, uint8_t pid[], uint8_t bcr, uint8_t dcr)
 {
 	I3C_DEVICE_INFO_SHORT_t *pNewDev;
 	I3C_DEVICE_INFO_SHORT_t *pThisDev;
@@ -564,7 +615,7 @@ I3C_DEVICE_INFO_SHORT_t *NewDevInfo(I3C_BUS_INFO_t *pBus, void *pDevice, I3C_DEV
  * @return                          Return device info with specified static address
  */
 /*------------------------------------------------------------------------------*/
-I3C_DEVICE_INFO_SHORT_t *GetDevInfoByStaticAddr(I3C_BUS_INFO_t *pBus, __u8 slaveAddr)
+I3C_DEVICE_INFO_SHORT_t *GetDevInfoByStaticAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
@@ -592,7 +643,7 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByStaticAddr(I3C_BUS_INFO_t *pBus, __u8 slave
  * @return                          Return device info with specified dynamic address
  */
 /*------------------------------------------------------------------------------*/
-I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, __u8 slaveAddr)
+I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
@@ -666,20 +717,20 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TAS
 /**
  * @brief                           Used to check the device is internal device or not
  * @param [in]      pDevice         pointer to the device object
- * @return                          TRUE, if the device is an internal device
+ * @return                          true, if the device is an internal device
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_Internal_DEVICE(void *pDevice)
+bool IS_Internal_DEVICE(void *pDevice)
 {
 	I3C_PORT_Enum port;
 
 	for (port = I3C1_IF; port < I3C_PORT_MAX; port++) {
 		if (pDevice == &gI3c_dev_node_internal[port]) {
-			return TRUE;
+			return true;
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -689,7 +740,7 @@ _Bool IS_Internal_DEVICE(void *pDevice)
  * @return                          None
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Reset(__u8 busNo)
+void I3C_Reset(uint8_t busNo)
 {
 	I3C_BUS_INFO_t *pBus = NULL;
 	I3C_DEVICE_INFO_t *pDevice;
@@ -832,16 +883,16 @@ void ResetDevInfo(I3C_BUS_INFO_t *pBus, I3C_DEVICE_INFO_SHORT_t *pDevInfo)
 /**
  * @brief                           Any device in the bus running in I3C mode ?
  * @param [in]      pBus            bus object
- * @return                          TRUE, if at least one slave device works in I3C mode
+ * @return                          true, if at least one slave device works in I3C mode
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_I3C_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
+bool IS_I3C_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	pDev = pBus->pDevList;
@@ -849,126 +900,126 @@ _Bool IS_I3C_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 		if (IS_Internal_DEVICE(pDev->pDeviceInfo)) {
 			pDevice = (I3C_DEVICE_INFO_t *)pDev->pDeviceInfo;
 			if (pDevice->bRunI3C) {
-				return TRUE;
+				return true;
 			}
 		}
 
 		pDev = pDev->pNextDev;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
 /**
  * @brief                           Used to check device in the bus needs to do RSTDAA
  * @param [in]      pBus            bus object
- * @return                          TRUE, if at least one device need to do RSTDAA
+ * @return                          true, if at least one device need to do RSTDAA
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_RSTDAA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
+bool IS_RSTDAA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
 		if ((pDev->attr.b.present) && (pDev->attr.b.reqRSTDAA) &&
 			(pDev->attr.b.doneRSTDAA == 0)) {
-			return TRUE;
+			return true;
 		}
 
 		pDev = pDev->pNextDev;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
 /**
  * @brief                           Used to check device in the bus needs to do SETHID
  * @param [in]      pBus            bus object
- * @return                          TRUE, if at least one device need to do SETHID
+ * @return                          true, if at least one device need to do SETHID
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_SETHID_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
+bool IS_SETHID_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
 		if ((pDev->attr.b.present) && (pDev->attr.b.reqSETHID) &&
 			(pDev->attr.b.doneSETHID == 0)) {
-			return TRUE;
+			return true;
 		}
 
 		pDev = pDev->pNextDev;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
 /**
  * @brief                           Used to check device in the bus needs to do SETDASA
  * @param [in]      pBus            bus object
- * @return                          TRUE, if at least one device need to do SETDASA
+ * @return                          true, if at least one device need to do SETDASA
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_SETDASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
+bool IS_SETDASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
 		if ((pDev->attr.b.present) && (pDev->attr.b.reqSETDASA) &&
 			(pDev->attr.b.doneSETDASA == 0)) {
-			return TRUE;
+			return true;
 		}
 
 		pDev = pDev->pNextDev;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
 /**
  * @brief                           Used to check device in the bus needs to do SETAASA
  * @param [in]      pBus            bus object
- * @return                          TRUE, if at least one device need to do SETAASA
+ * @return                          true, if at least one device need to do SETAASA
  */
 /*------------------------------------------------------------------------------*/
-_Bool IS_SETAASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
+bool IS_SETAASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
 	if (pBus == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
 		if ((pDev->attr.b.present) && (pDev->attr.b.reqSETAASA) &&
 			(pDev->attr.b.doneSETAASA == 0)) {
-			return TRUE;
+			return true;
 		}
 
 		pDev = pDev->pNextDev;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -980,11 +1031,11 @@ _Bool IS_SETAASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_CCCb_ENEC(I3C_BUS_INFO_t *pBus, __u8 mask, I3C_TASK_POLICY_Enum policy)
+void I3C_CCCb_ENEC(I3C_BUS_INFO_t *pBus, uint8_t mask, I3C_TASK_POLICY_Enum policy)
 {
 	I3C_DEVICE_INFO_t *pDevice;
-	__u16 TxLen;
-	__u8 TxBuf[1];
+	uint16_t TxLen;
+	uint8_t TxBuf[1];
 
 	if (pBus == NULL) {
 		return;
@@ -1014,11 +1065,11 @@ void I3C_CCCb_ENEC(I3C_BUS_INFO_t *pBus, __u8 mask, I3C_TASK_POLICY_Enum policy)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_CCCb_DISEC(I3C_BUS_INFO_t *pBus, __u8 mask, I3C_TASK_POLICY_Enum policy)
+void I3C_CCCb_DISEC(I3C_BUS_INFO_t *pBus, uint8_t mask, I3C_TASK_POLICY_Enum policy)
 {
 	I3C_DEVICE_INFO_t *pDevice;
-	__u16 TxLen;
-	__u8 TxBuf[1];
+	uint16_t TxLen;
+	uint8_t TxBuf[1];
 
 	if (pBus == NULL) {
 		return;
@@ -1112,7 +1163,7 @@ void I3C_CCCb_SETAASA(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	_Bool bNeedSETAASA;
+	bool bNeedSETAASA;
 
 	if (pBus == NULL) {
 		return;
@@ -1125,11 +1176,11 @@ void I3C_CCCb_SETAASA(I3C_BUS_INFO_t *pBus)
 	pDevice = pBus->pCurrentMaster;
 	pDev = pBus->pDevList;
 
-	bNeedSETAASA = FALSE;
-	while ((pDev != NULL) && (bNeedSETAASA == FALSE)) {
+	bNeedSETAASA = false;
+	while ((pDev != NULL) && (bNeedSETAASA == false)) {
 		if ((pDev->attr.b.present) && (pDev->attr.b.reqSETAASA) &&
 			(pDev->attr.b.doneSETAASA == 0)) {
-			bNeedSETAASA = TRUE;
+			bNeedSETAASA = true;
 		}
 
 		pDev = pDev->pNextDev;
@@ -1177,11 +1228,11 @@ void I3C_CCCb_SETHID(I3C_BUS_INFO_t *pBus)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_CCCw_ENEC(I3C_BUS_INFO_t *pBus, __u8 addr, __u8 mask, I3C_TASK_POLICY_Enum policy)
+void I3C_CCCw_ENEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_POLICY_Enum policy)
 {
 	I3C_DEVICE_INFO_t *pDevice;
-	__u16 TxLen;
-	__u8 TxBuf[2];
+	uint16_t TxLen;
+	uint8_t TxBuf[2];
 
 	if (pBus == NULL) {
 		return;
@@ -1210,11 +1261,11 @@ void I3C_CCCw_ENEC(I3C_BUS_INFO_t *pBus, __u8 addr, __u8 mask, I3C_TASK_POLICY_E
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, __u8 addr, __u8 mask, I3C_TASK_POLICY_Enum policy)
+void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_POLICY_Enum policy)
 {
 	I3C_DEVICE_INFO_t *pDevice;
-	__u16 TxLen;
-	__u8 TxBuf[2];
+	uint16_t TxLen;
+	uint8_t TxBuf[2];
 
 	if (pBus == NULL) {
 		return;
@@ -1244,9 +1295,9 @@ void I3C_CCCw_SETDASA(I3C_BUS_INFO_t *pBus)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u8 devCnt;
-	__u8 TxBuf[62];
-	__u16 TxLen;
+	uint8_t devCnt;
+	uint8_t TxBuf[62];
+	uint16_t TxLen;
 
 	if (pBus == NULL) {
 		return;
@@ -1292,11 +1343,11 @@ void I3C_CCCw_SETDASA(I3C_BUS_INFO_t *pBus)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_CCCw_SETNEWDA(I3C_BUS_INFO_t *pBus, __u8 dyn_addr_old, __u8 dyn_addr_new)
+void I3C_CCCw_SETNEWDA(I3C_BUS_INFO_t *pBus, uint8_t dyn_addr_old, uint8_t dyn_addr_new)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u16 TxLen;
-	__u8 TxBuf[2];
+	uint16_t TxLen;
+	uint8_t TxBuf[2];
 
 	if (pBus == NULL) {
 		return;
@@ -1330,17 +1381,17 @@ void I3C_CCCw_SETNEWDA(I3C_BUS_INFO_t *pBus, __u8 dyn_addr_old, __u8 dyn_addr_ne
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_PROTOCOL_Enum protocol;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
-	__u32 ret;
+	uint32_t ret;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 	I3C_TRANSFER_FRAME_t *pThisFrame;
 
-	__u8 i;
+	uint8_t i;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -1358,7 +1409,7 @@ __u32 I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
 		pDev = GetDevInfoByTask(pBus, pTask);
 		pDevice = (I3C_DEVICE_INFO_t *)pDev->pDeviceInfo;
 		if (pDevice->callback != NULL) {
-			ret = pDevice->callback((__u32)pTaskInfo, pTaskInfo->result);
+			ret = pDevice->callback((uint32_t)pTaskInfo, pTaskInfo->result);
 			return ret;
 		}
 	}
@@ -1372,7 +1423,7 @@ __u32 I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
 		pDev = GetDevInfoByTask(pBus, pTask);
 		pDevice = (I3C_DEVICE_INFO_t *)pDev->pDeviceInfo;
 		if (pDevice->callback != NULL) {
-			ret = pDevice->callback((__u32)pTaskInfo, pTaskInfo->result);
+			ret = pDevice->callback((uint32_t)pTaskInfo, pTaskInfo->result);
 			return ret;
 		}
 	}
@@ -1383,7 +1434,7 @@ __u32 I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
 		pDev = GetDevInfoByTask(pBus, pTask);
 		pDevice = (I3C_DEVICE_INFO_t *)pDev->pDeviceInfo;
 		if (pDevice->callback != NULL) {
-			ret = pDevice->callback((__u32)pTaskInfo, pTaskInfo->result);
+			ret = pDevice->callback((uint32_t)pTaskInfo, pTaskInfo->result);
 			return ret;
 		}
 	}
@@ -1449,9 +1500,9 @@ __u32 I3C_Notify(I3C_TASK_INFO_t *pTaskInfo)
  */
 /*------------------------------------------------------------------------------*/
 I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
-	__u8 Addr, __u8 HSize, __u16 *pWrCnt, __u16 *pRdCnt, __u8 *WrBuf, __u8 *RdBuf,
-	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback,
-	__u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
+	uint8_t Addr, uint8_t HSize, uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -1494,9 +1545,9 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 		return NULL;
 	}
 
-	pTaskInfo->MasterRequest = TRUE;
+	pTaskInfo->MasterRequest = true;
 	pTaskInfo->Port = PortId;
-	pTaskInfo->u32SwTimeout = Timeout;
+	pTaskInfo->SwTimeout = Timeout;
 
 	/* Later, I3C Task Engine will pick it from device's task list */
 	InsertTaskNode(pDevice, pTaskInfo->pTask, Policy);
@@ -1526,8 +1577,8 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
  */
 /*------------------------------------------------------------------------------*/
 I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
-	__u8 Addr, __u16 *pWrCnt, __u16 *pRdCnt, __u8 *WrBuf, __u8 *RdBuf,
-	__u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId, _Bool bHIF)
+	uint8_t Addr, uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf,
+	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, bool bHIF)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -1557,9 +1608,9 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 		return NULL;
 	}
 
-	pTaskInfo->MasterRequest = FALSE;
+	pTaskInfo->MasterRequest = false;
 	pTaskInfo->Port = PortId;
-	pTaskInfo->u32SwTimeout = Timeout;
+	pTaskInfo->SwTimeout = Timeout;
 
 	InsertTaskNode(pDevice, pTaskInfo->pTask, I3C_TASK_POLICY_APPEND_LAST);
 
@@ -1626,20 +1677,20 @@ void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo)
 /**
  * @brief                           Free I3C tasks for a specific slave device
  * @param [in]      pDevice         Pointer to the slave device
- * @return                          TRUE
+ * @return                          true
  */
 /*------------------------------------------------------------------------------*/
-_Bool I3C_Clean_Slave_Task(I3C_DEVICE_INFO_t *pDevice)
+bool I3C_Clean_Slave_Task(I3C_DEVICE_INFO_t *pDevice)
 {
 	if (pDevice == NULL) {
-		return TRUE;
+		return true;
 	}
 
 	while (pDevice->pTaskListHead != NULL) {
 		I3C_Complete_Task(pDevice->pTaskListHead->pTaskInfo);
 	}
 
-	return TRUE;
+	return true;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1667,10 +1718,10 @@ void InitTaskInfo(I3C_TASK_INFO_t *pTaskInfo)
 {
 	pTaskInfo->pTask = NULL;
 	pTaskInfo->result = I3C_ERR_OK;
-	pTaskInfo->MasterRequest = FALSE;
-	pTaskInfo->bHIF = FALSE;
+	pTaskInfo->MasterRequest = false;
+	pTaskInfo->bHIF = false;
 	pTaskInfo->Port = 0xFF;
-	pTaskInfo->u32SwTimeout = TIMEOUT_TYPICAL;
+	pTaskInfo->SwTimeout = TIMEOUT_TYPICAL;
 	pTaskInfo->callback = NULL;
 	pTaskInfo->pParentTaskInfo = NULL;
 
@@ -1694,7 +1745,7 @@ void FreeTaskNode(I3C_TRANSFER_TASK_t *pTask)
 	}
 
 	pTaskInfo = pTask->pTaskInfo;
-	if ((pTaskInfo != NULL) && (pTaskInfo->bHIF == FALSE)) {
+	if ((pTaskInfo != NULL) && (pTaskInfo->bHIF == false)) {
 		if (pTask->pRdLen != NULL) {
 			hal_I3C_MemFree(pTask->pRdLen);
 			pTask->pRdLen = NULL;
@@ -1787,7 +1838,7 @@ I3C_ErrCode_Enum ValidateProtocol(I3C_TRANSFER_PROTOCOL_Enum Protocol)
  * @return                          I3C_ERR_OK, if the specified baudrate is good
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum ValidateBaudrate(I3C_TRANSFER_PROTOCOL_Enum Protocol, __u32 BaudRate)
+I3C_ErrCode_Enum ValidateBaudrate(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint32_t BaudRate)
 {
 	if (EVENT_TRANSFER_PROTOCOL(Protocol)) {
 		return I3C_ERR_OK;
@@ -1882,8 +1933,8 @@ I3C_ErrCode_Enum ValidateBaudrate(I3C_TRANSFER_PROTOCOL_Enum Protocol, __u32 Bau
  * @return                          I3C_ERR_OK, if the specified buffer and buffer count are good
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, __u8 Address,
-	__u8 HSize, __u16 WrCnt, __u16 RdCnt, __u8 *WrBuf, __u8 *RdBuf, _Bool bHIF)
+I3C_ErrCode_Enum ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint8_t Address,
+	uint8_t HSize, uint16_t WrCnt, uint16_t RdCnt, uint8_t *WrBuf, uint8_t *RdBuf, bool bHIF)
 {
 	if (DDR_TRANSFER_PROTOCOL(Protocol)) {
 		if (READ_TRANSFER_PROTOCOL(Protocol)) {
@@ -2031,12 +2082,12 @@ I3C_ErrCode_Enum ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, __u8 Addres
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
-	I3C_TRANSFER_PROTOCOL_Enum Protocol, __u32 Baudrate, __u8 Addr, __u8 HSize,
-	__u16 *pWrCnt, __u8 *WrBuf, __u16 *pRdCnt, __u8 *RdBuf, ptrI3C_RetFunc callback, _Bool bHIF)
+	I3C_TRANSFER_PROTOCOL_Enum Protocol, uint32_t Baudrate, uint8_t Addr, uint8_t HSize,
+	uint16_t *pWrCnt, uint8_t *WrBuf, uint16_t *pRdCnt, uint8_t *RdBuf, ptrI3C_RetFunc callback, bool bHIF)
 {
-	__u16 i;
-	__u8 *pTxBuf = NULL;
-	__u8 *pRxBuf = NULL;
+	uint16_t i;
+	uint8_t *pTxBuf = NULL;
+	uint8_t *pRxBuf = NULL;
 	I3C_TRANSFER_FRAME_t *pFrameNode = NULL;
 	I3C_TRANSFER_TASK_t *pNewTask;
 
@@ -2056,8 +2107,8 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 		pNewTask->pRdBuf = NULL;
 
 		if ((pRdCnt != NULL) && (*pRdCnt != 0)) {
-			pNewTask->pRdLen = (__u16 *)hal_I3C_MemAlloc(1);
-			pRxBuf = (__u8 *)hal_I3C_MemAlloc(*pRdCnt);
+			pNewTask->pRdLen = (uint16_t *)hal_I3C_MemAlloc(1);
+			pRxBuf = (uint8_t *)hal_I3C_MemAlloc(*pRdCnt);
 
 			if ((pNewTask->pRdLen == NULL) || (pRxBuf == NULL)) {
 				FreeTaskNode(pNewTask);
@@ -2074,8 +2125,8 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 	pNewTask->pWrLen = NULL;
 
 	if ((pWrCnt != NULL) && (*pWrCnt != 0) && (WrBuf != NULL)) {
-		pNewTask->pWrLen = (__u16 *)hal_I3C_MemAlloc(1);
-		pTxBuf = (__u8 *)hal_I3C_MemAlloc(*pWrCnt);
+		pNewTask->pWrLen = (uint16_t *)hal_I3C_MemAlloc(1);
+		pTxBuf = (uint8_t *)hal_I3C_MemAlloc(*pWrCnt);
 
 		if ((pNewTask->pWrLen == NULL) || (pTxBuf == NULL)) {
 			FreeTaskNode(pNewTask);
@@ -2858,7 +2909,7 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum InsertTaskNode(I3C_DEVICE_INFO_t *pDevice,
-	I3C_TRANSFER_TASK_t *pNewTask, __u8 bType)
+	I3C_TRANSFER_TASK_t *pNewTask, uint8_t bType)
 {
 	I3C_TRANSFER_TASK_t *pNextTask;
 	I3C_TRANSFER_TASK_t *pThisTask;
@@ -2932,14 +2983,14 @@ CHECK_NEXT:
  * @return                          I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf,
-	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
-	I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
+I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(uint16_t *rxbuf_size, uint8_t *rxbuf,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
+	I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
-	__u8 TxBuf[1];
-	__u16 TxLen;
-	__u16 RxLen;
+	uint8_t TxBuf[1];
+	uint16_t TxLen;
+	uint16_t RxLen;
 	I3C_ErrCode_Enum result;
 
 	if (rxbuf_size == NULL) {
@@ -2992,16 +3043,16 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(__u16 *rxbuf_size, __u8 *rxbuf,
  * @return               I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(__u8 CCC, __u16 buf_size, __u8 *buf,
-	__u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
-	I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
+I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uint8_t *buf,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
+	I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
-	__u8 TxBuf[I3C_PAYLOAD_SIZE_MAX];
-	__u16 TxLen;
-	__u16 RxLen;
+	uint8_t TxBuf[I3C_PAYLOAD_SIZE_MAX];
+	uint16_t TxLen;
+	uint16_t RxLen;
 	I3C_ErrCode_Enum result;
-	__u16 i;
+	uint16_t i;
 
 	if ((buf_size > 0) && (buf == NULL)) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -3059,19 +3110,19 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(__u8 CCC, __u16 buf_size, __u8 *buf
  * @return              I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(__u8 CCC, __u8 HSize, __u16 buf_size,
-	__u8 *buf, __u32 Baudrate, __u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId,
-	I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
+I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(uint8_t CCC, uint8_t HSize, uint16_t buf_size,
+	uint8_t *buf, uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
+	I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
-	__u8 TxBuf[70];
-	__u16 TxLen;
-	__u16 RxLen;
+	uint8_t TxBuf[70];
+	uint16_t TxLen;
+	uint16_t RxLen;
 	I3C_ErrCode_Enum result;
-	__u16 i;
-	__u8 fmt;
-	__u16 dev_count;
-	__u8 remainder;
+	uint16_t i;
+	uint8_t fmt;
+	uint16_t dev_count;
+	uint8_t remainder;
 
 	if (HSize < 1) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -3187,18 +3238,18 @@ RETRY:
  * @return                I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_size,
-	__u16 *rxbuf_size, __u8 *txbuf, __u8 *rxbuf, __u32 Baudrate, __u32 Timeout,
-	ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy, _Bool bHIF)
+I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(uint8_t CCC, uint8_t HSize, uint16_t txbuf_size,
+	uint16_t *rxbuf_size, uint8_t *txbuf, uint8_t *rxbuf, uint32_t Baudrate, uint32_t Timeout,
+	ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
-	__u8 TxBuf[70];
-	__u16 TxLen;
-	__u16 RxLen;
+	uint8_t TxBuf[70];
+	uint16_t TxLen;
+	uint16_t RxLen;
 	I3C_ErrCode_Enum result;
-	__u16 i;
-	__u8 fmt = 0;
-	__u16 dev_count;
+	uint16_t i;
+	uint8_t fmt = 0;
+	uint16_t dev_count;
 
 	if (rxbuf_size == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -3322,12 +3373,12 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(__u8 CCC, __u8 HSize, __u16 txbuf_s
  * @return                 I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(__u16 *rxbuf_size, __u8 *rxbuf, __u32 Baudrate,
-	__u32 Timeout, ptrI3C_RetFunc callback, __u8 PortId, I3C_TASK_POLICY_Enum Policy,
-	_Bool bHIF)
+I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(uint16_t *rxbuf_size, uint8_t *rxbuf, uint32_t Baudrate,
+	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy,
+	bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
-	__u16 TxLen;
+	uint16_t TxLen;
 	I3C_ErrCode_Enum result;
 
 	if (rxbuf_size == NULL) {
@@ -3368,7 +3419,7 @@ I3C_ErrCode_Enum I3C_Slave_Insert_Task_HotJoin(I3C_PORT_Enum port)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	I3C_ErrCode_Enum result;
-	__u16 TxLen, RxLen;
+	uint16_t TxLen, RxLen;
 
 	TxLen = 0;
 	RxLen = 0;
@@ -3399,7 +3450,7 @@ I3C_ErrCode_Enum I3C_Slave_Insert_Task_MasterRequest(I3C_PORT_Enum port)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	I3C_ErrCode_Enum result;
-	__u16 TxLen, RxLen;
+	uint16_t TxLen, RxLen;
 
 	TxLen = 0;
 	RxLen = 0;
@@ -3428,11 +3479,11 @@ I3C_ErrCode_Enum I3C_Slave_Insert_Task_MasterRequest(I3C_PORT_Enum port)
  * @return                I3C_ERR_OK, if the task insert successfully
  */
 /*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum I3C_Slave_Insert_Task_IBI(I3C_PORT_Enum port, __u16 txbuf_size, __u8 *txbuf)
+I3C_ErrCode_Enum I3C_Slave_Insert_Task_IBI(I3C_PORT_Enum port, uint16_t txbuf_size, uint8_t *txbuf)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	I3C_ErrCode_Enum result;
-	__u16 TxLen, RxLen;
+	uint16_t TxLen, RxLen;
 
 	if (hal_I3C_run_ASYN0(port)) {
 		TxLen = txbuf_size + 3;

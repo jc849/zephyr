@@ -22,7 +22,7 @@ extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
  * @return                          final task result
  */
 
-__u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
+uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 {
 	const struct device *dev = NULL;
 	struct i3c_npcm4xx_obj *obj;
@@ -31,7 +31,7 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
-	__u32 ret;
+	uint32_t ret;
 
 	if (TaskInfo == 0) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -229,7 +229,7 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
 
 	/* Indirect Callback, callback defined in create master task */
 	if ((pTaskInfo->callback != NULL) && (pTaskInfo->callback != I3C_Master_Callback)) {
-		pTaskInfo->callback((__u32)pTaskInfo, ErrDetail);
+		pTaskInfo->callback((uint32_t)pTaskInfo, ErrDetail);
 	}
 
 	ret = pTaskInfo->result;
@@ -253,14 +253,14 @@ __u32 I3C_Master_Callback(__u32 TaskInfo, __u32 ErrDetail)
  * @return               task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_NACK(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_NACK(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TRANSFER_FRAME_t *pFrame;
 	I3C_BUS_INFO_t *pBus;
 	I3C_BUS_STATE_Enum busNextState;
-	__u32 ret;
+	uint32_t ret;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -334,7 +334,7 @@ __u32 I3C_DO_NACK(I3C_TASK_INFO_t *pTaskInfo)
 
 		if (pTask->protocol == I3C_TRANSFER_PROTOCOL_ENTDAA) {
 			pFrame->flag |= I3C_TRANSFER_REPEAT_START;
-			I3C_Master_Start_Request((__u32)pTaskInfo);
+			I3C_Master_Start_Request((uint32_t)pTaskInfo);
 		}
 	} else if ((pDevice->mode == I3C_DEVICE_MODE_SLAVE_ONLY) ||
 			   (pDevice->mode == I3C_DEVICE_MODE_SECONDARY_MASTER)) {
@@ -353,7 +353,7 @@ __u32 I3C_DO_NACK(I3C_TASK_INFO_t *pTaskInfo)
  * @return               task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_WRABT(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_WRABT(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 
@@ -380,7 +380,7 @@ __u32 I3C_DO_WRABT(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SLVSTART(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SLVSTART(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_FRAME_t *pFrame;
@@ -422,12 +422,12 @@ __u32 I3C_DO_SLVSTART(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SW_TIMEOUT(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SW_TIMEOUT(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
-	__u32 ret;
+	uint32_t ret;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -461,7 +461,7 @@ __u32 I3C_DO_SW_TIMEOUT(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_BUS_INFO_t *pBus;
 
@@ -480,7 +480,7 @@ __u32 I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
 	}
 
 	pBus = Get_Bus_From_Port(pTaskInfo->Port);
-	pBus->pCurrentMaster->bAbort = FALSE;
+	pBus->pCurrentMaster->bAbort = false;
 
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
@@ -495,7 +495,7 @@ __u32 I3C_DO_IBI(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_HOT_JOIN(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_HOT_JOIN(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
@@ -541,7 +541,7 @@ __u32 I3C_DO_HOT_JOIN(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_MASTER_REQUEST(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_MASTER_REQUEST(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_BUS_INFO_t *pBus;
 
@@ -571,13 +571,13 @@ __u32 I3C_DO_MASTER_REQUEST(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_ENEC(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_ENEC(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_BUS_INFO_t *pBus;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_PROTOCOL_Enum protocol;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u8 i;
+	uint8_t i;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -620,7 +620,7 @@ __u32 I3C_DO_ENEC(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_DISEC(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_DISEC(I3C_TASK_INFO_t *pTaskInfo)
 {
 	return I3C_DO_ENEC(pTaskInfo);
 }
@@ -632,7 +632,7 @@ __u32 I3C_DO_DISEC(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_RSTDAA(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_RSTDAA(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
@@ -660,9 +660,9 @@ __u32 I3C_DO_RSTDAA(I3C_TASK_INFO_t *pTaskInfo)
 					continue;
 				}
 
-				pDevice->bRunI3C = FALSE;
+				pDevice->bRunI3C = false;
 				pDevice->dynamicAddr = I3C_DYNAMIC_ADDR_DEFAULT_7BIT;
-				pDevice->ackIBI = FALSE;
+				pDevice->ackIBI = false;
 				I3C_Clean_Slave_Task(pDevice);
 			}
 
@@ -686,18 +686,18 @@ __u32 I3C_DO_RSTDAA(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_ENTDAA(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_ENTDAA(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 	I3C_DEVICE_INFO_t *pDevice;
 
-	__u8 i;
-	__u8 *pid;
-	__u8 bcr;
-	__u8 dcr;
-	__u8 dyn_addr;
+	uint8_t i;
+	uint8_t *pid;
+	uint8_t bcr;
+	uint8_t dcr;
+	uint8_t dyn_addr;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -732,14 +732,14 @@ __u32 I3C_DO_ENTDAA(I3C_TASK_INFO_t *pTaskInfo)
 								I3C_DEVICE_MODE_SECONDARY_MASTER))
 							&& (hal_i3c_get_dynamic_address(
 								pDevice->port) == dyn_addr))) {
-					pDevice->bRunI3C = TRUE;
+					pDevice->bRunI3C = true;
 					pDevice->dynamicAddr = dyn_addr;
 
 					if (((pDev->bcr & 0x06) == 0x02)
 							|| ((pDev->bcr & 0x06) == 0x06)) {
-						pDevice->ackIBI = TRUE;
+						pDevice->ackIBI = true;
 					} else {
-						pDevice->ackIBI = FALSE;
+						pDevice->ackIBI = false;
 					}
 
 					pDev->attr.b.runI3C = 1;
@@ -762,7 +762,7 @@ __u32 I3C_DO_ENTDAA(I3C_TASK_INFO_t *pTaskInfo)
 	if (pTaskInfo->result == I3C_ERR_MEMORY_RAN_OUT) {
 		/* reuse task to do ENTDAA again */
 		pTask->frame_idx = 0;
-		I3C_Master_Start_Request((__u32)pTaskInfo);
+		I3C_Master_Start_Request((uint32_t)pTaskInfo);
 		return I3C_ERR_OK;
 	}
 
@@ -783,7 +783,7 @@ __u32 I3C_DO_ENTDAA(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SETAASA(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SETAASA(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
@@ -807,7 +807,7 @@ __u32 I3C_DO_SETAASA(I3C_TASK_INFO_t *pTaskInfo)
 			(pDev->attr.b.reqSETAASA)) {
 			/* SPD5118_DO_SETAASA(pDev->dynamicAddr & 0x07); */
 
-			pDev->attr.b.runI3C = TRUE;
+			pDev->attr.b.runI3C = true;
 			pDev->dynamicAddr = pDev->staticAddr;
 
 			if ((pDev->attr.b.reqSETAASA) && (pDev->attr.b.doneSETAASA == 0))
@@ -829,12 +829,12 @@ __u32 I3C_DO_SETAASA(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SETHID(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SETHID(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u32 result;
+	uint32_t result;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -862,14 +862,14 @@ __u32 I3C_DO_SETHID(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SETDASA(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SETDASA(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_FRAME_t *pFrame;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u8 i;
+	uint8_t i;
 
 	if (pTaskInfo == NULL) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -900,9 +900,9 @@ __u32 I3C_DO_SETDASA(I3C_TASK_INFO_t *pTaskInfo)
 					continue;
 				}
 
-				pDevice->bRunI3C = TRUE;
+				pDevice->bRunI3C = true;
 				pDevice->dynamicAddr = pDevice->staticAddr;
-				pDevice->ackIBI = TRUE;
+				pDevice->ackIBI = true;
 			}
 
 			pDev->attr.b.runI3C = 1;
@@ -924,12 +924,12 @@ __u32 I3C_DO_SETDASA(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          task result
  */
 /*------------------------------------------------------------------------------*/
-__u32 I3C_DO_SETNEWDA(I3C_TASK_INFO_t *pTaskInfo)
+uint32_t I3C_DO_SETNEWDA(I3C_TASK_INFO_t *pTaskInfo)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_t *pDevice;
-	__u8 i;
+	uint8_t i;
 	I3C_TRANSFER_FRAME_t *pFrame;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
@@ -981,7 +981,7 @@ __u32 I3C_DO_SETNEWDA(I3C_TASK_INFO_t *pTaskInfo)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_Start_Request(__u32 Parm)
+void I3C_Master_Start_Request(uint32_t Parm)
 {
 	I3C_TASK_INFO_t *pTaskInfo;
 	I3C_BUS_INFO_t *pBus;
@@ -1039,11 +1039,11 @@ void I3C_Master_Start_Request(__u32 Parm)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_Stop_Request(__u32 Parm)
+void I3C_Master_Stop_Request(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
-	__u8 port;
+	uint8_t port;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_ErrCode_Enum result;
 
@@ -1071,7 +1071,7 @@ void I3C_Master_Stop_Request(__u32 Parm)
 
 	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
 	hal_I3C_Stop(port);
-	pDevice->bAbort = FALSE;
+	pDevice->bAbort = false;
 
 	if (result == I3C_ERR_IBI) {
 		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_rcv_ibi[port]);
@@ -1085,7 +1085,7 @@ void I3C_Master_Stop_Request(__u32 Parm)
  * @return                          none
  */
 /*---------------------------------------------------------------------------------*/
-void I3C_Master_Retry_Frame(__u32 Parm)
+void I3C_Master_Retry_Frame(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_FRAME_t *pFrame;
@@ -1111,15 +1111,15 @@ void I3C_Master_Retry_Frame(__u32 Parm)
 		if (pFrame->flag & I3C_TRANSFER_RETRY_WITHOUT_STOP) {
 			pFrame->flag |= I3C_TRANSFER_REPEAT_START;
 		} else {
-			I3C_Master_Stop_Request((__u32) pTask);
+			I3C_Master_Stop_Request((uint32_t) pTask);
 
 			/* wait a moment for slave to prepare response data */
 			/* k_usleep(WAIT_SLAVE_PREPARE_RESPONSE_TIME); */
 		}
 
-		I3C_Master_Start_Request((__u32) pTaskInfo);
+		I3C_Master_Start_Request((uint32_t) pTaskInfo);
 	} else {
-		I3C_Master_Stop_Request((__u32) pTask);
+		I3C_Master_Stop_Request((uint32_t) pTask);
 	}
 }
 
@@ -1130,7 +1130,7 @@ void I3C_Master_Retry_Frame(__u32 Parm)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_End_Request(__u32 Parm)
+void I3C_Master_End_Request(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -1146,7 +1146,7 @@ void I3C_Master_End_Request(__u32 Parm)
 
 	pTaskInfo = pTask->pTaskInfo;
 
-	I3C_Master_Callback((__u32)pTaskInfo, pTaskInfo->result);
+	I3C_Master_Callback((uint32_t)pTaskInfo, pTaskInfo->result);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1158,15 +1158,15 @@ void I3C_Master_End_Request(__u32 Parm)
 /*------------------------------------------------------------------------------*/
 #define MACRO pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = pDev->staticAddr;
 
-void I3C_Master_Run_Next_Frame(__u32 Parm)
+void I3C_Master_Run_Next_Frame(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	__u8 pid[6];
-	__u8 bcr;
-	__u8 dcr;
+	uint8_t pid[6];
+	uint8_t bcr;
+	uint8_t dcr;
 	I3C_DEVICE_INFO_t *pDevice;
 
 
@@ -1229,7 +1229,7 @@ void I3C_Master_Run_Next_Frame(__u32 Parm)
 	}
 
 	pTask->frame_idx++;
-	I3C_Master_Start_Request((__u32)pTaskInfo);
+	I3C_Master_Start_Request((uint32_t)pTaskInfo);
 }
 #undef MACRO
 
@@ -1240,14 +1240,14 @@ void I3C_Master_Run_Next_Frame(__u32 Parm)
  * @return                none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_New_Request(__u32 Parm)
+void I3C_Master_New_Request(uint32_t Parm)
 {
-	__u8 port;
+	uint8_t port;
 	I3C_BUS_INFO_t *pBus;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
 
-	__u16 rxLen;
+	uint16_t rxLen;
 
 	if (Parm >= I3C_PORT_MAX) {
 		return;
@@ -1255,7 +1255,7 @@ void I3C_Master_New_Request(__u32 Parm)
 
 	rxLen = IBI_PAYLOAD_SIZE_MAX;
 
-	port = (__u8)Parm;
+	port = (uint8_t)Parm;
 	/* must use NOT_HIF */
 	I3C_Master_Insert_Task_EVENT(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_IBI,
 		TIMEOUT_TYPICAL, I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
@@ -1279,7 +1279,7 @@ void I3C_Master_New_Request(__u32 Parm)
 	pTaskInfo = pTask->pTaskInfo;
 	pBus->pCurrentTask = pTask;
 	pBus->busState = I3C_BUS_STATE_IDLE;
-	I3C_Master_Start_Request((__u32)pTaskInfo);
+	I3C_Master_Start_Request((uint32_t)pTaskInfo);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1289,14 +1289,14 @@ void I3C_Master_New_Request(__u32 Parm)
  * @return               none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_Insert_DISEC_After_IbiNack(__u32 Parm)
+void I3C_Master_Insert_DISEC_After_IbiNack(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
-	__u8 port;
+	uint8_t port;
 	I3C_BUS_INFO_t *pBus;
 	I3C_IBITYPE_Enum ibiType;
-	__u8 ibiAddress;
+	uint8_t ibiAddress;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TRANSFER_FRAME_t *pFrame;
 
@@ -1368,7 +1368,7 @@ void I3C_Master_Insert_DISEC_After_IbiNack(__u32 Parm)
 	pFrame = &pTask->pFrameList[pTask->frame_idx];
 	pFrame->flag |= I3C_TRANSFER_REPEAT_START;
 	pBus->pCurrentTask = pTask;
-	I3C_Master_Start_Request((__u32)pTaskInfo);
+	I3C_Master_Start_Request((uint32_t)pTaskInfo);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -1378,7 +1378,7 @@ void I3C_Master_Insert_DISEC_After_IbiNack(__u32 Parm)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_IBIACK(__u32 Parm)
+void I3C_Master_IBIACK(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -1387,8 +1387,7 @@ void I3C_Master_IBIACK(__u32 Parm)
 	I3C_BUS_INFO_t *pBus;
 	uint8_t ibiAddress;
 	I3C_DEVICE_INFO_SHORT_t *pSlvDev;
-
-__u16 rxLen;
+	uint16_t rxLen;
 
 	if (Parm == 0) {
 		return;
@@ -1458,7 +1457,7 @@ rxLen = IBI_PAYLOAD_SIZE_MAX;
  * @return               none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
+void I3C_Master_Insert_GETACCMST_After_IbiAckMR(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -1467,9 +1466,9 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 	I3C_TRANSFER_FRAME_t *pFrame;
-	__u8 wrBuf[2];
-	__u8 rdBuf[2];	/* addr + pec */
-	__u16 rxLen;
+	uint8_t wrBuf[2];
+	uint8_t rdBuf[2];	/* addr + pec */
+	uint16_t rxLen;
 	I3C_ErrCode_Enum res;
 
 	if (Parm == 0) {
@@ -1535,12 +1534,12 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(__u32 Parm)
  * @return                          none
  */
 /*------------------------------------------------------------------------------*/
-void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(__u32 Parm)
+void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
-	__u8 port;
-	__u16 rxLen;
+	uint8_t port;
+	uint16_t rxLen;
 
 	if (Parm == 0) {
 		return;
@@ -1569,7 +1568,7 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(__u32 Parm)
 	/* Must to use STOP to notify slave finish hot-join task
 	 * Can't use RESTART + ENTDAA, that will cause MERRWARN.INVREQ
 	 */
-	I3C_Master_Stop_Request((__u32)pTask);
+	I3C_Master_Stop_Request((uint32_t)pTask);
 
 	rxLen = 63;
 	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
