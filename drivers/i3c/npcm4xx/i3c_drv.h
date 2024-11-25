@@ -120,7 +120,7 @@ struct i3c_npcm4xx_config {
 struct i3c_npcm4xx_obj {
 	const struct device *dev;
 	I3C_DEVICE_INFO_t *pDevice;
-	volatile __u8 task_count;
+	volatile uint8_t task_count;
 	struct I3C_TRANSFER_TASK *pTaskListHead;
 
 	struct i3c_npcm4xx_config *config;
