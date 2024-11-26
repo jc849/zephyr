@@ -27,7 +27,6 @@ extern "C"
 /*
  * Used for project customizztion
  */
-void I3C_Setup_Internal_Device(void);
 I3C_DEVICE_INFO_t *I3C_Get_INODE(I3C_PORT_Enum port);
 I3C_DEVICE_INFO_t *Get_Current_Master_From_Port(I3C_PORT_Enum port);
 I3C_PORT_Enum I3C_Get_IPORT(I3C_DEVICE_INFO_t *pDevice);
@@ -35,7 +34,6 @@ bool IsValidDynamicAddress(uint8_t addr);
 bool IsValidStaticAddress(uint8_t addr);
 I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port);
 void I3C_Setup_External_Device(void);
-I3C_ErrCode_Enum I3C_Setup_Bus(void);
 
 
 /*
@@ -51,7 +49,6 @@ void BUS_CLEAR_PORT1(void);
 void BUS_CLEAR_PORT2(void);
 
 /* bus status check */
-bool I3C_IS_BUS_KEEP_IDLE(I3C_BUS_INFO_t *pBus);
 bool I3C_IS_BUS_DURING_DAA(I3C_BUS_INFO_t *pBus);
 bool I3C_IS_BUS_DETECT_SLVSTART(I3C_BUS_INFO_t *pBus);
 bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus);
@@ -66,32 +63,13 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TAS
 
 bool IS_Internal_DEVICE(void *pDevice);
 
+
 void I3C_Reset(uint8_t busNo);
 void RemoveDevInfo(I3C_BUS_INFO_t *pBus, I3C_DEVICE_INFO_SHORT_t *pDevInfo);
 void ResetDevInfo(I3C_BUS_INFO_t *pBus, I3C_DEVICE_INFO_SHORT_t *pDevInfo);
 
-/* For bus enumeration */
-bool IS_I3C_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus);
-bool IS_RSTDAA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus);
-bool IS_SETHID_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus);
-bool IS_SETDASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus);
-bool IS_SETAASA_DEVICE_PRESENT(I3C_BUS_INFO_t *pBus);
-
-/* CCC for bus enumeration */
-void I3C_CCCb_ENEC(I3C_BUS_INFO_t *pBus, uint8_t mask, I3C_TASK_POLICY_Enum policy);
 void I3C_CCCb_DISEC(I3C_BUS_INFO_t *pBus, uint8_t mask, I3C_TASK_POLICY_Enum policy);
-void I3C_CCCb_RSTDAA(I3C_BUS_INFO_t *pBus);
-void I3C_CCCb_ENTDAA(I3C_BUS_INFO_t *pBus);
-void I3C_CCCb_SETAASA(I3C_BUS_INFO_t *pBus);
-void I3C_CCCb_SETHID(I3C_BUS_INFO_t *pBus);
-void I3C_CCCw_ENEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_POLICY_Enum policy);
-void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask,
-	I3C_TASK_POLICY_Enum policy);
-void I3C_CCCw_SETDASA(I3C_BUS_INFO_t *pBus);
-void I3C_CCCw_SETNEWDA(I3C_BUS_INFO_t *pBus, uint8_t dyn_addr_old, uint8_t dyn_addr_new);
-
-/* Response */
-uint32_t I3C_Notify(I3C_TASK_INFO_t *pTaskInfo);
+void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_POLICY_Enum policy);
 
 /*
  * Used to limit task amount

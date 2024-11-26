@@ -28,7 +28,7 @@
 
 LOG_MODULE_REGISTER(npcm4xx_i3c_drv, CONFIG_I3C_LOG_LEVEL);
 
-static struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
+struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 
 #define NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE 1024
 #define NPCM4XX_I3C_WORK_QUEUE_PRIORITY -2
@@ -232,110 +232,8 @@ void work_rcv_ibi_fun(struct k_work *item)
 	I3C_Master_Start_Request((uint32_t)pTaskInfo);
 }
 
-const struct device *GetDevNodeFromPort(I3C_PORT_Enum port)
-{
-	switch (port) {
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
-	case I3C1_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c0)));
-#endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c1), okay)
-	case I3C2_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c1)));
-#endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c2), okay)
-	case I3C3_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c2)));
-#endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c3), okay)
-	case I3C4_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c3)));
-#endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c4), okay)
-	case I3C5_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c4)));
-#endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c5), okay)
-	case I3C6_IF:
-		return device_get_binding(DT_LABEL(DT_NODELABEL(i3c5)));
-#endif
-
-	default:
-		return NULL;
-	}
-}
-
 #define I3C_NPCM4XX_CCC_TIMEOUT		K_MSEC(10)
 #define I3C_NPCM4XX_XFER_TIMEOUT	K_MSEC(10)
-#define I3C_NPCM4XX_SIR_TIMEOUT		K_MSEC(10)
-
-#define I3C_BUS_I2C_STD_TLOW_MIN_NS	4700
-#define I3C_BUS_I2C_STD_THIGH_MIN_NS	4000
-#define I3C_BUS_I2C_STD_TR_MAX_NS	1000
-#define I3C_BUS_I2C_STD_TF_MAX_NS	300
-#define I3C_BUS_I2C_FM_TLOW_MIN_NS	1300
-#define I3C_BUS_I2C_FM_THIGH_MIN_NS	600
-#define I3C_BUS_I2C_FM_TR_MAX_NS	300
-#define I3C_BUS_I2C_FM_TF_MAX_NS	300
-#define I3C_BUS_I2C_FMP_TLOW_MIN_NS	500
-#define I3C_BUS_I2C_FMP_THIGH_MIN_NS	260
-#define I3C_BUS_I2C_FMP_TR_MAX_NS	120
-#define I3C_BUS_I2C_FMP_TF_MAX_NS	120
-
-/*==========================================================================*/
-#ifndef DEVALT10
-#define DEVALT10 0x0B
-#endif
-
-#ifndef DEVALT0
-#define DEVALT0 0x10
-#endif
-
-#ifndef DEVALT5
-#define DEVALT5	0x15
-#endif
-
-#ifndef DEVALT7
-#define DEVALT7 0x17
-#endif
-
-#ifndef DEVALTA
-#define DEVALTA	0x1A
-#endif
-
-#ifndef DEVPD1
-#define DEVPD1	0x29
-#endif
-
-#ifndef DEVPD3
-#define DEVPD3	0x7B
-#endif
-
-int8_t i3c_npcm4xx_hw_enable_pue(int port)
-{
-	return 0;
-}
-
-int8_t i3c_npcm4xx_hw_disable_pue(int port)
-{
-	return 0;
-}
-
-void I3C_Enable_Interrupt(I3C_PORT_Enum port)
-{
-}
-
-void I3C_Disable_Interrupt(I3C_PORT_Enum port)
-{
-}
-
-void I3C_Enable_Interface(I3C_PORT_Enum port)
-{
-}
-
-void I3C_Disable_Interface(I3C_PORT_Enum port)
-{
-}
 
 /* declare 16 pdma descriptors to handle master/slave tx
  * in scatter gather mode
@@ -423,120 +321,6 @@ static void i3c_setup_dma_configure(I3C_PORT_Enum port, int tx_dma_channel, int 
 	}
 }
 
-/*==========================================================================*/
-#define I3C_GET_REG_MCONFIG(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MCONFIG)
-#define I3C_SET_REG_MCONFIG(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MCONFIG)
-
-#define I3C_GET_REG_CONFIG(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_CONFIG)
-#define I3C_SET_REG_CONFIG(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_CONFIG)
-
-#define I3C_GET_REG_STATUS(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_STATUS)
-#define I3C_SET_REG_STATUS(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_STATUS)
-
-#define I3C_GET_REG_CTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_CTRL)
-#define I3C_SET_REG_CTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_CTRL)
-
-#define I3C_GET_REG_INTSET(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_INTSET)
-#define I3C_SET_REG_INTSET(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_INTSET)
-
-#define I3C_SET_REG_INTCLR(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_INTCLR)
-
-#define I3C_GET_REG_INTMASKED(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_INTMASKED)
-
-#define I3C_GET_REG_ERRWARN(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_ERRWARN)
-#define I3C_SET_REG_ERRWARN(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_ERRWARN)
-
-#define I3C_GET_REG_DMACTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_DMACTRL)
-#define I3C_SET_REG_DMACTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_DMACTRL)
-
-#define I3C_GET_REG_DATACTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_DATACTRL)
-#define I3C_SET_REG_DATACTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_DATACTRL)
-
-#define I3C_SET_REG_WDATAB(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_WDATAB)
-#define I3C_SET_REG_WDATABE(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_WDATABE)
-#define I3C_SET_REG_WDATAH(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_WDATAH)
-#define I3C_SET_REG_WDATAHE(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_WDATAHE)
-
-#define I3C_GET_REG_RDATAB(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_RDATAB)
-#define I3C_GET_REG_RDATAH(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_RDATAH)
-
-#define I3C_SET_REG_WDATAB1(port, val) sys_write8(val, I3C_BASE_ADDR(port) + OFFSET_WDATAB1)
-
-#define I3C_GET_REG_CAPABILITIES(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_CAPABILITIES)
-#define I3C_GET_REG_DYNADDR(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_DYNADDR)
-
-#define I3C_GET_REG_MAXLIMITS(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MAXLIMITS)
-#define I3C_SET_REG_MAXLIMITS(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MAXLIMITS)
-
-#define I3C_GET_REG_PARTNO(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_PARTNO)
-#define I3C_SET_REG_PARTNO(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_PARTNO)
-
-#define I3C_GET_REG_IDEXT(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_IDEXT)
-#define I3C_SET_REG_IDEXT(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_IDEXT)
-
-#define I3C_GET_REG_VENDORID(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_VENDORID)
-#define I3C_SET_REG_VENDORID(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_VENDORID)
-
-#define I3C_GET_REG_TCCLOCK(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_TCCLOCK)
-#define I3C_SET_REG_TCCLOCK(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_TCCLOCK)
-
-#define I3C_GET_REG_MCTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MCTRL)
-#define I3C_SET_REG_MCTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MCTRL)
-
-#define I3C_GET_REG_MSTATUS(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MSTATUS)
-#define I3C_SET_REG_MSTATUS(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MSTATUS)
-
-#define I3C_GET_REG_IBIRULES(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_IBIRULES)
-#define I3C_SET_REG_IBIRULES(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_IBIRULES)
-
-#define I3C_GET_REG_MINTSET(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MINTSET)
-#define I3C_SET_REG_MINTSET(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MINTSET)
-
-#define I3C_SET_REG_MINTCLR(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MINTCLR)
-
-#define I3C_GET_REG_MINTMASKED(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MINTMASKED)
-
-#define I3C_GET_REG_MERRWARN(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MERRWARN)
-#define I3C_SET_REG_MERRWARN(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MERRWARN)
-
-#define I3C_GET_REG_MDMACTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MDMACTRL)
-#define I3C_SET_REG_MDMACTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MDMACTRL)
-
-#define I3C_GET_REG_MDATACTRL(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MDATACTRL)
-#define I3C_SET_REG_MDATACTRL(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MDATACTRL)
-
-#define I3C_SET_REG_MWDATAB(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MWDATAB)
-#define I3C_SET_REG_MWDATABE(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MWDATABE)
-#define I3C_SET_REG_MWDATAH(port, val) sys_write32(val. I3C_BASE_ADDR(port) + OFFSET_MWDATAH)
-#define I3C_SET_REG_MWDATAHE(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MWDATAHE)
-
-#define I3C_GET_REG_MRDATAB(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MRDATAB)
-#define I3C_GET_REG_MRDATAH(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MRDATAH)
-
-#define I3C_SET_REG_MWDATAB1(port, val) sys_write8(val, I3C_BASE_ADDR(port) + OFFSET_MWDATAB1)
-
-#define I3C_SET_REG_MWMSG_SDR(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MWMSG_SDR)
-
-#define I3C_GET_REG_MRMSG_SDR(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MRMSG_SDR)
-
-#define I3C_SET_REG_MWMSG_DDR(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MWMSG_DDR)
-
-#define I3C_GET_REG_MRMSG_DDR(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MWMSG_DDR)
-
-#define I3C_GET_REG_MDYNADDR(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_MDYNADDR)
-#define I3C_SET_REG_MDYNADDR(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_MDYNADDR)
-
-#define I3C_GET_REG_HDRCMD(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_HDRCMD)
-
-#define I3C_GET_REG_IBIEXT1(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_IBIEXT1)
-#define I3C_SET_REG_IBIEXT1(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_IBIEXT1)
-
-#define I3C_GET_REG_IBIEXT2(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_IBIEXT2)
-#define I3C_SET_REG_IBIEXT2(port, val) sys_write32(val, I3C_BASE_ADDR(port) + OFFSET_IBIEXT2)
-
-#define I3C_GET_REG_ID(port) sys_read32(I3C_BASE_ADDR(port) + OFFSET_ID)
-/*==========================================================================*/
-
 /*
  * Customize Register layout
  */
@@ -600,9 +384,6 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 	sconfig = I3C_GET_REG_CONFIG(port) & 0xFE7F071F;
 
 	if (pDevice->mode == I3C_DEVICE_MODE_DISABLE) {
-		I3C_Disable_Interrupt(port);
-		I3C_Enable_Interface(port);
-
 		I3C_SET_REG_MDYNADDR(port, I3C_GET_REG_MDYNADDR(port) & 0xFE);
 		I3C_SET_REG_CONFIG(port, 0x00);
 		I3C_SET_REG_MCONFIG(port, 0x30);
@@ -775,96 +556,12 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 		I3C_SET_REG_CONFIG(port, sconfig);
 	}
 
-	I3C_Enable_Interface(port);
-	I3C_Enable_Interrupt(port);
-
 	if ((pDevice->mode == I3C_DEVICE_MODE_SLAVE_ONLY)
 		|| (pDevice->mode == I3C_DEVICE_MODE_SECONDARY_MASTER)) {
 		I3C_Prepare_To_Read_Command((uint32_t) port);
 	}
 
 	return result;
-}
-
-int8_t LoadBaudrateSetting(I3C_TRANSFER_TYPE_Enum type, uint32_t baudrate, uint32_t *pPPBAUD,
-	uint32_t *pPPLOW, uint32_t *pODBAUD, uint32_t *pI2CBAUD)
-{
-	if (type == I3C_TRANSFER_TYPE_I2C) {
-		switch (baudrate) {
-		case I3C_TRANSFER_SPEED_I2C_1MHZ:
-			*pPPBAUD = 1;
-			*pPPLOW = 0;
-			*pODBAUD = 5;
-			*pI2CBAUD = 2;
-			break;
-		case I3C_TRANSFER_SPEED_I2C_400KHZ:
-			*pPPBAUD = 1;
-			*pPPLOW = 0;
-			*pODBAUD = 5;
-			*pI2CBAUD = 8;
-			break;
-		default: /* if (pFrame->baudrate == I3C_TRANSFER_SPEED_I2C_100KHZ) */
-			*pPPBAUD = 1;
-			*pPPLOW = 0;
-			*pODBAUD = 15;
-			*pI2CBAUD = 13;
-		}
-
-		return 0;
-	}
-
-	switch (baudrate) {
-	case I3C_TRANSFER_SPEED_SDR_12p5MHZ:
-	/* I3C PP=12MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 1;
-		*pPPLOW = 0;
-		*pODBAUD = 4;
-		*pI2CBAUD = 3;
-		break;
-	case I3C_TRANSFER_SPEED_SDR_8MHZ:
-	/* I3C PP=8MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 1;
-		*pPPLOW = 2;
-		*pODBAUD = 4;
-		*pI2CBAUD = 3;
-		break;
-	case I3C_TRANSFER_SPEED_SDR_6MHZ:
-	/* I3C PP=6MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 1;
-		*pPPLOW = 4;
-		*pODBAUD = 4;
-		*pI2CBAUD = 3;
-		break;
-	case I3C_TRANSFER_SPEED_SDR_4MHZ:
-	/* I3C PP=4MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 1;
-		*pPPLOW = 8;
-		*pODBAUD = 4;
-		*pI2CBAUD = 3;
-		break;
-	case I3C_TRANSFER_SPEED_SDR_2MHZ:
-	/* I3C PP=2MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 1;
-		*pPPLOW = 16;
-		*pODBAUD = 4;
-		*pI2CBAUD = 3;
-		break;
-	case I3C_TRANSFER_SPEED_SDR_1MHZ:
-	/* I3C PP=1MHz, OD Freq = 4MHz, I2C FM+ (H=400ns, L=600ns) */
-		*pPPBAUD = 5;
-		*pPPLOW = 12;
-		*pODBAUD = 0;
-		*pI2CBAUD = 6;
-		break;
-	default:
-	/* PP=4MHz, OD Freq = 1MHz for IBI */
-		*pPPBAUD = 5;
-		*pPPLOW = 0;
-		*pODBAUD = 6;
-		*pI2CBAUD = 8;
-	}
-
-	return 0;
 }
 
 /*
@@ -1049,7 +746,6 @@ I3C_ErrCode_Enum hal_I3C_enable_interface(I3C_PORT_Enum port)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	I3C_Enable_Interface(port);
 	return I3C_ERR_OK;
 }
 
@@ -1058,7 +754,6 @@ I3C_ErrCode_Enum hal_I3C_disable_interface(I3C_PORT_Enum port)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	I3C_Disable_Interface(port);
 	return I3C_ERR_OK;
 }
 
@@ -1067,7 +762,6 @@ I3C_ErrCode_Enum hal_I3C_enable_interrupt(I3C_PORT_Enum port)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	I3C_Disable_Interrupt(port);
 	return I3C_ERR_OK;
 }
 
@@ -1076,7 +770,6 @@ I3C_ErrCode_Enum hal_I3C_disable_interrupt(I3C_PORT_Enum port)
 	if (port >= I3C_PORT_MAX)
 		return I3C_ERR_PARAMETER_INVALID;
 
-	I3C_Enable_Interrupt(port);
 	return I3C_ERR_OK;
 }
 
@@ -2163,64 +1856,6 @@ void hal_I3C_MemFree(void *pv)
 	k_free(pv);
 }
 
-/* static uint32_t tIMG = 50; */
-void hal_I3C_Master_Stall(I3C_BUS_INFO_t *pBus, I3C_PORT_Enum port)
-{
-	/*CLK_SysTickDelay(tIMG);*/
-}
-
-I3C_ErrCode_Enum hal_I3C_bus_reset(I3C_PORT_Enum Port)
-{
-	if (Port >= I3C_PORT_MAX)
-		return I3C_ERR_PARAMETER_INVALID;
-
-	return I3C_ERR_OK;
-}
-
-I3C_ErrCode_Enum hal_I3C_bus_clear(I3C_PORT_Enum Port, uint8_t counter)
-{
-	if (Port >= I3C_PORT_MAX)
-		return I3C_ERR_PARAMETER_INVALID;
-
-	return I3C_ERR_OK;
-}
-
-/*==========================================================================*/
-
-#define I3CG_REG1(x)			((x * 0x10) + 0x14)
-#define SDA_OUT_SW_MODE_EN		BIT(31)
-#define SCL_OUT_SW_MODE_EN		BIT(30)
-#define SDA_IN_SW_MODE_EN		BIT(29)
-#define SCL_IN_SW_MODE_EN		BIT(28)
-#define SDA_IN_SW_MODE_VAL		BIT(27)
-#define SDA_OUT_SW_MODE_VAL		BIT(25)
-#define SDA_SW_MODE_OE			BIT(24)
-#define SCL_IN_SW_MODE_VAL		BIT(23)
-#define SCL_OUT_SW_MODE_VAL		BIT(21)
-#define SCL_SW_MODE_OE			BIT(20)
-
-void i3c_npcm4xx_isolate_scl_sda(int inst_id, bool iso)
-{
-}
-
-void i3c_npcm4xx_gen_tbits_low(struct i3c_npcm4xx_obj *obj)
-{
-}
-
-void i3c_npcm4xx_toggle_scl_in(int inst_id)
-{
-}
-
-void i3c_npcm4xx_gen_start_to_internal(int inst_id)
-{
-}
-
-void i3c_npcm4xx_gen_stop_to_internal(int inst_id)
-{
-}
-
-static int i3c_npcm4xx_init(const struct device *dev);
-
 static uint8_t *pec_append(const struct device *dev, uint8_t *ptr, uint16_t len)
 {
 	struct i3c_npcm4xx_config *config = DEV_CFG(dev);
@@ -2244,7 +1879,6 @@ static uint8_t *pec_append(const struct device *dev, uint8_t *ptr, uint16_t len)
 
 static int pec_valid(const struct device *dev, uint8_t *ptr, uint16_t len)
 {
-	struct i3c_npcm4xx_config *config;
 	uint8_t pec_v;
 	uint8_t address;
 	uint8_t addr_rnw;
@@ -2252,8 +1886,6 @@ static int pec_valid(const struct device *dev, uint8_t *ptr, uint16_t len)
 
 	if (len == 0 || ptr == NULL)
 		return -EINVAL;
-
-	config = DEV_CFG(dev);
 
 	ret = i3c_slave_get_dynamic_addr(dev, &address);
 	if (ret)
@@ -2448,98 +2080,6 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 
 	if (slave->bus == NULL)
 		return 0;
-
-	if ((slave->info.static_addr == 0x6A) || (slave->info.static_addr == 0x6B)) {
-		LSM6DSO_DEVICE_INFO_t lsm6dso;
-		I3C_DEVICE_ATTRIB_t attr;
-
-		lsm6dso.initMode = INITMODE_RSTDAA | INITMODE_SETDASA;
-		lsm6dso.state = I3C_LSM6DSO_STATE_DEFAULT;
-		lsm6dso.post_init_state = LSM6DSO_POST_INIT_STATE_Default;
-
-		lsm6dso.i3c_device.mode = I3C_DEVICE_MODE_SLAVE_ONLY;
-		lsm6dso.i3c_device.pOwner = pBus;
-		lsm6dso.i3c_device.port = port;
-		lsm6dso.i3c_device.bRunI3C = false;
-		lsm6dso.i3c_device.staticAddr = slave->info.static_addr;
-		lsm6dso.i3c_device.dynamicAddr = I3C_DYNAMIC_ADDR_DEFAULT_7BIT;
-		lsm6dso.i3c_device.pid[0] = 0x02;
-		lsm6dso.i3c_device.pid[1] = 0x08;
-		lsm6dso.i3c_device.pid[2] = 0x00;
-		lsm6dso.i3c_device.pid[3] = 0x6C;
-		lsm6dso.i3c_device.pid[4] = 0x10;
-		lsm6dso.i3c_device.pid[5] = 0x0B;
-		lsm6dso.i3c_device.bcr = 0x07;
-		lsm6dso.i3c_device.dcr = 0x44;
-		lsm6dso.i3c_device.ackIBI = false;
-		lsm6dso.i3c_device.pReg = NULL;
-		lsm6dso.i3c_device.regCnt = 0;
-
-		attr.U16 = 0;
-		attr.b.suppSLV = 1;
-		attr.b.present = 1;
-		attr.b.runI3C = 0;
-
-		if (lsm6dso.initMode & INITMODE_POST_INIT)
-			attr.b.reqPostInit = 0;
-		if (lsm6dso.initMode & INITMODE_RSTDAA)
-			attr.b.reqRSTDAA = 1;
-		if (lsm6dso.initMode & INITMODE_SETDASA)
-			attr.b.reqSETDASA = 1;
-		if (lsm6dso.initMode & INITMODE_ENTDAA)
-			attr.b.suppENTDAA = 1;
-
-		lsm6dso.i3c_device.pDevInfo = NewDevInfo(pBus, &lsm6dso, attr,
-			lsm6dso.i3c_device.staticAddr, lsm6dso.i3c_device.dynamicAddr,
-			lsm6dso.i3c_device.pid, lsm6dso.i3c_device.bcr, lsm6dso.i3c_device.dcr);
-		if (lsm6dso.i3c_device.pDevInfo == NULL)
-			return -ENXIO;
-	} else if ((slave->info.static_addr >= 0x50) && (slave->info.static_addr <= 0x57)) {
-		SPD5118_DEVICE_INFO_t spd5118;
-		I3C_DEVICE_ATTRIB_t attr;
-
-		spd5118.initMode = INITMODE_RSTDAA | INITMODE_SETAASA;
-		spd5118.state = SPD5118_STATE_DEFAULT;
-		spd5118.post_init_state = SPD5118_POST_INIT_STATE_Default;
-
-		spd5118.i3c_device.mode = I3C_DEVICE_MODE_SLAVE_ONLY;
-		spd5118.i3c_device.pOwner = pBus;
-		spd5118.i3c_device.port = port;
-		spd5118.i3c_device.bRunI3C = false;
-		spd5118.i3c_device.staticAddr = slave->info.static_addr;
-		spd5118.i3c_device.dynamicAddr = I3C_DYNAMIC_ADDR_DEFAULT_7BIT;
-		spd5118.i3c_device.pid[0] = 0x00;
-		spd5118.i3c_device.pid[1] = 0x00;
-		spd5118.i3c_device.pid[2] = 0x00;
-		spd5118.i3c_device.pid[3] = 0x00;
-		spd5118.i3c_device.pid[4] = 0x00;
-		spd5118.i3c_device.pid[5] = 0x00;
-		spd5118.i3c_device.bcr = 0x00;
-		spd5118.i3c_device.dcr = 0x00;
-		spd5118.i3c_device.ackIBI = false;
-		spd5118.i3c_device.pReg = NULL;
-		spd5118.i3c_device.regCnt = 0;
-
-		attr.U16 = 0;
-		attr.b.suppSLV = 1;
-		attr.b.present = 1;
-		attr.b.runI3C = 0;
-
-		if (spd5118.initMode & INITMODE_POST_INIT)
-			attr.b.reqPostInit = 0;
-		if (spd5118.initMode & INITMODE_RSTDAA)
-			attr.b.reqRSTDAA = 1;
-		if (spd5118.initMode & INITMODE_SETAASA)
-			attr.b.reqSETAASA = 1;
-		if (spd5118.initMode & INITMODE_ENTDAA)
-			attr.b.suppENTDAA = 1;
-
-		spd5118.i3c_device.pDevInfo = NewDevInfo(pBus, &spd5118, attr,
-			spd5118.i3c_device.staticAddr, spd5118.i3c_device.dynamicAddr,
-			spd5118.i3c_device.pid, spd5118.i3c_device.bcr, spd5118.i3c_device.dcr);
-		if (spd5118.i3c_device.pDevInfo == NULL)
-			return -ENXIO;
-	}
 
 	return 0;
 }
@@ -3456,9 +2996,6 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	return 0;
 }
 
-/* MDB[7:5] = 111b, reserved */
-volatile uint8_t MDB = 0xFF;
-
 void I3C_Slave_Handle_DMA(uint32_t Parm);
 uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t *pRx_buff,
 	bool bHDR);
@@ -3480,13 +3017,6 @@ uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t 
 	/* GPIO_Set_Data(GPIOC, 5, GPIO_DATA_HIGH); */ \
 	/* GPIOC4 goes H */ \
 	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(4)); */ }
-
-/* MDMA */
-#define I3C_MDMA_STOP_TX(p) {\
-	I3C_SET_REG_MDMACTRL(p, I3C_GET_REG_MDMACTRL(p) & ~I3C_MDMACTRL_DMATB_MASK); }
-
-#define I3C_MDMA_FLUSH_TX(p) {\
-	I3C_SET_REG_MDATACTRL(p, I3C_GET_REG_MDATACTRL(p) | I3C_MDATACTRL_FLUSHTB_MASK); }
 
 #define UpdateTaskInfoResult(t, r) { t->result = r; }
 #define UpdateTaskResult(t, r) { UpdateTaskInfoResult(t->pTaskInfo, r); }
@@ -3533,16 +3063,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 				mstatus = I3C_GET_REG_MSTATUS(I3C_IF);
 				I3C_SET_REG_MSTATUS(I3C_IF, mstatus | I3C_MSTATUS_COMPLETE_MASK);
 
-				if (mstatus & I3C_MSTATUS_SLVSTART_MASK) {
-					I3C_SET_REG_MSTATUS(I3C_IF, I3C_MSTATUS_SLVSTART_MASK);
-					I3C_MDMA_STOP_TX(I3C_IF);
-					I3C_MDMA_FLUSH_TX(I3C_IF);
-					UpdateTaskResult(pTask, I3C_ERR_SLVSTART);
-					I3C_SET_REG_MINTSET(I3C_IF,
-						I3C_MINTSET_SLVSTART_MASK);
-					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
-						&work_stop[I3C_IF]);
-				} else if (pTask->pFrameList[pTask->frame_idx].direction
+				if (pTask->pFrameList[pTask->frame_idx].direction
 					== I3C_TRANSFER_DIR_WRITE) {
 					UpdateTaskResult(pTask, I3C_ERR_NACK);
 					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
@@ -3764,11 +3285,9 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 		}
 
 		if (pTaskInfo->result == I3C_ERR_IBI) {
-			const struct device *dev;
 			struct i3c_npcm4xx_obj *obj;
 
-			dev = GetDevNodeFromPort(I3C_IF);
-			obj = DEV_DATA(dev);
+			obj = gObj[I3C_IF];
 			i3c_npcm4xx_master_rx_ibi(obj);
 			k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF], &work_stop[I3C_IF]);
 			EXIT_MASTER_ISR();
@@ -3777,11 +3296,6 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 
 		if (pTaskInfo->result == I3C_ERR_MR) {
 			k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF], &work_stop[I3C_IF]);
-			EXIT_MASTER_ISR();
-			return;
-		}
-
-		if (pTaskInfo->result == I3C_ERR_HJ) {
 			EXIT_MASTER_ISR();
 			return;
 		}
@@ -4339,17 +3853,12 @@ void I3C_Slave_Handle_DMA(uint32_t Parm)
 
 				/* To fill rx data to the requested mqueue */
 				/* We must find callback from slave_data */
-				const struct device *dev;
 				struct i3c_npcm4xx_obj *obj = NULL;
 				struct i3c_slave_payload *payload = NULL;
 				int ret = 0;
 
-				dev = GetDevNodeFromPort(port);
-				if ((dev == NULL) || !device_is_ready(dev))
-					return;
-
 				/* slave device */
-				obj = DEV_DATA(dev);
+				obj = gObj[port];
 
 				/* prepare m_queue to backup rx data */
 				if (obj->slave_data.callbacks->write_requested != NULL) {
@@ -4360,13 +3869,13 @@ void I3C_Slave_Handle_DMA(uint32_t Parm)
 					/*i3c_aspeed_rd_rx_fifo(obj, payload->buf, payload->size);*/
 					bRet = true;
 					if (obj->config->priv_xfer_pec) {
-						ret = pec_valid(dev, (uint8_t *)&slvRxBuf[port + (I3C_PORT_MAX * idx)],
+						ret = pec_valid(obj->dev, (uint8_t *)&slvRxBuf[port + (I3C_PORT_MAX * idx)],
 							slvRxOffset[port + (I3C_PORT_MAX * idx)]);
-					if (ret) {
-						LOG_WRN("PEC error\n");
-						bRet = false;
-						payload->size = 0;
-					}
+						if (ret) {
+							LOG_WRN("PEC error\n");
+							bRet = false;
+							payload->size = 0;
+						}
 					}
 
 					memcpy(payload->buf, slvRxBuf[port + (I3C_PORT_MAX * idx)], payload->size);
