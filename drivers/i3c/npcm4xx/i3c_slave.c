@@ -61,7 +61,6 @@ uint32_t I3C_Slave_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 	ret = pTaskInfo->result;
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
-	pBus->busState = I3C_BUS_STATE_IDLE;
 	return ret;
 }
 
@@ -312,31 +311,6 @@ I3C_ErrCode_Enum Setup_Slave_Write_DMA(I3C_DEVICE_INFO_t *pDevice)
 		pDevice->txLen - pDevice->txOffset);
 	pDevice->txOffset = pDevice->txLen;
 
-	return I3C_ERR_OK;
-}
-
-/*------------------------------------------------------------------------------*/
-/**
- * @brief                           configure PDMA for slave read transfer
- * @param [in]      pDevice         Pointer to device object
- * @return                          none
- */
-/*------------------------------------------------------------------------------*/
-I3C_ErrCode_Enum Setup_Slave_Read_DMA(I3C_DEVICE_INFO_t *pDevice)
-{
-	if (pDevice == NULL) {
-		return I3C_ERR_PARAMETER_INVALID;
-	}
-	if (pDevice->port >= I3C_PORT_MAX) {
-		return I3C_ERR_TASK_INVALID;
-	}
-
-	if ((pDevice->rxLen - pDevice->rxOffset) == 0) {
-		return I3C_ERR_OK;
-	}
-
-	hal_I3C_DMA_Read(pDevice->port, pDevice->mode, &(pDevice->pRxBuf[pDevice->rxOffset]),
-		pDevice->rxLen - pDevice->rxOffset);
 	return I3C_ERR_OK;
 }
 
