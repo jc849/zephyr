@@ -11,7 +11,6 @@
 #include <init.h>
 #include <irq.h>
 #include <kernel/thread_stack.h>
-
 #include <portability/cmsis_os2.h>
 
 #include "pub_I3C.h"
@@ -529,7 +528,7 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 
 	I3C_SET_REG_INTSET(port, I3C_INTSET_CHANDLED_MASK | I3C_INTSET_DDRMATCHED_MASK |
 		I3C_INTSET_ERRWARN_MASK | I3C_INTSET_CCC_MASK | I3C_INTSET_DACHG_MASK |
-		I3C_INTSET_STOP_MASK | I3C_INTSET_START_MASK);
+		I3C_INTSET_STOP_MASK | I3C_INTSET_START_MASK | I3C_INTSET_EVENT_MASK);
 
 	if (pDevice->mode == I3C_DEVICE_MODE_CURRENT_MASTER) {
 		I3C_SET_REG_MDYNADDR(port, (pDevice->dynamicAddr << I3C_MDYNADDR_DADDR_SHIFT) |
@@ -1151,7 +1150,7 @@ bool hal_I3C_DMA_Read(I3C_PORT_Enum port, I3C_DEVICE_MODE_Enum mode, uint8_t *rx
 		}
 
 		if (Temp & I3C_MDATACTRL_TXCOUNT_MASK) {
-			LOG_WRN("txcount = %d", (Temp & I3C_MDATACTRL_TXCOUNT_MASK) >> I3C_MDATACTRL_TXCOUNT_SHIFT);
+			LOG_DBG("txcount = %d", (Temp & I3C_MDATACTRL_TXCOUNT_MASK) >> I3C_MDATACTRL_TXCOUNT_SHIFT);
 		}
 
 		PDMA->CHCTL |= BIT(PDMA_OFFSET + pdma_ch);
@@ -1179,7 +1178,7 @@ bool hal_I3C_DMA_Read(I3C_PORT_Enum port, I3C_DEVICE_MODE_Enum mode, uint8_t *rx
 	}
 
 	if (Temp & I3C_DATACTRL_TXCOUNT_MASK) {
-		LOG_WRN("txcount = %d", (Temp & I3C_DATACTRL_TXCOUNT_MASK) >> I3C_DATACTRL_TXCOUNT_SHIFT);
+		LOG_DBG("txcount = %d", (Temp & I3C_DATACTRL_TXCOUNT_MASK) >> I3C_DATACTRL_TXCOUNT_SHIFT);
 	}
 
 	PDMA->CHCTL |= BIT(PDMA_OFFSET + pdma_ch);
@@ -3442,35 +3441,75 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 		}
 	}
 
-	if (bMATCHSS && (intmasked & I3C_INTMASKED_EVENT_MASK)) {
-		evdet = (uint8_t)((status & I3C_STATUS_EVDET_MASK) >> I3C_STATUS_EVDET_SHIFT);
+	/* Speedup to clear MATCHED flag in interrupt to avoid SDA driven from stop to start too quickly */
+	if (intmasked & I3C_INTMASKED_STOP_MASK) {
+		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_STOP_MASK);
 
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_EVENT_MASK);
-		if (evdet == 0x03) {
-			/* Ack Hot-Join --> status = 0x341000 */
-			pTask = pDevice->pTaskListHead;
-			if (pTask == NULL) {
-				EXIT_SLAVE_ISR();
-				return;
+		/* Clear address matched for SDR */
+		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_MATCHED_MASK) {
+			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_MATCHED_MASK);
+		}
+
+		/* when bMATCHSS enabled, HW only set start/stop flag if MATCHED(address) as true */
+		if (bMATCHSS) {
+			/* Received stop interrupt from HW but currently bus status is start or stop,
+			 * the status means "RE-ENTRY".
+			 */
+			if (hal_I3C_Is_Slave_Idle(I3C_IF) != true) {
+				/* Received stop interrupt but current status is start, clear it. */
+				if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_START_MASK) {
+					LOG_DBG("[RE-ENTRY] FORCE CLEAR START in STOP INT, intmasked=0x%x status=0x%x",
+							intmasked, I3C_GET_REG_STATUS(I3C_IF));
+					I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_START_MASK);
+				}
+
+				/* Received stop interrupt but current status is stop, clear it. CPU running too slow? */
+				if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_STOP_MASK) {
+					LOG_ERR("[RE-ENTRY] RECV SECOND STOP in STOP INT, intmasked=0x%x status=0x%x",
+							intmasked, I3C_GET_REG_STATUS(I3C_IF));
+					I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_STOP_MASK);
+				}
 			}
+		}
+	}
 
+	/* Target send IBI, Hot-Join or Master Request done */
+	if (intmasked & I3C_INTMASKED_EVENT_MASK) {
+		evdet = (uint8_t)((status & I3C_STATUS_EVDET_MASK) >> I3C_STATUS_EVDET_SHIFT);
+		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_EVENT_MASK);
+		pTask = pDevice->pTaskListHead;
+
+		if (pTask) {
 			pTaskInfo = pTask->pTaskInfo;
 			if (pTaskInfo == NULL) {
-				EXIT_SLAVE_ISR();
-				return;
+				LOG_ERR("INTEVENT but pTaskInfo NULL");
+			}
+		} else {
+			LOG_ERR("INTEVENT but pTask null");
+		}
+
+		if (pTaskInfo) {
+			/* Target request IBI, Hot-Join and Master Request ACKED */
+			if (evdet == 0x03) {
+				/* Ack Hot-Join --> status = 0x341000 */
+				pTaskInfo->result = I3C_ERR_OK;
+				I3C_Slave_End_Request((uint32_t)pTask);
 			}
 
-			pTaskInfo->result = I3C_ERR_OK;
-			I3C_Slave_End_Request((uint32_t)pTask);
+			/* Target request IBI, Hot-Join and Master Request NACKED */
+			if (evdet == 0x02) {
+				pFrame = &pTask->pFrameList[pTask->frame_idx];
+				if ((pFrame->flag & I3C_TRANSFER_RETRY_ENABLE) &&
+					(pFrame->retry_count >= 1)) {
+					pFrame->retry_count--;
+					I3C_Slave_Start_Request((uint32_t)pTaskInfo);
+				}
+			} else {
+				I3C_SET_REG_CTRL(I3C_IF, I3C_MCTRL_REQUEST_NONE);
+				pTaskInfo->result = I3C_ERR_NACK;
+				I3C_Slave_End_Request((uint32_t)pTask);
+			}
 		}
-
-		intmasked &= ~I3C_INTMASKED_EVENT_MASK;
-		if (!intmasked) {
-			EXIT_SLAVE_ISR();
-			return;
-		}
-	} else if (intmasked & I3C_INTMASKED_EVENT_MASK){
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_EVENT_MASK);
 
 		intmasked &= ~I3C_INTMASKED_EVENT_MASK;
 		if (!intmasked) {
@@ -3509,20 +3548,11 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 	}
 
 	if (intmasked & I3C_INTMASKED_START_MASK) {
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_START_MASK);
+		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_START_MASK) {
+			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_START_MASK);
+		}
 
 		intmasked &= ~I3C_INTMASKED_START_MASK;
-		if (!intmasked) {
-			EXIT_SLAVE_ISR();
-			return;
-		}
-	}
-
-	/* !!! Don't remove to leave ISR after slave wakeup */
-	if (intmasked & I3C_INTMASKED_MATCHED_MASK) {
-		I3C_SET_REG_STATUS(I3C_IF, I3C_INTMASKED_MATCHED_MASK);
-
-		intmasked &= ~I3C_INTMASKED_MATCHED_MASK;
 		if (!intmasked) {
 			EXIT_SLAVE_ISR();
 			return;
@@ -3603,174 +3633,60 @@ void I3C_Slave_ISR(uint8_t I3C_IF)
 		}
 	}
 
-	if (bMATCHSS && (intmasked & I3C_INTMASKED_DDRMATCHED_MASK)) {
-		LOG_WRN("Not support DDR, yet\n");
-
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DDRMATCH_MASK);
-
-		if (!intmasked) {
-			EXIT_SLAVE_ISR();
-			return;
-		}
-	} else if (intmasked & I3C_INTMASKED_DDRMATCHED_MASK){
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DDRMATCH_MASK);
-
-		if (!intmasked) {
-			EXIT_SLAVE_ISR();
-			return;
-		}
-	}
-
-	if (intmasked & I3C_INTMASKED_RXPEND_MASK) {
-	}
-
 	if (intmasked & I3C_INTMASKED_ERRWARN_MASK) {
 		errwarn = I3C_GET_REG_ERRWARN(I3C_IF);
 
-		if (errwarn & I3C_ERRWARN_SPAR_MASK) {
-			/*LOG_WRN("\nSPAR\n");*/
-			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_SPAR_MASK);
-			if (errwarn == I3C_ERRWARN_SPAR_MASK) {
-				EXIT_SLAVE_ISR();
-				return;
-			}
+		LOG_WRN("ERRWARN:0x%x\n", errwarn);
 
-			errwarn &= ~I3C_ERRWARN_SPAR_MASK;
+		if (errwarn & I3C_ERRWARN_SPAR_MASK) {
+			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_SPAR_MASK);
 		}
 
 		if (errwarn & I3C_ERRWARN_URUNNACK_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_URUNNACK_MASK);
-			if (errwarn == I3C_ERRWARN_URUNNACK_MASK) {
-				LOG_WRN("\nURUNNACK\n");
-				EXIT_SLAVE_ISR();
-				return;
-			}
-
-			errwarn &= ~I3C_ERRWARN_URUNNACK_MASK;
 		}
 
 		if (errwarn & I3C_ERRWARN_INVSTART_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_INVSTART_MASK);
-			if (errwarn & I3C_ERRWARN_INVSTART_MASK) {
-				LOG_WRN("\nInvalid START\n");
-				EXIT_SLAVE_ISR();
-				return;
-			}
-
-			errwarn &= ~I3C_ERRWARN_INVSTART_MASK;
 		}
 
 		if (errwarn & I3C_ERRWARN_OWRITE_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_OWRITE_MASK);
-			LOG_WRN("@E0");
 		}
 		if (errwarn & I3C_ERRWARN_OREAD_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_OREAD_MASK);
-			LOG_WRN("@E1");
 		}
 
 		if (errwarn & I3C_ERRWARN_HCRC_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_HCRC_MASK);
-			LOG_WRN("@E3");
 		}
 		if (errwarn & I3C_ERRWARN_HPAR_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_HPAR_MASK);
-			LOG_WRN("@E4");
 		}
 		if (errwarn & I3C_ERRWARN_ORUN_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_ORUN_MASK);
-			LOG_WRN("@E5");
 		}
 		if (errwarn & I3C_ERRWARN_TERM_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_TERM_MASK);
 		}
 		if (errwarn & I3C_ERRWARN_S0S1_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_S0S1_MASK);
-			LOG_WRN("@E7");
 		}
 		if (errwarn & I3C_ERRWARN_URUN_MASK) {
 			I3C_SET_REG_ERRWARN(I3C_IF, I3C_ERRWARN_URUN_MASK);
-			LOG_WRN("@EA");
 		}
 	}
 
 	if (intmasked & I3C_INTMASKED_STOP_MASK) {
-		I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_STOP_MASK);
-
-		pTask = pDevice->pTaskListHead;
-		if (pTask != NULL) {
-			pTaskInfo = pTask->pTaskInfo;
-			pFrame = &pTask->pFrameList[pTask->frame_idx];
-		}
-
-		/* IBI and Hot-Join only */
-		/* Master Request handled in NOWMASTER */
-		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_EVENT_MASK) {
-			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_EVENT_MASK);
-
-			if (pTask->protocol == I3C_TRANSFER_PROTOCOL_MASTER_REQUEST) {
-				/* master request */
-			} else {
-				/* Ack IBI or Hot-Join */
-				if (pTaskInfo != NULL) {
-					pTaskInfo->result = I3C_ERR_OK;
-					I3C_Slave_End_Request((uint32_t)pTask);
-				}
-			}
-		} else if ((pTask != NULL) && ((I3C_GET_REG_STATUS(I3C_IF) &
-			I3C_STATUS_EVDET_MASK) == I3C_STATUS_EVDET(2))) {
-			/* NACK SLVSTART */
-			if ((pFrame->flag & I3C_TRANSFER_RETRY_ENABLE) &&
-				(pFrame->retry_count >= 1)) {
-				pFrame->retry_count--;
-				I3C_Slave_Start_Request((uint32_t)pTaskInfo);
-			} else {
-				I3C_SET_REG_CTRL(I3C_IF, I3C_MCTRL_REQUEST_NONE);
-
-				pTaskInfo->result = I3C_ERR_NACK;
-				I3C_Slave_End_Request((uint32_t)pTask);
-			}
-		}
-
 		if (bMATCHSS) {
-			I3C_Slave_Handle_DMA((uint32_t) pDevice);
-
-			if (pDevice->stopSplitRead) {
-				I3C_SET_REG_DMACTRL(I3C_IF, I3C_GET_REG_DMACTRL(I3C_IF) &
-						~I3C_DMACTRL_DMATB_MASK);
-				PDMA->CHCTL &= ~BIT(PDMA_OFFSET + I3C_IF);
-
-				if (PDMA->TDSTS & BIT(PDMA_OFFSET + I3C_IF)) {
-					PDMA->TDSTS = BIT(PDMA_OFFSET + I3C_IF);
-				} else {
+			if (hal_I3C_Is_Slave_Idle(I3C_IF) != true) {
+				if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_MATCHED_MASK) {
+					LOG_WRN("[RE-ENTRY] MATCHED AGAIN, DATA MAY LOST");
 				}
-
-				I3C_SET_REG_DATACTRL(I3C_IF, I3C_GET_REG_DATACTRL(I3C_IF) |
-						I3C_DATACTRL_FLUSHTB_MASK);
-			} else {
 			}
-		}
 
-		/* Force End RX DMA */
-
-		/* clear auto CCC */
-		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_CHANDLED_MASK) {
-			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_CHANDLED_MASK);
-		}
-
-		/* clear Address Matched for SDR */
-		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_MATCHED_MASK) {
-			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_MATCHED_MASK);
-		}
-
-		/* clear Address Matched for HDR Write */
-		if (I3C_GET_REG_STATUS(I3C_IF) & I3C_STATUS_DDRMATCH_MASK) {
-			I3C_SET_REG_STATUS(I3C_IF, I3C_STATUS_DDRMATCH_MASK);
-			I3C_SET_REG_INTSET(I3C_IF, I3C_INTSET_DDRMATCHED_MASK);
-		}
-
-		if (I3C_GET_REG_STATUS(I3C_IF) & (I3C_STATUS_START_MASK | I3C_STATUS_STOP_MASK)) {
-			LOG_DBG("\r\nRE-ENTRY\r\n");
+			/* handle target data */
+			I3C_Slave_Handle_DMA((uint32_t) pDevice);
 		}
 	}
 
