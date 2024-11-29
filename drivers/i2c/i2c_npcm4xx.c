@@ -57,6 +57,7 @@ struct i2c_npcm4xx_config {
 	struct npcm4xx_clk_cfg clk_cfg; /* clock configuration */
 	uint32_t default_bitrate;
 	uint8_t irq;                    /* i2c controller irq */
+	uint32_t wait_free_time;
 };
 
 /*rx_buf and tx_buf address must 4-align for DMA */
@@ -857,6 +858,7 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 	uint8_t value, i;
 	bool bus_busy;
 	struct i2c_reg *const inst = I2C_INSTANCE(dev);
+	const struct i2c_npcm4xx_config *const config = I2C_DRV_CONFIG(dev);
 
 #if (CONFIG_MASTER_HW_TIMEOUT_EN == 'Y')
 	struct i2c_reg *const inst = I2C_INSTANCE(dev);
@@ -876,7 +878,7 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 			inst->SMBnADDR1 = value;
 			break;
 		}
-		k_busy_wait(I2C_WAITING_FREE_TIME);
+		k_busy_wait(config->wait_free_time);
 	}
 
 	if (bus_busy) {
@@ -985,6 +987,8 @@ static const struct i2c_driver_api i2c_npcm4xx_driver_api = {
 		.clk_cfg = NPCM4XX_DT_CLK_CFG_ITEM(inst),			 \
 		.default_bitrate = DT_INST_PROP(inst, clock_frequency),		 \
 		.irq = DT_INST_IRQN(inst),					 \
+		.wait_free_time = DT_INST_PROP_OR(inst, wait_free_time,		 \
+				  I2C_WAITING_FREE_TIME),	 		 \
 	};									 \
 										 \
 	static struct i2c_npcm4xx_data i2c_npcm4xx_data_##inst;			 \
