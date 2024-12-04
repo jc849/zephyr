@@ -428,7 +428,7 @@ enum I3C_IBITYPE {
 
 #define I3C_IBITYPE_Enum enum I3C_IBITYPE
 
-typedef uint32_t (*ptrI3C_RetFunc)(uint32_t TaskInfo, uint32_t ErrDetail);
+typedef uint32_t (*ptrI3C_RetFunc)(uint32_t TaskInfo, void *pCallbackData);
 
 struct I3C_CAPABILITY_INFO {
 	uint8_t	MASTER : 1;
@@ -507,15 +507,14 @@ struct I3C_DEVICE_INFO {
 	I3C_REG_ITEM_t *pReg;
 	uint8_t regCnt;
 
-	bool bAbort;
 	volatile uint8_t task_count;
 	struct I3C_TRANSFER_TASK *pTaskListHead;
-	ptrI3C_RetFunc callback;
 
 	uint8_t dma_tx_channel;
 	uint8_t dma_rx_channel;
 
 	struct k_mutex lock;
+	struct k_sem xfer_complete;
 	struct k_sem ibi_complete;
 };
 
@@ -540,7 +539,8 @@ struct I3C_DEVICE_INFO {
 struct I3C_TASK_INFO {
 	struct I3C_TRANSFER_TASK *pTask;
 	I3C_ErrCode_Enum result;
-	ptrI3C_RetFunc callback;
+	ptrI3C_RetFunc pCallback;
+	void *pCallbackData;
 
 	uint8_t MasterRequest : 1;
 	uint8_t bHIF : 1;

@@ -12,8 +12,6 @@
 {
 #endif
 
-uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail);
-
 uint32_t I3C_DO_NACK(I3C_TASK_INFO_t *pTaskInfo);
 uint32_t I3C_DO_WRABT(I3C_TASK_INFO_t *pTaskInfo);
 uint32_t I3C_DO_SLVSTART(I3C_TASK_INFO_t *pTaskInfo);

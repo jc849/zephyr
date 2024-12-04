@@ -1343,7 +1343,6 @@ I3C_ErrCode_Enum hal_I3C_Process_Task(I3C_TASK_INFO_t *pTaskInfo)
 	I3C_DEVICE_INFO_t *pDevice;
 	uint32_t mctrl;
 	uint16_t rdterm;
-	I3C_BUS_INFO_t *pBus;
 
 	if (pTaskInfo == NULL)
 		return I3C_ERR_PARAMETER_INVALID;
@@ -1396,22 +1395,9 @@ I3C_ErrCode_Enum hal_I3C_Process_Task(I3C_TASK_INFO_t *pTaskInfo)
 		mctrl |= I3C_MCTRL_REQUEST(I3C_MCTRL_REQUEST_EMIT_START);
 	}
 
-	if ((pDevice->bAbort == false) || (protocol == I3C_TRANSFER_PROTOCOL_EVENT)) {
-		I3C_SetXferRate(pTaskInfo);
-		I3C_SET_REG_MCTRL(pTaskInfo->Port, mctrl);
-		return I3C_ERR_PENDING;
-	} else if (pDevice->bAbort) {
-		/* flush HDRCMD */
-		I3C_SET_REG_MDATACTRL(pTaskInfo->Port, I3C_GET_REG_MDATACTRL(pTaskInfo->Port) |
-			I3C_MDATACTRL_FLUSHTB_MASK);
-		I3C_SET_REG_MDMACTRL(pTaskInfo->Port, I3C_GET_REG_MDMACTRL(pTaskInfo->Port) &
-			~(I3C_MDMACTRL_DMAFB_MASK | I3C_MDMACTRL_DMATB_MASK));
+	I3C_SetXferRate(pTaskInfo);
 
-		pBus = pDevice->pOwner;
-		pBus->pCurrentTask = NULL;
-		pDevice->bAbort = false;
-		return I3C_ERR_SLVSTART;
-	}
+	I3C_SET_REG_MCTRL(pTaskInfo->Port, mctrl);
 
 	return I3C_ERR_OK;
 }
@@ -1440,7 +1426,12 @@ I3C_ErrCode_Enum hal_I3C_Stop(I3C_PORT_Enum port)
 		mctrl |= I3C_MCTRL_REQUEST_EMIT_STOP;
 
 	I3C_SET_REG_MINTCLR(port, I3C_MINTCLR_MCTRLDONE_MASK);
+
 	I3C_SET_REG_MCTRL(port, mctrl);
+
+	/* We disable mctrldone interrupt, wait mctrl done after emit stop */
+	while ((I3C_GET_REG_MSTATUS(port) & I3C_MSTATUS_MCTRLDONE_MASK) == 0);
+
 	return I3C_ERR_OK;
 }
 
@@ -1948,27 +1939,24 @@ static void i3c_npcm4xx_start_xfer(struct i3c_npcm4xx_obj *obj, struct i3c_npcm4
 	pBus = Get_Bus_From_Port(port);
 
 	while (pDevice->pTaskListHead != NULL) {
-		if (pBus->pCurrentTask == NULL) {
-			pTask = pDevice->pTaskListHead;
-			pBus->pCurrentTask = pTask;
-
+		if (pBus->pCurrentTask != NULL) {
+			k_yield();
+		} else {
 			key = k_spin_lock(&obj->lock);
-			obj->curr_xfer = xfer;
+
+			pTask = pDevice->pTaskListHead;
+			if (pTask) {
+				pBus->pCurrentTask = pTask;
+			} else {
+				k_spin_unlock(&obj->lock, key);
+				break;
+			}
 
 			pTaskInfo = pTask->pTaskInfo;
-			if (pTaskInfo->MasterRequest)
-				I3C_Master_Start_Request((uint32_t)pTaskInfo);
-			else
-				I3C_Slave_Start_Request((uint32_t)pTaskInfo);
+
+			I3C_Master_Start_Request((uint32_t)pTaskInfo);
 
 			k_spin_unlock(&obj->lock, key);
-
-			/* wait until current task complete */
-			while (pBus->pCurrentTask) {
-				k_yield();
-				/* k_usleep(0); */
-			}
-			return;
 		}
 	}
 }
@@ -2558,20 +2546,55 @@ union i3c_device_cmd_queue_port_s {
 };
 /* offset 0x0c */
 
+uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData)
+{
+	I3C_TASK_INFO_t *pTaskInfo;
+	struct i3c_npcm4xx_xfer *xfer;
+	I3C_TRANSFER_TASK_t *pTask;
+	I3C_DEVICE_INFO_t *pDevice;
+	k_spinlock_key_t key;
+
+	pTaskInfo = (I3C_TASK_INFO_t *)TaskInfo;
+	pTask = pTaskInfo->pTask;
+
+	xfer = (struct i3c_npcm4xx_xfer *) pCallbackData;
+	pDevice = Get_Current_Master_From_Port(pTaskInfo->Port);
+
+	key = k_spin_lock(&xfer->lock);
+
+	if (xfer->abort == true) {
+		k_spin_unlock(&xfer->lock, key);
+		LOG_ERR("command abort, free buffer");
+		hal_I3C_MemFree(xfer);
+		return 0;
+	}
+
+	xfer->rx_len = *pTask->pRdLen;
+	xfer->ret = pTaskInfo->result;
+	xfer->complete = true;
+
+	/* context switch may happened after spin_unlock() */
+	k_spin_unlock(&xfer->lock, key);
+
+	k_sem_give(&pDevice->xfer_complete);
+
+	return 0;
+}
+
 int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *ccc)
 {
 	struct i3c_npcm4xx_obj *obj = DEV_DATA(dev);
 	struct i3c_npcm4xx_config *config;
-	struct i3c_npcm4xx_xfer xfer;
-	struct i3c_npcm4xx_cmd cmd;
-	union i3c_device_cmd_queue_port_s cmd_hi, cmd_lo;
-	int pos = 0;
+	struct i3c_npcm4xx_xfer *xfer;
+	int pos = 0, ret = 0;
+	k_spinlock_key_t key;
+	I3C_DEVICE_INFO_t *pDevice;
 
 	/* To construct task */
 	uint8_t CCC;
 	uint32_t Baudrate = 0;
 	uint32_t Timeout = TIMEOUT_TYPICAL;
-	ptrI3C_RetFunc callback = NULL;
+	ptrI3C_RetFunc pCallback = i3c_npcm4xx_master_send_done;
 	uint8_t PortId;
 	I3C_TASK_POLICY_Enum Policy = I3C_TASK_POLICY_APPEND_LAST;
 	bool bHIF = NOT_HIF;
@@ -2588,204 +2611,194 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 		}
 	}
 
-	xfer.ncmds = 1;
-	xfer.cmds = &cmd;
-	xfer.ret = 0;
-
-	cmd.ret = 0;
-	if (ccc->rnw) {
-		cmd.rx_buf = ccc->payload.data;
-		cmd.rx_length = ccc->payload.length;
-		cmd.tx_length = 0;
-	} else {
-		cmd.tx_buf = ccc->payload.data;
-		cmd.tx_length = ccc->payload.length;
-		cmd.rx_length = 0;
-	}
-
-	cmd_hi.value = 0;
-	cmd_hi.xfer_arg.cmd_attr = COMMAND_PORT_XFER_ARG;
-	cmd_hi.xfer_arg.dl = ccc->payload.length;
-
-	cmd_lo.value = 0;
-	cmd_lo.xfer_cmd.cmd_attr = COMMAND_PORT_XFER_CMD;
-	cmd_lo.xfer_cmd.cp = 1;
-	cmd_lo.xfer_cmd.dev_idx = pos;
-	cmd_lo.xfer_cmd.cmd = ccc->id;
-	cmd_lo.xfer_cmd.roc = 1;
-	cmd_lo.xfer_cmd.rnw = ccc->rnw;
-	cmd_lo.xfer_cmd.toc = 1;
-	if (ccc->id == I3C_CCC_SETHID || ccc->id == I3C_CCC_DEVCTRL) {
-		cmd_lo.xfer_cmd.speed = COMMAND_PORT_SPEED_I3C_I2C_FM;
-	}
-	cmd.cmd_hi = cmd_hi.value;
-	cmd.cmd_lo = cmd_lo.value;
-
 	config = obj->config;
 
 	CCC = ccc->id;
 	PortId = (uint8_t)(config->inst_id);
-	Baudrate = I3C_TRANSFER_SPEED_SDR_1MHZ;
+	Baudrate = config->i3c_scl_hz;
 	Policy = I3C_TASK_POLICY_APPEND_LAST;
-	callback = NULL;
 	Timeout = TIMEOUT_TYPICAL;
 	bHIF = IS_HIF;
+	pDevice = obj->pDevice;
+
+	xfer = (struct i3c_npcm4xx_xfer *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_xfer));
+
+	if (xfer) {
+		xfer->ncmds = 1;
+		xfer->abort = false;
+		xfer->complete = false;
+		xfer->ret = -ETIMEDOUT;
+	} else {
+		return -ENOMEM;
+	}
 
 	if (ccc->id & I3C_CCC_DIRECT) {
 		if ((CCC == CCC_DIRECT_ENEC) || (CCC == CCC_DIRECT_DISEC)) {
-			if (cmd.tx_length != 1)
-				return -1;
-			if (cmd.tx_buf == NULL)
-				return -1;
+			if (ccc->payload.length != 1)
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
 
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
-			memcpy(&TxBuf[1], cmd.tx_buf, 1);
+			memcpy(&TxBuf[1], ccc->payload.data, 1);
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
-				callback, PortId, Policy, bHIF);
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_RSTDAA) {
-			if (cmd.tx_length != 0)
-				return -1;
+			if (ccc->payload.length != 0)
+				return -EINVAL;
 
 			TxLen = 1;
 			TxBuf[0] = ccc->addr;
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
-				callback, PortId, Policy, bHIF);
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMWL) {
-			if (cmd.tx_length != 2)
-				return -1;
-			if (cmd.tx_buf == NULL)
-				return -1;
+			if (ccc->payload.length != 2)
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
 
 			TxLen = 3;
 			TxBuf[0] = ccc->addr;
-			memcpy(&TxBuf[1], cmd.tx_buf, 2);
+			memcpy(&TxBuf[1], ccc->payload.data, 2);
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
-				callback, PortId, Policy, bHIF);
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMRL) {
-			if ((cmd.tx_length != 2) && (cmd.tx_length != 3))
-				return -1;
-			if (cmd.tx_buf == NULL)
-				return -1;
+			if ((ccc->payload.length != 2) && (ccc->payload.length != 3))
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
 
-			TxLen = cmd.tx_length + 1;
+			TxLen = ccc->payload.length + 1;
 			TxBuf[0] = ccc->addr;
-			memcpy(&TxBuf[1], cmd.tx_buf, cmd.tx_length);
+			memcpy(&TxBuf[1], ccc->payload.data, ccc->payload.length);
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
-				callback, PortId, Policy, bHIF);
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETDASA) {
-			if (cmd.tx_length != 1)
-				return -1;
-			if (cmd.tx_buf == NULL)
-				return -1;
+			if (ccc->payload.length != 1)
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
 
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
-			memcpy(&TxBuf[1], cmd.tx_buf, cmd.tx_length);
+			memcpy(&TxBuf[1], ccc->payload.data, ccc->payload.length);
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
-				callback, PortId, Policy, bHIF);
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETMWL) {
 			TxLen = 1;
 			RxLen = 2;
 			TxBuf[0] = ccc->addr;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf, Baudrate,
-				Timeout, callback, PortId, Policy, bHIF);
+			RxBuf = ccc->payload.data;
+			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETMRL) {
 			TxLen = 1;
 			RxLen = 3;
 			TxBuf[0] = ccc->addr;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf, Baudrate,
-				Timeout, callback, PortId, Policy, bHIF);
+			RxBuf = ccc->payload.data;
+			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETPID) {
 			TxLen = 1;
 			RxLen = 6;
 			TxBuf[0] = ccc->addr;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf, Baudrate,
-				Timeout, callback, PortId, Policy, bHIF);
+			RxBuf = ccc->payload.data;
+			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if ((CCC == CCC_DIRECT_GETBCR) || (CCC == CCC_DIRECT_GETDCR)
 			|| (CCC == CCC_DIRECT_GETACCMST)) {
 			TxLen = 1;
 			RxLen = 1;
 			TxBuf[0] = ccc->addr;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf, Baudrate,
-				Timeout, callback, PortId, Policy, bHIF);
+			RxBuf = ccc->payload.data;
+			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+					Baudrate,Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETSTATUS) {
 			TxLen = 1;
 			RxLen = 2;
 			TxBuf[0] = ccc->addr;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf, Baudrate,
-				Timeout, callback, PortId, Policy, bHIF);
+			RxBuf = ccc->payload.data;
+			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else {
-			return -2;
+			return -EINVAL;
 		}
 	} else {
-		if (CCC == CCC_BROADCAST_ENTDAA) {
-			RxLen = (sizeof(cmd.rx_buf) >= 63) ? 63 : (sizeof(cmd.rx_buf) % 9) * 9;
-			RxBuf = cmd.rx_buf;
-			I3C_Master_Insert_Task_ENTDAA(&RxLen, RxBuf, Baudrate, Timeout, callback,
-				PortId, Policy, bHIF);
+		if ((CCC == CCC_BROADCAST_ENEC) || (CCC == CCC_BROADCAST_DISEC)) {
+			if (ccc->payload.length != 1)
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
+
+			TxLen = ccc->payload.length;
+			memcpy(TxBuf, ccc->payload.data, TxLen);
+		} else if ((CCC == CCC_BROADCAST_RSTDAA) ||
+			(CCC == CCC_BROADCAST_SETAASA)) {
+			TxLen = 0;
+		} else if (CCC == CCC_BROADCAST_SETMWL) {
+			if (ccc->payload.length != 2)
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
+
+			TxLen = ccc->payload.length;
+			memcpy(TxBuf, ccc->payload.data, TxLen);
+		} else if (CCC == CCC_BROADCAST_SETMRL) {
+			if ((ccc->payload.length != 1) || (ccc->payload.length != 3))
+				return -EINVAL;
+			if (ccc->payload.data == NULL)
+				return -EINVAL;
+
+			TxLen = ccc->payload.length;
+			memcpy(TxBuf, ccc->payload.data, TxLen);
+		} else if (CCC == CCC_BROADCAST_SETHID) {
+			TxLen = 1;
+			TxBuf[0] = 0x00;
+		} else if (CCC == CCC_BROADCAST_DEVCTRL) {
+			TxLen = 3;
+
+			TxBuf[0] = 0xE0;
+			TxBuf[1] = 0x00;
+			TxBuf[2] = 0x00;
 		} else {
-			if ((CCC == CCC_BROADCAST_ENEC) || (CCC == CCC_BROADCAST_DISEC)) {
-				if (cmd.tx_length != 1)
-					return -1;
-				if (cmd.tx_buf == NULL)
-					return -1;
+			return -EINVAL;
+		}
 
-				TxLen = cmd.tx_length;
-				memcpy(TxBuf, cmd.tx_buf, TxLen);
-			} else if ((CCC == CCC_BROADCAST_RSTDAA) ||
-				(CCC == CCC_BROADCAST_SETAASA)) {
-				TxLen = 0;
-			} else if (CCC == CCC_BROADCAST_SETMWL) {
-				if (cmd.tx_length != 2)
-					return -1;
-				if (cmd.tx_buf == NULL)
-					return -1;
+		I3C_Master_Insert_Task_CCCb(CCC, TxLen, TxBuf, Baudrate, Timeout,
+				pCallback, (void *)xfer, PortId, Policy, bHIF);
+	}
 
-				TxLen = cmd.tx_length;
-				memcpy(TxBuf, cmd.tx_buf, TxLen);
-			} else if (CCC == CCC_BROADCAST_SETMRL) {
-				if ((cmd.tx_length != 1) || (cmd.tx_length != 3))
-					return -1;
-				if (cmd.tx_buf == NULL)
-					return -1;
+	k_sem_init(&pDevice->xfer_complete, 0, 1);
 
-				TxLen = cmd.tx_length;
-				memcpy(TxBuf, cmd.tx_buf, TxLen);
-			} else if (CCC == CCC_BROADCAST_SETHID) {
-				TxLen = 1;
-				TxBuf[0] = 0x00;
-			} else if (CCC == CCC_BROADCAST_DEVCTRL) {
-				TxLen = 3;
+	i3c_npcm4xx_start_xfer(obj, xfer);
 
-				TxBuf[0] = 0xE0;
-				TxBuf[1] = 0x00;
-				TxBuf[2] = 0x00;
-			} else {
-				return -2;
+	/* wait done, xfer.ret will be changed in ISR */
+	if(k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+		key = k_spin_lock(&xfer->lock);
+		if (xfer->complete == true) {
+			/* In this case, means context switch after callback function
+			 * call spin_unlock() and timeout happened.
+			 * Take semaphore again to make xfer_complete synchronization.
+			 */
+			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
+			k_spin_unlock(&xfer->lock, key);
+			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+				LOG_WRN("take sem again timeout");
 			}
-
-			I3C_Master_Insert_Task_CCCb(CCC, TxLen, TxBuf, Baudrate, Timeout, callback,
-				PortId, Policy, bHIF);
+		} else { /* the memory will be free when driver call pCallback */
+			xfer->abort = true;
+			ret = xfer->ret;
+			k_spin_unlock(&xfer->lock, key);
+			return ret;
 		}
 	}
 
-	k_sem_init(&xfer.sem, 0, 1);
-	xfer.ret = -ETIMEDOUT;
+	ret = xfer->ret;
 
-	i3c_npcm4xx_start_xfer(obj, &xfer);
+	hal_I3C_MemFree(xfer);
 
-	/* wait done, xfer.ret will be changed in ISR */
-	k_sem_take(&xfer.sem, I3C_NPCM4XX_CCC_TIMEOUT);
-
-	/* stop worker thread*/
-
-	return xfer.ret;
+	return ret;
 }
 
 /* i3cdev -> target device */
@@ -2795,11 +2808,11 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 {
 	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->bus);
 	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(i3cdev);
-	struct i3c_npcm4xx_xfer xfer;
-	struct i3c_npcm4xx_cmd *cmds, *cmd;
-	union i3c_device_cmd_queue_port_s cmd_hi, cmd_lo;
+	struct i3c_npcm4xx_xfer *xfer;
 	int pos;
 	int i, ret;
+	k_spinlock_key_t key;
+	I3C_DEVICE_INFO_t *pDevice;
 
 	I3C_TASK_INFO_t *pTaskInfo;
 	bool bWnR;
@@ -2811,7 +2824,7 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 	uint8_t *RxBuf = NULL;
 	uint32_t Baudrate;
 	uint32_t Timeout = TIMEOUT_TYPICAL;
-	ptrI3C_RetFunc callback = NULL;
+	ptrI3C_RetFunc pCallback = i3c_npcm4xx_master_send_done;
 	uint8_t PortId = obj->config->inst_id;
 	I3C_TASK_POLICY_Enum Policy = I3C_TASK_POLICY_APPEND_LAST;
 	bool bHIF = IS_HIF;
@@ -2841,50 +2854,27 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 
 	Addr = obj->dev_addr_tbl[pos];
 	pSlaveDev = obj->dev_descs[pos];
+	pDevice = obj->pDevice;
 
 	if (pSlaveDev == NULL)
 		return DEVICE_COUNT_MAX;
 
-	cmds = (struct i3c_npcm4xx_cmd *)k_calloc(sizeof(struct i3c_npcm4xx_cmd), nxfers);
-	__ASSERT(cmds, "failed to allocat cmd\n");
+	xfer = (struct i3c_npcm4xx_xfer *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_xfer));
 
-	xfer.ncmds = nxfers;
-	xfer.cmds = cmds;
-	xfer.ret = 0;
-
-	for (i = 0; i < nxfers; i++) {
-		cmd = &xfer.cmds[i];
-
-		cmd_hi.value = 0;
-		cmd_hi.xfer_arg.cmd_attr = COMMAND_PORT_XFER_ARG;
-		cmd_hi.xfer_arg.dl = xfers[i].len;
-
-		cmd_lo.value = 0;
-		if (xfers[i].rnw) {
-			cmd->rx_buf = xfers[i].data.in;
-			cmd->rx_length = xfers[i].len;
-			cmd_lo.xfer_cmd.rnw = 1;
-		} else {
-			cmd->tx_buf = xfers[i].data.out;
-			cmd->tx_length = xfers[i].len;
-		}
-
-		cmd_lo.xfer_cmd.tid = i;
-		cmd_lo.xfer_cmd.dev_idx = pos;
-		cmd_lo.xfer_cmd.roc = 1;
-		if (i == nxfers - 1) {
-			cmd_lo.xfer_cmd.toc = 1;
-		}
-
-		cmd->cmd_hi = cmd_hi.value;
-		cmd->cmd_lo = cmd_lo.value;
+	if (xfer) {
+		xfer->abort = false;
+		xfer->complete = false;
+		xfer->ncmds = nxfers;
+		xfer->ret = -ETIMEDOUT;
+	} else {
+		return -ENOMEM;
 	}
 
 	for (i = 0; i < nxfers; i++) {
 		bWnR = (((i + 1) < nxfers) && (xfers[i].rnw == 0) && (xfers[i + 1].rnw == 1));
 
-		Baudrate = (pSlaveDev->info.i2c_mode) ? I3C_TRANSFER_SPEED_I2C_100KHZ :
-			I3C_TRANSFER_SPEED_SDR_12p5MHZ;
+		Baudrate = (pSlaveDev->info.i2c_mode) ? obj->config->i2c_scl_hz :
+			obj->config->i3c_scl_hz;
 
 		/* Try to slow down for the fly line */
 		/* Baudrate = (pSlaveDev->attr.b.runI3C) ? I3C_TRANSFER_SPEED_SDR_6MHZ : */
@@ -2915,15 +2905,32 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 		}
 
 		pTaskInfo = I3C_Master_Create_Task(Protocol, Addr, 0, &TxLen, &RxLen, TxBuf, RxBuf,
-			Baudrate, Timeout, callback, PortId, Policy, bHIF);
+			Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		if (pTaskInfo != NULL) {
-			k_sem_init(&xfer.sem, 0, 1);
-			i3c_npcm4xx_start_xfer(obj, &xfer);
+
+			k_sem_init(&pDevice->xfer_complete, 0, 1);
+
+			i3c_npcm4xx_start_xfer(obj, xfer);
 
 			/* wait done, xfer.ret will be changed in ISR */
-			if (k_sem_take(&xfer.sem, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
-				xfer.ret = -ETIMEDOUT;
-				break;
+			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
+				key = k_spin_lock(&xfer->lock);
+				if (xfer->complete == true) {
+					/* In this case, means context switch after callback function
+					 * call spin_unlock() and timeout happened.
+					 * Take semaphore again to make xfer_complete synchronization.
+					 */
+					LOG_WRN("sem timeout but task complete, get sem again to clear flag");
+					k_spin_unlock(&xfer->lock, key);
+					if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
+						LOG_WRN("take sem again timeout");
+					}
+				} else { /* the memory will be free when driver call pCallback */
+					xfer->abort = true;
+					ret = xfer->ret;
+					k_spin_unlock(&xfer->lock, key);
+					return ret;
+				}
 			}
 
 			/* report actual read length */
@@ -2932,12 +2939,13 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 			}
 
 			if (xfers[i].rnw == 1)
-				xfers[i].len = xfer.rx_len;
+				xfers[i].len = xfer->rx_len;
 		}
 	}
 
-	ret = xfer.ret;
-	k_free(cmds);
+	ret = xfer->ret;
+
+	hal_I3C_MemFree(xfer);
 
 	return ret;
 }
@@ -2946,53 +2954,71 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 {
 	struct i3c_npcm4xx_config *config;
 	I3C_PORT_Enum port;
+	int ret = 0;
 
 	uint16_t rxlen = 63;
 	uint8_t RxBuf_expected[63];
+	uint32_t Baudrate = 0;
+	k_spinlock_key_t key;
+	I3C_DEVICE_INFO_t *pDevice;
 
 	config = DEV_CFG(i3cdev->bus);
 	port = config->inst_id;
 
 	struct i3c_npcm4xx_obj *obj = DEV_DATA(i3cdev->bus);
-	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(i3cdev);
-	struct i3c_npcm4xx_xfer xfer;
-	struct i3c_npcm4xx_cmd cmd;
-	union i3c_device_cmd_queue_port_s cmd_hi, cmd_lo;
+	struct i3c_npcm4xx_xfer *xfer;
+	ptrI3C_RetFunc pCallback = i3c_npcm4xx_master_send_done;
 
-	cmd_hi.value = 0;
-	cmd_hi.xfer_arg.cmd_attr = COMMAND_PORT_XFER_ARG;
+	pDevice = obj->pDevice;
 
-	cmd_lo.value = 0;
-	cmd_lo.addr_assign_cmd.cmd = I3C_CCC_ENTDAA;
-	cmd_lo.addr_assign_cmd.cmd_attr = COMMAND_PORT_ADDR_ASSIGN;
-	cmd_lo.addr_assign_cmd.toc = 1;
-	cmd_lo.addr_assign_cmd.roc = 1;
+	Baudrate = config->i3c_scl_hz;
 
-	cmd_lo.addr_assign_cmd.dev_cnt = 1;
-	cmd_lo.addr_assign_cmd.dev_idx = priv->pos;
+	xfer = (struct i3c_npcm4xx_xfer *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_xfer));
 
-	cmd.cmd_hi = cmd_hi.value;
-	cmd.cmd_lo = cmd_lo.value;
-	cmd.rx_length = 0;
-	cmd.tx_length = 0;
+	if (xfer) {
+		xfer->ret = -ETIMEDOUT;
+		xfer->ncmds = 1;
+	} else {
+		return -ENOMEM;
+	}
 
-	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, I3C_TRANSFER_SPEED_SDR_1MHZ,
-		TIMEOUT_TYPICAL, NULL, port, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
+	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL,
+			pCallback, (void *)xfer, port, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
 
-	k_sem_init(&xfer.sem, 0, 1);
-	xfer.ret = -ETIMEDOUT;
-	xfer.ncmds = 1;
-	xfer.cmds = &cmd;
-	i3c_npcm4xx_start_xfer(obj, &xfer);
+	k_sem_init(&pDevice->xfer_complete, 0, 1);
+
+	i3c_npcm4xx_start_xfer(obj, xfer);
 
 	/* wait done, xfer.ret will be changed in ISR */
-	if (k_sem_take(&xfer.sem, I3C_NPCM4XX_CCC_TIMEOUT) == 0) {
-		if (xfer.ret == 0) {
+	if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+		key = k_spin_lock(&xfer->lock);
+		if (xfer->complete == true) {
+			/* In this case, means context switch after callback function
+			 * call spin_unlock() and timeout happened.
+			 * Take semaphore again to make xfer_complete synchronization.
+			 */
+			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
+			k_spin_unlock(&xfer->lock, key);
+			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+				LOG_WRN("take sem again timeout");
+			}
+		} else { /* the memory will be free when driver call pCallback */
+			xfer->abort = true;
+			ret = xfer->ret;
+			k_spin_unlock(&xfer->lock, key);
+			return ret;
+		}
+	} else {
+		if (xfer->ret == 0) {
 			i3cdev->info.i2c_mode = 0;
 		}
 	}
 
-	return 0;
+	ret = xfer->ret;
+
+	hal_I3C_MemFree(xfer);
+
+	return ret;
 }
 
 void I3C_Slave_Handle_DMA(uint32_t Parm);
@@ -3375,11 +3401,8 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 	if (I3C_GET_REG_MINTMASKED(I3C_IF) & I3C_MINTMASKED_SLVSTART_MASK) {
 		I3C_SET_REG_MSTATUS(I3C_IF, I3C_MSTATUS_SLVSTART_MASK);
 
-		if ((pBus->pCurrentTask != NULL) &&
-			(pBus->pCurrentTask->protocol != I3C_TRANSFER_PROTOCOL_IBI) &&
-			(pBus->pCurrentTask->protocol != I3C_TRANSFER_PROTOCOL_MASTER_REQUEST) &&
-			(pBus->pCurrentTask->protocol != I3C_TRANSFER_PROTOCOL_HOT_JOIN)) {
-			pDevice->bAbort = true;
+		if (pBus->pCurrentTask != NULL) {
+			LOG_ERR("New slave request but pCurrentTask not NULL");
 		}
 
 		I3C_Master_New_Request((uint32_t)I3C_IF);
@@ -4136,8 +4159,6 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		else
 			pDevice->mode = I3C_DEVICE_MODE_SLAVE_ONLY;
 
-		pDevice->callback = I3C_Slave_Callback;
-
 		pDevice->stopSplitRead = false;
 		pDevice->capability.OFFLINE = false;
 
@@ -4153,7 +4174,6 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		pDevice->bRunI3C = true;
 		pDevice->ackIBI = true;
 		pDevice->dynamicAddr = config->assigned_addr;
-		pDevice->callback = I3C_Master_Callback;
 	}
 
 	I3C_connect_bus(port, config->busno);
