@@ -26,17 +26,17 @@ I3C_BUS_INFO_t gBus[I3C_BUS_COUNT_MAX] = {
 };
 
 I3C_DEVICE_INFO_t gI3c_dev_node_internal[I3C_PORT_MAX] = {
-	{.port = I3C1_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C1_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-	{.port = I3C2_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C2_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-	{.port = I3C3_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C3_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-	{.port = I3C4_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C4_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-	{.port = I3C5_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C5_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
-	{.port = I3C6_IF, .mode = I3C_DEVICE_MODE_DISABLE, .callback = NULL,
+	{.port = I3C6_IF, .mode = I3C_DEVICE_MODE_DISABLE,
 		.pOwner = NULL, .pDevInfo = NULL, .task_count = 0, .pTaskListHead = NULL},
 };
 
@@ -243,7 +243,6 @@ I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port)
 	pDevice->capability.I3C_VER_1p1 = hal_i3c_get_capability_support_V11(port);
 
 	pDevice->mode = I3C_DEVICE_MODE_DISABLE;
-	pDevice->callback = NULL;
 	pDevice->bRunI3C = false;
 
 	pDevice->staticAddr = I2C_STATIC_ADDR_DEFAULT_7BIT;
@@ -629,7 +628,6 @@ void I3C_Reset(uint8_t busNo)
 
 			/* used to disable I3C */
 			pDevice->mode = I3C_DEVICE_MODE_DISABLE;
-			pDevice->callback = NULL;
 			pDevice->pOwner = NULL;
 			pDevice->pDevInfo = NULL;
 			hal_I3C_Config_Device(pDevice);
@@ -770,7 +768,7 @@ void I3C_CCCb_DISEC(I3C_BUS_INFO_t *pBus, uint8_t mask, I3C_TASK_POLICY_Enum pol
 	TxLen = 1;
 	TxBuf[0] = mask;
 	I3C_Master_Insert_Task_CCCb(CCC_BROADCAST_DISEC, TxLen, TxBuf, I3C_TRANSFER_SPEED_SDR_1MHZ,
-		TIMEOUT_TYPICAL, I3C_Master_Callback, pDevice->port, policy, NOT_HIF);
+		TIMEOUT_TYPICAL, NULL, NULL, pDevice->port, policy, NOT_HIF);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -803,7 +801,7 @@ void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_P
 	TxBuf[0] = addr;
 	TxBuf[1] = mask;
 	I3C_Master_Insert_Task_CCCw(CCC_DIRECT_DISEC, 1, TxLen, TxBuf, I3C_TRANSFER_SPEED_SDR_1MHZ,
-		TIMEOUT_TYPICAL, I3C_Master_Callback, pDevice->port, policy, NOT_HIF);
+		TIMEOUT_TYPICAL, NULL, NULL, pDevice->port, policy, NOT_HIF);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -837,7 +835,7 @@ void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_P
 /*------------------------------------------------------------------------------*/
 I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	uint8_t Addr, uint8_t HSize, uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
 	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_DEVICE_INFO_t *pDevice;
@@ -876,7 +874,7 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	}
 
 	if (CreateTaskNode(pTaskInfo, Protocol, Baudrate, Addr, HSize, pWrCnt, WrBuf, pRdCnt,
-		RdBuf, callback, bHIF) != I3C_ERR_OK) {
+		RdBuf, bHIF) != I3C_ERR_OK) {
 		hal_I3C_MemFree(pTaskInfo);
 		return NULL;
 	}
@@ -884,8 +882,9 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	pTaskInfo->MasterRequest = true;
 	pTaskInfo->Port = PortId;
 	pTaskInfo->SwTimeout = Timeout;
+	pTaskInfo->pCallback = pCallback;
+	pTaskInfo->pCallbackData = pCallbackData;
 
-	/* Later, I3C Task Engine will pick it from device's task list */
 	InsertTaskNode(pDevice, pTaskInfo->pTask, Policy);
 
 	pDevice->task_count++;
@@ -914,7 +913,7 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 /*------------------------------------------------------------------------------*/
 I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	uint8_t Addr, uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf,
-	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, bool bHIF)
+	uint32_t Timeout, ptrI3C_RetFunc pCallback, uint8_t PortId, bool bHIF)
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TASK_INFO_t *pTaskInfo;
@@ -939,7 +938,7 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 		(ValidateBuffer(Protocol, Addr, 0, *pWrCnt, *pRdCnt, WrBuf, RdBuf, bHIF) !=
 			I3C_ERR_OK) ||
 		(CreateTaskNode(pTaskInfo, Protocol, pDevice->baudrate.i3cSdr, Addr, 0, pWrCnt,
-			WrBuf, 0, NULL, callback, bHIF) != I3C_ERR_OK)) {
+			WrBuf, 0, NULL, bHIF) != I3C_ERR_OK)) {
 		hal_I3C_MemFree(pTaskInfo);
 		return NULL;
 	}
@@ -947,6 +946,8 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	pTaskInfo->MasterRequest = false;
 	pTaskInfo->Port = PortId;
 	pTaskInfo->SwTimeout = Timeout;
+	pTaskInfo->pCallback = pCallback;
+	pTaskInfo->pCallbackData = NULL;
 
 	InsertTaskNode(pDevice, pTaskInfo->pTask, I3C_TASK_POLICY_APPEND_LAST);
 
@@ -1058,7 +1059,8 @@ void InitTaskInfo(I3C_TASK_INFO_t *pTaskInfo)
 	pTaskInfo->bHIF = false;
 	pTaskInfo->Port = 0xFF;
 	pTaskInfo->SwTimeout = TIMEOUT_TYPICAL;
-	pTaskInfo->callback = NULL;
+	pTaskInfo->pCallback = NULL;
+	pTaskInfo->pCallbackData = NULL;
 	pTaskInfo->pParentTaskInfo = NULL;
 
 	pTaskInfo->idx = 0;
@@ -1419,7 +1421,7 @@ I3C_ErrCode_Enum ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint8_t Add
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 	I3C_TRANSFER_PROTOCOL_Enum Protocol, uint32_t Baudrate, uint8_t Addr, uint8_t HSize,
-	uint16_t *pWrCnt, uint8_t *WrBuf, uint16_t *pRdCnt, uint8_t *RdBuf, ptrI3C_RetFunc callback, bool bHIF)
+	uint16_t *pWrCnt, uint8_t *WrBuf, uint16_t *pRdCnt, uint8_t *RdBuf, bool bHIF)
 {
 	uint16_t i;
 	uint8_t *pTxBuf = NULL;
@@ -2230,7 +2232,6 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 	pNewTask->pNextTask = NULL;
 	pTaskInfo->bHIF = bHIF;
 	pTaskInfo->pTask = pNewTask;
-	pTaskInfo->callback = callback;
 
 	return I3C_ERR_OK;
 }
@@ -2320,8 +2321,8 @@ CHECK_NEXT:
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(uint16_t *rxbuf_size, uint8_t *rxbuf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
-	I3C_TASK_POLICY_Enum Policy, bool bHIF)
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	uint8_t TxBuf[1];
@@ -2347,8 +2348,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(uint16_t *rxbuf_size, uint8_t *rx
 	*rxbuf_size = RxLen;
 
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_ENTDAA, 0, TxLen,
-		&TxLen, rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, I3C_Master_Callback, PortId,
-		Policy, bHIF);
+		&TxLen, rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, pCallback, pCallbackData,
+		PortId, Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -2380,8 +2381,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(uint16_t *rxbuf_size, uint8_t *rx
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uint8_t *buf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
-	I3C_TASK_POLICY_Enum Policy, bool bHIF)
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	uint8_t TxBuf[I3C_PAYLOAD_SIZE_MAX];
@@ -2411,8 +2412,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uin
 	}
 
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_CCCb, 0,
-		TxLen, &TxLen, &RxLen, TxBuf, NULL, Baudrate, Timeout, callback, PortId,
-		Policy, bHIF);
+		TxLen, &TxLen, &RxLen, TxBuf, NULL, Baudrate, Timeout, pCallback,
+		pCallbackData, PortId, Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -2447,8 +2448,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uin
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(uint8_t CCC, uint8_t HSize, uint16_t buf_size,
-	uint8_t *buf, uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
-	I3C_TASK_POLICY_Enum Policy, bool bHIF)
+	uint8_t *buf, uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	uint8_t TxBuf[70];
@@ -2541,7 +2542,9 @@ RETRY:
 	}
 
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_CCCw, fmt, HSize,
-		&TxLen, &RxLen, TxBuf, NULL, Baudrate, Timeout, callback, PortId, Policy, bHIF);
+		&TxLen, &RxLen, TxBuf, NULL, Baudrate, Timeout, pCallback, pCallbackData,
+		PortId, Policy, bHIF);
+
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
 	}
@@ -2576,7 +2579,8 @@ RETRY:
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(uint8_t CCC, uint8_t HSize, uint16_t txbuf_size,
 	uint16_t *rxbuf_size, uint8_t *txbuf, uint8_t *rxbuf, uint32_t Baudrate, uint32_t Timeout,
-	ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF)
+	ptrI3C_RetFunc pCallback, void *pCallbackData, uint8_t PortId, I3C_TASK_POLICY_Enum Policy,
+	bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	uint8_t TxBuf[70];
@@ -2678,7 +2682,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(uint8_t CCC, uint8_t HSize, uint16_
 	RxLen = *rxbuf_size;
 
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_CCCr, fmt, HSize, &TxLen,
-		rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
+		rxbuf_size, TxBuf, rxbuf, Baudrate, Timeout, pCallback, pCallbackData, PortId,
+		Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -2710,8 +2715,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(uint8_t CCC, uint8_t HSize, uint16_
  */
 /*------------------------------------------------------------------------------*/
 I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(uint16_t *rxbuf_size, uint8_t *rxbuf, uint32_t Baudrate,
-	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy,
-	bool bHIF)
+	uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData, uint8_t PortId,
+	I3C_TASK_POLICY_Enum Policy, bool bHIF)
 {
 	I3C_TASK_INFO_t *pNewTaskInfo;
 	uint16_t TxLen;
@@ -2729,7 +2734,8 @@ I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(uint16_t *rxbuf_size, uint8_t *rxb
 
 	/* ibi payload should not more than 255 byte specified in GETMRL if supported */
 	pNewTaskInfo = I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_EVENT, I3C_BROADCAST_ADDR, 0,
-		&TxLen, rxbuf_size, NULL, rxbuf, Baudrate, Timeout, callback, PortId, Policy, bHIF);
+		&TxLen, rxbuf_size, NULL, rxbuf, Baudrate, Timeout, pCallback, pCallbackData, PortId,
+		Policy, bHIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -2760,7 +2766,7 @@ I3C_ErrCode_Enum I3C_Slave_Insert_Task_HotJoin(I3C_PORT_Enum port)
 	TxLen = 0;
 	RxLen = 0;
 	pNewTaskInfo = I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_HOT_JOIN, 0, &TxLen, &RxLen,
-		NULL, NULL, TIMEOUT_TYPICAL, I3C_Slave_Callback, port, NOT_HIF);
+		NULL, NULL, TIMEOUT_TYPICAL, NULL, port, NOT_HIF);
 
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
@@ -2791,7 +2797,7 @@ I3C_ErrCode_Enum I3C_Slave_Insert_Task_MasterRequest(I3C_PORT_Enum port)
 	TxLen = 0;
 	RxLen = 0;
 	pNewTaskInfo = I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_MASTER_REQUEST, 0,
-		&TxLen, &RxLen, NULL, NULL, TIMEOUT_TYPICAL, I3C_Slave_Callback, port, NOT_HIF);
+		&TxLen, &RxLen, NULL, NULL, TIMEOUT_TYPICAL, NULL, port, NOT_HIF);
 	if (pNewTaskInfo == NULL) {
 		return I3C_ERR_OUT_OF_MEMORY;
 	}

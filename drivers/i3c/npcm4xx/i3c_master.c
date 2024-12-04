@@ -23,16 +23,12 @@ extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
  * @return                          final task result
  */
 
-uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
+static uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 {
-	const struct device *dev = NULL;
-	struct i3c_npcm4xx_obj *obj;
-	struct i3c_npcm4xx_xfer *xfer;
 	I3C_TASK_INFO_t *pTaskInfo;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
-	uint32_t ret;
 
 	if (TaskInfo == 0) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -53,21 +49,12 @@ uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 	pBus = pDevice->pOwner;
 
 	/* Indirect Callback, callback defined in create master task */
-	if ((pTaskInfo->callback != NULL) && (pTaskInfo->callback != I3C_Master_Callback)) {
-		pTaskInfo->callback((uint32_t)pTaskInfo, ErrDetail);
+	if ((pTaskInfo->pCallback != NULL)) {
+		pTaskInfo->pCallback((uint32_t)pTaskInfo, pTaskInfo->pCallbackData);
 	}
-
-	obj = gObj[pTaskInfo->Port];
-	xfer = obj->curr_xfer;
 
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
-
-	if (xfer) {
-		xfer->rx_len = *pTask->pRdLen;
-		xfer->ret = pTaskInfo->result;
-		k_sem_give(&xfer->sem);
-	}
 
 	return pTaskInfo->result;
 }
@@ -166,9 +153,9 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 		pTask->address = hal_I3C_get_ibiAddr(port);
 	}
 
-	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
 	hal_I3C_Stop(port);
-	pDevice->bAbort = false;
+
+	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
 
 	if (result == I3C_ERR_IBI) {
 		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_rcv_ibi[port]);
@@ -352,7 +339,7 @@ void I3C_Master_New_Request(uint32_t Parm)
 	port = (uint8_t)Parm;
 	/* must use NOT_HIF */
 	I3C_Master_Insert_Task_EVENT(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_IBI,
-		TIMEOUT_TYPICAL, I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+		TIMEOUT_TYPICAL, NULL, NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 
 	pBus = Get_Bus_From_Port(port);
 	if (pBus == NULL) {
@@ -500,6 +487,8 @@ void I3C_Master_IBIACK(uint32_t Parm)
 	}
 
 	pBus = pDevice->pOwner;
+
+	/* Master Transfer but IBIWON */
 	if (pTask->protocol != I3C_TRANSFER_PROTOCOL_EVENT) {
 		hal_I3C_Disable_Master_RX_DMA(port);
 
@@ -508,7 +497,7 @@ void I3C_Master_IBIACK(uint32_t Parm)
 		 */
 		rxLen = IBI_PAYLOAD_SIZE_MAX;
 		I3C_Master_Insert_Task_EVENT(&rxLen, NULL,
-			I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL, I3C_Master_Callback,
+			I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL, NULL, NULL,
 			port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 
 		if (pDevice->pTaskListHead == NULL) {
@@ -606,7 +595,7 @@ void I3C_Master_Insert_GETACCMST_After_IbiAckMR(uint32_t Parm)
 	/* We should malloc rdBuf and rxLen for IS_HIF if needed */
 	res = I3C_Master_Insert_Task_CCCr(CCC_DIRECT_GETACCMST, 1, 1, &rxLen, wrBuf,
 		rdBuf, I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL,
-		I3C_Master_Callback, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+		NULL, NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 
 	if (res == I3C_ERR_OK) {
 		pTask = pBus->pCurrentMaster->pTaskListHead;
@@ -631,6 +620,8 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(uint32_t Parm)
 {
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TASK_INFO_t *pTaskInfo;
+	I3C_DEVICE_INFO_t *pDevice;
+	I3C_BUS_INFO_t *pBus;
 	uint8_t port;
 	uint16_t rxLen;
 
@@ -652,6 +643,10 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(uint32_t Parm)
 
 	port = pTaskInfo->Port;
 
+	pDevice = I3C_Get_INODE(port);
+
+	pBus = pDevice->pOwner;
+
 	pTaskInfo->result = I3C_ERR_OK;
 	*pTask->pRdLen = 0;
 
@@ -663,9 +658,32 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(uint32_t Parm)
 	 */
 	I3C_Master_Stop_Request((uint32_t)pTask);
 
-	rxLen = 63;
-	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
-		NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+	/* Master Transfer but IBIWON */
+	if (pTask->protocol != I3C_TRANSFER_PROTOCOL_EVENT) {
+		/* Insert Event task and assume event task has running to
+		 * restore IBI Type and IBI address
+		 */
+		rxLen = IBI_PAYLOAD_SIZE_MAX;
+		I3C_Master_Insert_Task_EVENT(&rxLen, NULL,
+				I3C_TRANSFER_SPEED_SDR_IBI, TIMEOUT_TYPICAL, NULL, NULL,
+				port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+
+		if (pDevice->pTaskListHead == NULL) {
+			return;
+		}
+
+		pTask = pDevice->pTaskListHead;
+		pBus->pCurrentTask = pTask;
+
+		if (pTask->pTaskInfo == NULL) {
+			return;
+		}
+		pTaskInfo = pTask->pTaskInfo;
+	}
+
+//	rxLen = 63;
+//	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
+//		NULL, NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
 }
 
 /*------------------------------------------------------------------------------*/

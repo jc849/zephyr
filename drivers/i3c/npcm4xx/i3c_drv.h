@@ -59,21 +59,13 @@ struct i3c_ibi_status {
 	uint8_t ibi_status;
 };
 
-struct i3c_npcm4xx_cmd {
-	uint32_t cmd_lo;
-	uint32_t cmd_hi;
-	void *tx_buf;
-	void *rx_buf;
-	int tx_length;
-	int rx_length;
-	int ret;
-};
 struct i3c_npcm4xx_xfer {
 	int ret;
 	int rx_len;
 	int ncmds;
-	struct i3c_npcm4xx_cmd *cmds;
-	struct k_sem sem;
+	struct k_spinlock lock;
+	bool abort;
+	bool complete;
 };
 
 struct i3c_npcm4xx_dev_priv {
@@ -125,7 +117,6 @@ struct i3c_npcm4xx_obj {
 
 	struct i3c_npcm4xx_config *config;
 	struct k_spinlock lock;
-	struct i3c_npcm4xx_xfer *curr_xfer;
 	struct k_work work;
 	bool sir_allowed_by_sw;
 	struct {

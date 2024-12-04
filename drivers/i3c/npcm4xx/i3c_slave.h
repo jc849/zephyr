@@ -12,8 +12,6 @@
 {
 #endif
 
-uint32_t I3C_Slave_Callback(uint32_t TaskInfo, uint32_t ErrDetail);
-
 /* response */
 uint32_t I3C_DO_NACK_SLVSTART(I3C_TASK_INFO_t *pTaskInfo);
 

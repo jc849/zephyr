@@ -27,7 +27,7 @@ I3C_REG_ITEM_t *pSlaveReg[I3C_PORT_MAX] = {
  * @return                          final task result
  */
 /*------------------------------------------------------------------------------*/
-uint32_t I3C_Slave_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
+static uint32_t I3C_Slave_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 {
 	I3C_TASK_INFO_t *pTaskInfo;
 	I3C_DEVICE_INFO_t *pDevice;
@@ -46,7 +46,7 @@ uint32_t I3C_Slave_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 	} else if (ErrDetail == I3C_ERR_NACK_SLVSTART) {
 		return I3C_DO_NACK_SLVSTART(pTaskInfo);
 	} else if (ErrDetail == I3C_ERR_OK) {
-		if (pTaskInfo->callback != NULL) {
+		if (pTaskInfo->pCallback != NULL) {
 		}
 	}
 

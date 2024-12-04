@@ -78,11 +78,13 @@ void I3C_CCCw_DISEC(I3C_BUS_INFO_t *pBus, uint8_t addr, uint8_t mask, I3C_TASK_P
 
 I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint8_t Addr,
 	uint8_t HSize, uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf, uint32_t Baudrate,
-	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy,
-	bool bHIF);
+	uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData, uint8_t PortId,
+	I3C_TASK_POLICY_Enum Policy, bool bHIF);
+
 I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint8_t Addr,
 	uint16_t *pWrCnt, uint16_t *pRdCnt, uint8_t *WrBuf, uint8_t *RdBuf, uint32_t Timeout,
 	ptrI3C_RetFunc callback, uint8_t PortId, bool bHIF);
+
 void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo);
 bool I3C_Clean_Slave_Task(I3C_DEVICE_INFO_t *pDevice);
 
@@ -97,28 +99,31 @@ I3C_ErrCode_Enum ValidateBuffer(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint8_t Add
 
 I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 	I3C_TRANSFER_PROTOCOL_Enum Protocol, uint32_t Baudrate, uint8_t Addr, uint8_t HSize,
-	uint16_t *pWrCnt, uint8_t *WrBuf, uint16_t *pRdCnt, uint8_t *RdBuf, ptrI3C_RetFunc callback,
-	bool bHIF);
+	uint16_t *pWrCnt, uint8_t *WrBuf, uint16_t *pRdCnt, uint8_t *RdBuf, bool bHIF);
 I3C_ErrCode_Enum InsertTaskNode(I3C_DEVICE_INFO_t *pDevice,
 	I3C_TRANSFER_TASK_t *pNewTask, uint8_t bType);
 
 /* Sample to create master task and might be used in the driver */
 I3C_ErrCode_Enum I3C_Master_Insert_Task_ENTDAA(uint16_t *rxbuf_size, uint8_t *rxbuf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
-	I3C_TASK_POLICY_Enum Policy, bool bHIF);
-I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uint8_t *buf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
-	I3C_TASK_POLICY_Enum Policy, bool bHIF);
-I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(uint8_t CCC, uint8_t HSize,
-	uint16_t buf_size, uint8_t *buf, uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
 	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF);
+
+I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCb(uint8_t CCC, uint16_t buf_size, uint8_t *buf,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF);
+
+I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCw(uint8_t CCC, uint8_t HSize,
+	uint16_t buf_size, uint8_t *buf, uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback,
+	void *pCallbackData, uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF);
+
 I3C_ErrCode_Enum I3C_Master_Insert_Task_CCCr(uint8_t CCC, uint8_t HSize,
 	uint16_t txbuf_size, uint16_t *rxbuf_size, uint8_t *txbuf, uint8_t *rxbuf, uint32_t Baudrate,
-	uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId, I3C_TASK_POLICY_Enum Policy,
-	bool bHIF);
-I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(uint16_t *rxbuf_size, uint8_t *rxbuf,
-	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc callback, uint8_t PortId,
+	uint32_t Timeout, ptrI3C_RetFunc callback, void *pCallbackData, uint8_t PortId,
 	I3C_TASK_POLICY_Enum Policy, bool bHIF);
+
+I3C_ErrCode_Enum I3C_Master_Insert_Task_EVENT(uint16_t *rxbuf_size, uint8_t *rxbuf,
+	uint32_t Baudrate, uint32_t Timeout, ptrI3C_RetFunc pCallback, void *pCallbackData,
+	uint8_t PortId, I3C_TASK_POLICY_Enum Policy, bool bHIF);
 
 /* Sample to create slave task and might be used in the driver */
 I3C_ErrCode_Enum I3C_Slave_Insert_Task_HotJoin(I3C_PORT_Enum port);
