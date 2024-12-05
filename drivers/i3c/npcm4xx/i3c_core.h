@@ -55,10 +55,11 @@ bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus);
 
 /* dev info */
 I3C_DEVICE_INFO_SHORT_t *NewDevInfo(I3C_BUS_INFO_t *pBus, void *pDevice,
-	I3C_DEVICE_ATTRIB_t attr, uint8_t prefferedAddr, uint8_t dynamicAddr, uint8_t pid[],
+	I3C_DEVICE_ATTRIB_t attr, uint8_t prefferedAddr, uint8_t dynamicAddr, uint8_t *pid,
 	uint8_t bcr, uint8_t dcr);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByStaticAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr);
+I3C_DEVICE_INFO_SHORT_t *GetDevInfoByCharacteristics(I3C_BUS_INFO_t *pBus, uint8_t *pid, uint8_t bcr, uint8_t dcr);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TASK_t *pTask);
 
 bool IS_Internal_DEVICE(void *pDevice);

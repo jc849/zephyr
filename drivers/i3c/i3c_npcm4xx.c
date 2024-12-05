@@ -7,6 +7,7 @@
 #include <sys/crc.h>
 
 #include <sys/util.h>
+#include <sys/byteorder.h>
 #include <kernel.h>
 #include <init.h>
 #include <irq.h>
@@ -37,6 +38,9 @@ struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 #define NPCM4XX_I3C_HJ_CHECK_MAX	5
 #define NPCM4XX_I3C_HJ_UDELAY		10000
 
+#define I3C_NPCM4XX_CCC_TIMEOUT		K_MSEC(100)
+#define I3C_NPCM4XX_XFER_TIMEOUT	K_MSEC(100)
+
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i3c0), okay)
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area0, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
 #endif
@@ -63,6 +67,10 @@ struct k_work work_next[I3C_PORT_MAX];
 struct k_work work_retry[I3C_PORT_MAX];
 struct k_work work_send_ibi[I3C_PORT_MAX];
 struct k_work work_rcv_ibi[I3C_PORT_MAX];
+struct k_work work_entdaa[I3C_PORT_MAX];
+
+static uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData);
+static void i3c_npcm4xx_start_xfer(struct i3c_npcm4xx_obj *obj, struct i3c_npcm4xx_xfer *xfer);
 
 void work_stop_fun(struct k_work *item)
 {
@@ -231,8 +239,82 @@ void work_rcv_ibi_fun(struct k_work *item)
 	I3C_Master_Start_Request((uint32_t)pTaskInfo);
 }
 
-#define I3C_NPCM4XX_CCC_TIMEOUT		K_MSEC(10)
-#define I3C_NPCM4XX_XFER_TIMEOUT	K_MSEC(10)
+void work_entdaa_fun(struct k_work *item)
+{
+	struct i3c_npcm4xx_config *config;
+	struct i3c_npcm4xx_obj *obj;
+	struct i3c_npcm4xx_xfer *xfer;
+	uint8_t i;
+	uint16_t rxlen = 63;
+	uint8_t RxBuf_expected[63];
+	uint32_t Baudrate;
+	I3C_BUS_INFO_t *pBus;
+	I3C_DEVICE_INFO_t *pDevice;
+	ptrI3C_RetFunc pCallback;
+	k_spinlock_key_t key;
+
+	for (i = 0; i < I3C_PORT_MAX; i++) {
+		if (item == &work_entdaa[i])
+			break;
+	}
+
+	if (i == I3C_PORT_MAX)
+		return;
+
+	pDevice = Get_Current_Master_From_Port(i);
+	if (pDevice == NULL)
+		return;
+
+	pBus = Get_Bus_From_Port(i);
+	if (pBus == NULL)
+		return;
+
+	obj = gObj[i];
+	config = obj->config;
+	Baudrate = config->i3c_scl_hz;
+	pCallback = i3c_npcm4xx_master_send_done;
+
+	xfer = (struct i3c_npcm4xx_xfer *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_xfer));
+
+	if (xfer) {
+		xfer->ret = -ETIMEDOUT;
+		xfer->ncmds = 1;
+		xfer->abort = false;
+		xfer->complete = false;
+	} else {
+		return;
+	}
+
+	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL, pCallback,
+			(void *)xfer, i, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
+
+	k_sem_init(&pDevice->xfer_complete, 0, 1);
+
+	i3c_npcm4xx_start_xfer(obj, xfer);
+
+	/* wait done, xfer.ret will be changed in ISR */
+	if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+		key = k_spin_lock(&xfer->lock);
+		if (xfer->complete == true) {
+			/* In this case, means context switch after callback function
+			 * call spin_unlock() and timeout happened.
+			 * Take semaphore again to make xfer_complete synchronization.
+			 */
+			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
+			k_spin_unlock(&xfer->lock, key);
+			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+				LOG_WRN("take sem again timeout");
+			}
+		} else { /* the memory will be free when driver call pCallback */
+			LOG_ERR("ENTDAA timeout");
+			xfer->abort = true;
+			k_spin_unlock(&xfer->lock, key);
+			return;
+		}
+	}
+
+	hal_I3C_MemFree(xfer);
+}
 
 /* declare 16 pdma descriptors to handle master/slave tx
  * in scatter gather mode
@@ -1975,13 +2057,44 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 
 	struct i3c_npcm4xx_dev_priv *priv;
 	int i, pos;
+	uint8_t convert_pid[8] = {0};
 	I3C_BUS_INFO_t *pBus = NULL;
 	I3C_DEVICE_INFO_t *pDevice = NULL;
-	I3C_DEVICE_INFO_t *pDeviceSlv = NULL;
 	I3C_DEVICE_INFO_SHORT_t *pDevInfo = NULL;
+	I3C_DEVICE_ATTRIB_t attr;
+
+	obj = DEV_DATA(dev);
+	config = obj->config;
+	port = config->inst_id;
+	pDevice = I3C_Get_INODE(port);
+
+	if (pDevice == NULL) {
+		return -ENODEV;
+	}
+
+	pBus = pDevice->pOwner;
+
+	if (pBus == NULL) {
+		return -ENODEV;
+	}
+
+	/* Use for ENTDAA */
+	attr.b.present = 1;
+
+	/* up layer send u64 little endian format, covert to big endian
+	 * and suppose pid only need 6 bytes
+	 */
+	sys_put_be64(slave->info.pid, convert_pid);
+
+	pDevInfo = NewDevInfo(pBus, slave, attr, slave->info.static_addr, slave->info.assigned_dynamic_addr,
+			(uint8_t *)&convert_pid[2], slave->info.bcr, slave->info.dcr);
+
+	if (pDevInfo == NULL) {
+		return -ENOMEM;
+	}
 
 	/* allocate private data of the device */
-	priv = (struct i3c_npcm4xx_dev_priv *)k_calloc(sizeof(struct i3c_npcm4xx_dev_priv), 1);
+	priv = (struct i3c_npcm4xx_dev_priv *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_dev_priv));
 	__ASSERT(priv, "failed to allocat device private data\n");
 
 	priv->pos = -1;
@@ -1997,76 +2110,31 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 		slave->info.dynamic_addr = slave->info.assigned_dynamic_addr;
 	}
 
-	/* master might not exist in devicetree */
-	/* but try to get bus from bus master first */
-	if (dev != NULL) {
-		obj = DEV_DATA(dev);
-		config = obj->config;
-		port = config->inst_id;
-		pDevice = I3C_Get_INODE(port);
-		if (pDevice == NULL)
-			return -ENODEV;
-		pBus = pDevice->pOwner;
+	/* assign dev as slave's bus controller */
+	slave->bus = dev;
 
-		/* assign dev as slave's bus controller */
-		slave->bus = dev;
-
-		/* find a free position from master's hw_dat_free_pos */
-		for (i = 0; i < DEVICE_COUNT_MAX; i++) {
-			if (obj->hw_dat_free_pos & BIT(i))
-				break;
-		}
-
-		/* can't attach if no free space */
-		if (i == DEVICE_COUNT_MAX)
-			return i;
-
-		pos = i3c_npcm4xx_get_pos(obj, slave->info.dynamic_addr);
-		if (pos >= 0) {
-			LOG_WRN("addr %x has been registered at %d\n",
-				slave->info.dynamic_addr, pos);
-			return pos;
-		}
-
-		priv->pos = i;
-
-		obj->dev_addr_tbl[i] = slave->info.dynamic_addr;
-		obj->dev_descs[i] = slave;
-		obj->hw_dat_free_pos &= ~BIT(i);
-	} else {
-		/* slave device must be internal device, and match pid */
-		for (i = 0; i < I3C_PORT_MAX; i++) {
-			pDeviceSlv = I3C_Get_INODE(i);
-			if (pDeviceSlv->pid[5] != (uint8_t) slave->info.pid)
-				continue;
-			if (pDeviceSlv->pid[4] != (uint8_t)(slave->info.pid >> 8))
-				continue;
-			if (pDeviceSlv->pid[3] != (uint8_t)(slave->info.pid >> 16))
-				continue;
-			if (pDeviceSlv->pid[2] != (uint8_t)(slave->info.pid >> 24))
-				continue;
-			if (pDeviceSlv->pid[1] != (uint8_t)(slave->info.pid >> 32))
-				continue;
-			if (pDeviceSlv->pid[0] != (uint8_t)(slave->info.pid >> 48))
-				continue;
-
-			pDevInfo = pDeviceSlv->pDevInfo;
+	/* find a free position from master's hw_dat_free_pos */
+	for (i = 0; i < DEVICE_COUNT_MAX; i++) {
+		if (obj->hw_dat_free_pos & BIT(i))
 			break;
-		}
-
-		if (pDevInfo == NULL)
-			return -ENODEV;
-		pBus = pDeviceSlv->pOwner;
-
-		/* bus owner outside the devicetree */
-		slave->bus = NULL;
 	}
 
-	if (pBus == NULL)
-		return -ENXIO;
+	/* can't attach if no free space */
+	if (i == DEVICE_COUNT_MAX)
+		return i;
 
-	if (slave->bus == NULL)
-		return 0;
+	pos = i3c_npcm4xx_get_pos(obj, slave->info.dynamic_addr);
+	if (pos >= 0) {
+		LOG_WRN("addr %x has been registered at %d\n",
+			slave->info.dynamic_addr, pos);
+		return pos;
+	}
+
+	priv->pos = i;
+
+	obj->dev_addr_tbl[i] = slave->info.dynamic_addr;
+	obj->dev_descs[i] = slave;
+	obj->hw_dat_free_pos &= ~BIT(i);
 
 	return 0;
 }
@@ -2075,7 +2143,31 @@ int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_de
 {
 	struct i3c_npcm4xx_obj *obj = DEV_DATA(dev);
 	struct i3c_npcm4xx_dev_priv *priv = DESC_PRIV(slave);
+	struct i3c_npcm4xx_config *config = NULL;
+	I3C_DEVICE_INFO_SHORT_t *pDevInfo;
+	I3C_DEVICE_INFO_t *pDevice = NULL;
+	I3C_BUS_INFO_t *pBus = NULL;
+	I3C_PORT_Enum port;
 	int pos;
+	uint8_t convert_pid[8] = {0};
+
+	config = obj->config;
+	port = config->inst_id;
+	pDevice = I3C_Get_INODE(port);
+	pBus = pDevice->pOwner;
+
+	/* up layer send u64 little endian format, covert to big endian
+	 * and suppose pid only need 6 bytes
+	 */
+	sys_put_be64(slave->info.pid, convert_pid);
+
+	pDevInfo = GetDevInfoByCharacteristics(pBus, (uint8_t *)&convert_pid[2],
+			slave->info.bcr, slave->info.dcr);
+	if (pDevInfo) {
+		RemoveDevInfo(pBus, pDevInfo);
+	} else {
+		return -ENODEV;
+	}
 
 	pos = priv->pos;
 	if (pos < 0) {
@@ -2085,8 +2177,9 @@ int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_de
 	obj->hw_dat_free_pos |= BIT(pos);
 	obj->dev_addr_tbl[pos] = 0;
 
-	k_free(slave->priv_data);
+	hal_I3C_MemFree(slave->priv_data);
 	obj->dev_descs[pos] = (struct i3c_dev_desc *) NULL;
+
 	return 0;
 }
 
@@ -2546,7 +2639,7 @@ union i3c_device_cmd_queue_port_s {
 };
 /* offset 0x0c */
 
-uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData)
+static uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData)
 {
 	I3C_TASK_INFO_t *pTaskInfo;
 	struct i3c_npcm4xx_xfer *xfer;
@@ -2978,6 +3071,8 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	if (xfer) {
 		xfer->ret = -ETIMEDOUT;
 		xfer->ncmds = 1;
+		xfer->abort = false;
+		xfer->complete = false;
 	} else {
 		return -ENOMEM;
 	}
@@ -4082,6 +4177,7 @@ static int i3c_init_work_queue(I3C_PORT_Enum port)
 	k_work_init(&work_retry[port], work_retry_fun);
 	k_work_init(&work_send_ibi[port], work_send_ibi_fun);
 	k_work_init(&work_rcv_ibi[port], work_rcv_ibi_fun);
+	k_work_init(&work_entdaa[port], work_entdaa_fun);
 
 	return 0;
 }
