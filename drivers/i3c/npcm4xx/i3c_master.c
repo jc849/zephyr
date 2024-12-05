@@ -2,6 +2,7 @@
  * Copyright (c) 2023 Nuvoton Technology Corporation.
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <kernel.h>
 #include "pub_I3C.h"
 #include "i3c_core.h"
 #include "i3c_master.h"
@@ -15,6 +16,9 @@ extern struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 extern struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
 extern struct k_work work_retry[I3C_PORT_MAX];
 extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
+extern struct k_work work_entdaa[I3C_PORT_MAX];
+
+static uint8_t default_assign_address = 0x40;
 
 /**
  * @brief                           Callback for I3C master
@@ -246,11 +250,6 @@ void I3C_Master_Run_Next_Frame(uint32_t Parm)
 	I3C_TASK_INFO_t *pTaskInfo;
 	I3C_BUS_INFO_t *pBus;
 	I3C_DEVICE_INFO_SHORT_t *pDev;
-	uint8_t pid[6];
-	uint8_t bcr;
-	uint8_t dcr;
-	I3C_DEVICE_INFO_t *pDevice;
-
 
 	if (Parm == 0) {
 		return;
@@ -270,6 +269,10 @@ void I3C_Master_Run_Next_Frame(uint32_t Parm)
 	}
 
 	if (pTask->protocol == I3C_TRANSFER_PROTOCOL_ENTDAA) {
+		uint8_t rx_buf[8] = {0};
+		uint8_t bcr;
+		uint8_t dcr;
+		bool found = false;
 		pBus = Get_Bus_From_Port(pTaskInfo->Port);
 
 		/* previous slave dynamic address has been accepted, if (pTask->frame_idx != 0)
@@ -278,35 +281,36 @@ void I3C_Master_Run_Next_Frame(uint32_t Parm)
 		 * Now, we try to assign slave dynamic address in according to PID, BCR, DCR and
 		 * save the into access_buf[8]
 		 */
-		memcpy(pid, pTask->pFrameList[pTask->frame_idx + 1].access_buf, 6);
-		bcr = pTask->pFrameList[pTask->frame_idx + 1].access_buf[6];
-		dcr = pTask->pFrameList[pTask->frame_idx + 1].access_buf[7];
+		memcpy(&rx_buf, pTask->pFrameList[pTask->frame_idx + 1].access_buf, sizeof(rx_buf));
+
+		/* rx_buf[0] ~ rx_buf[5] => pid value */
+		bcr = rx_buf[6];
+		dcr = rx_buf[7];
 
 		pDev = pBus->pDevList;
 		while (pDev != NULL) {
-			if ((pDev->attr.b.present) && (!IsValidDynamicAddress(pDev->dynamicAddr))
-					&& (pDev->bcr == bcr) && (pDev->dcr == dcr)
-					&& (memcmp(pDev->pid, pid, 6) == 0)) {
-				if (IS_Internal_DEVICE(pDev->pDeviceInfo)) {
-					pDevice = pDev->pDeviceInfo;
+			if (IS_Internal_DEVICE(pDev->pDeviceInfo)) {
+				pDev = pDev->pNextDev;
+				continue;
+			}
 
-					if ((pDevice->mode == I3C_DEVICE_MODE_SLAVE_ONLY)
-						|| (pDevice->mode
-							== I3C_DEVICE_MODE_SECONDARY_MASTER)) {
-						pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = pDev->staticAddr;
-						break;
-					}
-
-					pDev = pDev->pNextDev;
-					continue;
-				}
+			if ((pDev->attr.b.present) && (pDev->bcr == bcr) && (pDev->dcr == dcr) &&
+				(memcmp(&pDev->pid, (uint8_t *)&rx_buf, 6) == 0)) {
 
 				/* adopt user define in advance */
-				pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = pDev->staticAddr;
+				pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = pDev->dynamicAddr;
+				found = true;
 				break;
 			}
 
 			pDev = pDev->pNextDev;
+		}
+
+		/* Cannot match any device, assign default dynamic address */
+		if (found == false) {
+			LOG_WRN("Cannot found match device, assigned address 0x%x", default_assign_address);
+			pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = default_assign_address;
+			default_assign_address++;
 		}
 	}
 
@@ -681,9 +685,8 @@ void I3C_Master_Insert_ENTDAA_After_IbiAckHJ(uint32_t Parm)
 		pTaskInfo = pTask->pTaskInfo;
 	}
 
-//	rxLen = 63;
-//	I3C_Master_Insert_Task_ENTDAA(&rxLen, NULL, I3C_TRANSFER_SPEED_SDR_1MHZ, TIMEOUT_TYPICAL,
-//		NULL, NULL, port, I3C_TASK_POLICY_INSERT_FIRST, NOT_HIF);
+	/* entdaa use system workqueue */
+	k_work_submit(&work_entdaa[port]);
 }
 
 /*------------------------------------------------------------------------------*/
