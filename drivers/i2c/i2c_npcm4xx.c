@@ -42,6 +42,8 @@ LOG_MODULE_REGISTER(i2c_npcm4xx, LOG_LEVEL_ERR);
 /* Data abort timeout */
 #define ABORT_TIMEOUT 10000
 
+#define I2C_RECOVER_BUS_DELAY_US 5
+
 /* I2C operation state */
 enum i2c_npcm4xx_oper_state {
 	I2C_NPCM4XX_OPER_STA_IDLE,
@@ -852,6 +854,47 @@ static int i2c_npcm4xx_combine_msg(const struct device *dev,
 	return 0;
 }
 
+int i2c_npcm4xx_recover_bus(const struct device *dev)
+{
+	struct i2c_reg *const inst = I2C_INSTANCE(dev);
+	struct i2c_npcm4xx_data *const data = I2C_DRV_DATA(dev);
+	bool done = false;
+	int32_t iter = 27;
+
+	if (IS_BIT_SET(inst->SMBnCTL3, NPCM4XX_SMBnCTL3_SCL_LVL) &&
+		IS_BIT_SET(inst->SMBnCTL3, NPCM4XX_SMBnCTL3_SDA_LVL)) {
+		i2c_npcm4xx_abort_data(dev);
+		data->master_oper_state = I2C_NPCM4XX_OPER_STA_IDLE;
+		i2c_npcm4xx_reset_module(dev);
+		LOG_INF("bus recovery skipped, bus is not stuck");
+		return 0;
+	}
+
+	/* Repeat the following sequence until SDA is released */
+	do {
+		/* Issue a single SCL toggle */
+		inst->SMBnCST |= BIT(NPCM4XX_SMBnCST_TGSCL);
+		k_busy_wait(I2C_RECOVER_BUS_DELAY_US);
+
+		/* If SDA line is inactive (high), stop */
+		if (IS_BIT_SET(inst->SMBnCTL3, NPCM4XX_SMBnCTL3_SDA_LVL)) {
+			done = true;
+		}
+
+	} while (!done && iter--);
+
+	i2c_npcm4xx_abort_data(dev);
+	data->master_oper_state = I2C_NPCM4XX_OPER_STA_IDLE;
+	i2c_npcm4xx_reset_module(dev);
+
+	if (!(IS_BIT_SET(inst->SMBnCTL3, NPCM4XX_SMBnCTL3_SCL_LVL) &&
+		IS_BIT_SET(inst->SMBnCTL3, NPCM4XX_SMBnCTL3_SDA_LVL))) {
+		return -EBUSY;
+	}
+
+	return 0;
+}
+
 static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 				uint8_t num_msgs, uint16_t addr)
 {
@@ -940,6 +983,11 @@ static int i2c_npcm4xx_transfer(const struct device *dev, struct i2c_msg *msgs,
 		gdma_memcpy_u8(data->rx_msg_buf, data->rx_buf, data->rx_cnt);
 	}
 
+
+	if (data->err_code == -EAGAIN) {
+		ret = i2c_npcm4xx_recover_bus(dev);
+	}
+
 	i2c_npcm4xx_mutex_unlock(dev);
 
 	/* Enable slave addr 1 */
@@ -955,6 +1003,7 @@ static const struct i2c_driver_api i2c_npcm4xx_driver_api = {
 	.transfer = i2c_npcm4xx_transfer,
 	.slave_register = i2c_npcm4xx_slave_register,
 	.slave_unregister = i2c_npcm4xx_slave_unregister,
+	.recover_bus = i2c_npcm4xx_recover_bus,
 };
 
 
