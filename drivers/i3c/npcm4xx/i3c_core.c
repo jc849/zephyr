@@ -874,15 +874,21 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TASK_INFO_t *pTaskInfo;
+	uint32_t key;
 
 	if (PortId >= I3C_PORT_MAX) {
 		return NULL;
 	}
 
+	key = irq_lock();
+
 	pDevice = &gI3c_dev_node_internal[PortId];
 	if (pDevice->task_count >= I3C_TASK_MAX) {
+		irq_unlock(key);
 		return NULL;
 	}
+
+	irq_unlock(key);
 
 	pTaskInfo = (I3C_TASK_INFO_t *)NewTaskInfo();
 	if (pTaskInfo == NULL) {
@@ -910,6 +916,7 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	if (CreateTaskNode(pTaskInfo, Protocol, Baudrate, Addr, HSize, pWrCnt, WrBuf, pRdCnt,
 		RdBuf, bHIF) != I3C_ERR_OK) {
 		hal_I3C_MemFree(pTaskInfo);
+		irq_unlock(key);
 		return NULL;
 	}
 
@@ -919,10 +926,16 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	pTaskInfo->pCallback = pCallback;
 	pTaskInfo->pCallbackData = pCallbackData;
 
+	key = irq_lock();
+
 	InsertTaskNode(pDevice, pTaskInfo->pTask, Policy);
 
 	pDevice->task_count++;
+
+	irq_unlock(key);
+
 	pTaskInfo->result = I3C_ERR_PENDING;
+
 	return pTaskInfo;
 }
 
@@ -951,15 +964,21 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 {
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TASK_INFO_t *pTaskInfo;
+	uint32_t key;
 
 	if (PortId >= I3C_PORT_MAX) {
 		return NULL;
 	}
 
+	key = irq_lock();
+
 	pDevice = &gI3c_dev_node_internal[PortId];
 	if (pDevice->task_count > I3C_TASK_MAX) {
+		irq_unlock(key);
 		return NULL;
 	}
+
+	irq_unlock(key);
 
 	pTaskInfo = NewTaskInfo();
 	if (pTaskInfo == NULL) {
@@ -983,9 +1002,14 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 	pTaskInfo->pCallback = pCallback;
 	pTaskInfo->pCallbackData = NULL;
 
+	key = irq_lock();
+
 	InsertTaskNode(pDevice, pTaskInfo->pTask, I3C_TASK_POLICY_APPEND_LAST);
 
 	pDevice->task_count++;
+
+	irq_unlock(key);
+
 	pTaskInfo->result = I3C_ERR_PENDING;
 	return pTaskInfo;
 }
@@ -1002,6 +1026,7 @@ void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo)
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_TRANSFER_TASK_t *pParentTask;
+	uint32_t key;
 
 	if (pTaskInfo == NULL) {
 		return;
@@ -1012,9 +1037,13 @@ void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo)
 	}
 
 	pTask = pTaskInfo->pTask;
+
+	key = irq_lock();
+
 	pDevice = &gI3c_dev_node_internal[pTaskInfo->Port];
 
 	if (pDevice->pTaskListHead == NULL) {
+		irq_unlock(key);
 		return;
 	}
 
@@ -1031,6 +1060,7 @@ void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo)
 		}
 
 		if ((pParentTask == NULL) || (pParentTask->pNextTask != pTask)) {
+			irq_unlock(key);
 			return;
 		}
 
@@ -1039,6 +1069,8 @@ void I3C_Complete_Task(I3C_TASK_INFO_t *pTaskInfo)
 
 	pDevice->task_count--;
 	FreeTaskNode(pTask);
+
+	irq_unlock(key);
 
 	hal_I3C_MemFree(pTaskInfo);
 	pTaskInfo = NULL;
