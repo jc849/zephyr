@@ -15,7 +15,6 @@ LOG_MODULE_REGISTER(npcm4xx_i3c_master, CONFIG_I3C_LOG_LEVEL);
 extern struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 extern struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
 extern struct k_work work_retry[I3C_PORT_MAX];
-extern struct k_work work_rcv_ibi[I3C_PORT_MAX];
 extern struct k_work work_entdaa[I3C_PORT_MAX];
 
 static uint8_t default_assign_address = 0x40;
@@ -73,9 +72,6 @@ static uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 void I3C_Master_Start_Request(uint32_t Parm)
 {
 	I3C_TASK_INFO_t *pTaskInfo;
-	I3C_BUS_INFO_t *pBus;
-	I3C_TRANSFER_TASK_t *pTask;
-	I3C_TRANSFER_PROTOCOL_Enum protocol;
 
 	if (Parm == 0) {
 		return;
@@ -86,38 +82,7 @@ void I3C_Master_Start_Request(uint32_t Parm)
 		return;
 	}
 
-	pBus = Get_Bus_From_Port(pTaskInfo->Port);
-	pTask = pTaskInfo->pTask;
-	protocol = pTask->protocol;
-
-	if (I3C_IS_BUS_DETECT_SLVSTART(pBus)) {
-		/* try to run master's task but SLVSTART is happened,
-		 * and we should process it with higher priority
-		 * abort current task and Event task will be inserted in ISR
-		 */
-		if (protocol != I3C_TRANSFER_PROTOCOL_EVENT) {
-			pBus->pCurrentTask = NULL;
-			return;
-		}
-
-		hal_I3C_Process_Task(pTaskInfo);
-	} else if (I3C_IS_BUS_DURING_DAA(pBus)) {
-		if (protocol != I3C_TRANSFER_PROTOCOL_ENTDAA) {
-			return;
-		}
-		hal_I3C_Process_Task(pTaskInfo);
-	} else if (I3C_IS_BUS_WAIT_STOP_OR_RETRY(pBus)) {
-		hal_I3C_Process_Task(pTaskInfo);
-	} else {
-		/* run retry after isr, let slave's isr can complete its task in time */
-
-		if (I3C_IS_BUS_DETECT_SLVSTART(pBus) && (protocol != I3C_TRANSFER_PROTOCOL_EVENT)) {
-			pBus->pCurrentTask = NULL;
-			return;
-		}
-
-		hal_I3C_Process_Task(pTaskInfo);
-	}
+	hal_I3C_Process_Task(pTaskInfo);
 }
 
 /*------------------------------------------------------------------------------*/
@@ -134,6 +99,7 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 	uint8_t port;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_ErrCode_Enum result;
+	uint32_t key;
 
 	if (Parm == 0) {
 		return;
@@ -153,17 +119,16 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 	pDevice = I3C_Get_INODE(port);
 	result = pTaskInfo->result;
 
-	if (result == I3C_ERR_IBI) {
-		pTask->address = hal_I3C_get_ibiAddr(port);
-	}
-
-	hal_I3C_Stop(port);
+	/* Disable interrupt to avoid context switch in callback function
+	 * before driver emit stop. (limit: Cannot sleep in callback function)
+	 */
+	key = irq_lock();
 
 	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
 
-	if (result == I3C_ERR_IBI) {
-		k_work_submit_to_queue(&npcm4xx_i3c_work_q[port], &work_rcv_ibi[port]);
-	}
+	hal_I3C_Stop(port);
+
+	irq_unlock(key);
 }
 
 /*---------------------------------------------------------------------------------*/
@@ -515,24 +480,19 @@ void I3C_Master_IBIACK(uint32_t Parm)
 			return;
 		}
 		pTaskInfo = pTask->pTaskInfo;
+
+		if (Setup_Master_Read_DMA(pDevice) != 0)
+			LOG_ERR("Arbitration DMA setup fail");
 	}
 
 	ibiAddress = hal_I3C_get_ibiAddr(port);
 
 	pSlvDev = GetDevInfoByDynamicAddr(pBus, ibiAddress);
 	if (pSlvDev == NULL) {
-		/* slave device info should be init after
-		 * ENTDAA/SETAASA/SETDASA/SETNEWDA
-		 */
+		hal_I3C_Nack_IBI(port);
 	} else {
-		if ((pSlvDev->bcr & 0x06) == 0x06) {
-			hal_I3C_Ack_IBI_With_MDB(port);
-		} else if ((pSlvDev->bcr & 0x06) == 0x02) {
-			hal_I3C_Ack_IBI_Without_MDB(port);
-			hal_I3C_Disable_Master_RX_DMA(port);
-			pTaskInfo->result = I3C_ERR_OK;
-			*pTask->pRdLen = 0;
-		}
+		/* suppose we only support ibi with MDB */
+		hal_I3C_Ack_IBI_With_MDB(port);
 	}
 }
 
