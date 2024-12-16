@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "pub_I3C.h"
+#include "pub_i3c.h"
 #include "i3c_core.h"
 #include "i3c_master.h"
 #include "i3c_slave.h"
-#include "hal_I3C.h"
+#include "hal_i3c.h"
 #include "i3c_drv.h"
 
 I3C_BUS_INFO_t gBus[I3C_BUS_COUNT_MAX] = {

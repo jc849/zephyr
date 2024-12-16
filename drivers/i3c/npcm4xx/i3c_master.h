@@ -5,7 +5,7 @@
 #ifndef __I3C_MASTER_H__
 #define __I3C_MASTER_H__
 
-#include "pub_I3C.h"
+#include "pub_i3c.h"
 
 #ifdef __cplusplus
 "C"

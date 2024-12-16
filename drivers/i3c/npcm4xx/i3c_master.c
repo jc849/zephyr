@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <kernel.h>
-#include "pub_I3C.h"
+#include "pub_i3c.h"
 #include "i3c_core.h"
 #include "i3c_master.h"
 #include "i3c_slave.h"
-#include "hal_I3C.h"
+#include "hal_i3c.h"
 #include "i3c_drv.h"
 
 LOG_MODULE_REGISTER(npcm4xx_i3c_master, CONFIG_I3C_LOG_LEVEL);

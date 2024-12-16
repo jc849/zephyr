@@ -5,7 +5,7 @@
 #ifndef __I3C_CORE_H__
 #define __I3C_CORE_H__
 
-#include "pub_I3C.h"
+#include "pub_i3c.h"
 
 /*
  * variable
