@@ -5,7 +5,7 @@
 #ifndef __HAL_I3C_H__
 #define __HAL_I3C_H__
 
-#include "pub_I3C.h"
+#include "pub_i3c.h"
 #include "i3c_drv.h"
 #ifdef __cplusplus
 extern "C"
