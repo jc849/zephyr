@@ -68,7 +68,7 @@ struct k_work work_retry[I3C_PORT_MAX];
 struct k_work work_send_ibi[I3C_PORT_MAX];
 struct k_work work_entdaa[I3C_PORT_MAX];
 
-static uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData);
+static uint32_t i3c_npcm4xx_master_send_done(void *pCallbackData, struct I3C_CallBackResult *CallBackResult);
 static void i3c_npcm4xx_start_xfer(struct i3c_npcm4xx_obj *obj, struct i3c_npcm4xx_xfer *xfer);
 
 void work_stop_fun(struct k_work *item)
@@ -246,15 +246,17 @@ void work_entdaa_fun(struct k_work *item)
 		return;
 	}
 
+	k_mutex_lock(&pDevice->lock, K_FOREVER);
+
 	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL, pCallback,
 			(void *)xfer, i, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
 
-	k_sem_init(&pDevice->xfer_complete, 0, 1);
+	k_sem_init(&xfer->xfer_complete, 0, 1);
 
 	i3c_npcm4xx_start_xfer(obj, xfer);
 
 	/* wait done, xfer.ret will be changed in ISR */
-	if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+	if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 		key = k_spin_lock(&xfer->lock);
 		if (xfer->complete == true) {
 			/* In this case, means context switch after callback function
@@ -263,16 +265,19 @@ void work_entdaa_fun(struct k_work *item)
 			 */
 			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
 			k_spin_unlock(&xfer->lock, key);
-			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+			if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 				LOG_WRN("take sem again timeout");
 			}
 		} else { /* the memory will be free when driver call pCallback */
 			LOG_ERR("ENTDAA timeout");
 			xfer->abort = true;
 			k_spin_unlock(&xfer->lock, key);
+			k_mutex_unlock(&pDevice->lock);
 			return;
 		}
 	}
+
+	k_mutex_unlock(&pDevice->lock);
 
 	hal_I3C_MemFree(xfer);
 }
@@ -2650,19 +2655,17 @@ union i3c_device_cmd_queue_port_s {
 };
 /* offset 0x0c */
 
-static uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackData)
+static uint32_t i3c_npcm4xx_master_send_done(void *pCallbackData, struct I3C_CallBackResult *CallBackResult)
 {
-	I3C_TASK_INFO_t *pTaskInfo;
 	struct i3c_npcm4xx_xfer *xfer;
-	I3C_TRANSFER_TASK_t *pTask;
-	I3C_DEVICE_INFO_t *pDevice;
 	k_spinlock_key_t key;
 
-	pTaskInfo = (I3C_TASK_INFO_t *)TaskInfo;
-	pTask = pTaskInfo->pTask;
+	if (CallBackResult == NULL) {
+		LOG_ERR("CallBackResult NULL!");
+		return -EINVAL;
+	}
 
 	xfer = (struct i3c_npcm4xx_xfer *) pCallbackData;
-	pDevice = Get_Current_Master_From_Port(pTaskInfo->Port);
 
 	key = k_spin_lock(&xfer->lock);
 
@@ -2673,14 +2676,15 @@ static uint32_t i3c_npcm4xx_master_send_done(uint32_t TaskInfo, void *pCallbackD
 		return 0;
 	}
 
-	xfer->rx_len = *pTask->pRdLen;
-	xfer->ret = pTaskInfo->result;
+	xfer->rx_len = CallBackResult->rx_len;
+	xfer->tx_len = CallBackResult->tx_len;
+	xfer->ret = CallBackResult->result;
 	xfer->complete = true;
 
 	/* context switch may happened after spin_unlock() */
 	k_spin_unlock(&xfer->lock, key);
 
-	k_sem_give(&pDevice->xfer_complete);
+	k_sem_give(&xfer->xfer_complete);
 
 	return 0;
 }
@@ -2736,12 +2740,18 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 		return -ENOMEM;
 	}
 
+	k_mutex_lock(&pDevice->lock, K_FOREVER);
+
 	if (ccc->id & I3C_CCC_DIRECT) {
 		if ((CCC == CCC_DIRECT_ENEC) || (CCC == CCC_DIRECT_DISEC)) {
-			if (ccc->payload.length != 1)
+			if (ccc->payload.length != 1) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
@@ -2749,18 +2759,24 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_RSTDAA) {
-			if (ccc->payload.length != 0)
+			if (ccc->payload.length != 0) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = 1;
 			TxBuf[0] = ccc->addr;
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMWL) {
-			if (ccc->payload.length != 2)
+			if (ccc->payload.length != 2) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = 3;
 			TxBuf[0] = ccc->addr;
@@ -2768,10 +2784,14 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMRL) {
-			if ((ccc->payload.length != 2) && (ccc->payload.length != 3))
+			if ((ccc->payload.length != 2) && (ccc->payload.length != 3)) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = ccc->payload.length + 1;
 			TxBuf[0] = ccc->addr;
@@ -2779,10 +2799,14 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETDASA) {
-			if (ccc->payload.length != 1)
+			if (ccc->payload.length != 1) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
@@ -2826,14 +2850,19 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else {
+			k_mutex_unlock(&pDevice->lock);
 			return -EINVAL;
 		}
 	} else {
 		if ((CCC == CCC_BROADCAST_ENEC) || (CCC == CCC_BROADCAST_DISEC)) {
-			if (ccc->payload.length != 1)
+			if (ccc->payload.length != 1) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = ccc->payload.length;
 			memcpy(TxBuf, ccc->payload.data, TxLen);
@@ -2841,18 +2870,26 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			(CCC == CCC_BROADCAST_SETAASA)) {
 			TxLen = 0;
 		} else if (CCC == CCC_BROADCAST_SETMWL) {
-			if (ccc->payload.length != 2)
+			if (ccc->payload.length != 2) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = ccc->payload.length;
 			memcpy(TxBuf, ccc->payload.data, TxLen);
 		} else if (CCC == CCC_BROADCAST_SETMRL) {
-			if ((ccc->payload.length != 1) || (ccc->payload.length != 3))
+			if ((ccc->payload.length != 1) || (ccc->payload.length != 3)) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
-			if (ccc->payload.data == NULL)
+			}
+			if (ccc->payload.data == NULL) {
+				k_mutex_unlock(&pDevice->lock);
 				return -EINVAL;
+			}
 
 			TxLen = ccc->payload.length;
 			memcpy(TxBuf, ccc->payload.data, TxLen);
@@ -2866,6 +2903,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			TxBuf[1] = 0x00;
 			TxBuf[2] = 0x00;
 		} else {
+			k_mutex_unlock(&pDevice->lock);
 			return -EINVAL;
 		}
 
@@ -2873,12 +2911,12 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 	}
 
-	k_sem_init(&pDevice->xfer_complete, 0, 1);
+	k_sem_init(&xfer->xfer_complete, 0, 1);
 
 	i3c_npcm4xx_start_xfer(obj, xfer);
 
 	/* wait done, xfer.ret will be changed in ISR */
-	if(k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+	if(k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 		key = k_spin_lock(&xfer->lock);
 		if (xfer->complete == true) {
 			/* In this case, means context switch after callback function
@@ -2887,18 +2925,22 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			 */
 			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
 			k_spin_unlock(&xfer->lock, key);
-			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+			if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 				LOG_WRN("take sem again timeout");
 			}
 		} else { /* the memory will be free when driver call pCallback */
 			xfer->abort = true;
 			ret = xfer->ret;
 			k_spin_unlock(&xfer->lock, key);
+			k_mutex_unlock(&pDevice->lock);
+			LOG_ERR("CCC command timeout abort");
 			return ret;
 		}
 	}
 
 	ret = xfer->ret;
+
+	k_mutex_unlock(&pDevice->lock);
 
 	hal_I3C_MemFree(xfer);
 
@@ -2974,6 +3016,8 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 		return -ENOMEM;
 	}
 
+	k_mutex_lock(&pDevice->lock, K_FOREVER);
+
 	for (i = 0; i < nxfers; i++) {
 		bWnR = (((i + 1) < nxfers) && (xfers[i].rnw == 0) && (xfers[i + 1].rnw == 1));
 
@@ -3012,12 +3056,12 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 			Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		if (pTaskInfo != NULL) {
 
-			k_sem_init(&pDevice->xfer_complete, 0, 1);
+			k_sem_init(&xfer->xfer_complete, 0, 1);
 
 			i3c_npcm4xx_start_xfer(obj, xfer);
 
 			/* wait done, xfer.ret will be changed in ISR */
-			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
+			if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
 				key = k_spin_lock(&xfer->lock);
 				if (xfer->complete == true) {
 					/* In this case, means context switch after callback function
@@ -3026,13 +3070,15 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 					 */
 					LOG_WRN("sem timeout but task complete, get sem again to clear flag");
 					k_spin_unlock(&xfer->lock, key);
-					if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
+					if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_XFER_TIMEOUT) != 0) {
 						LOG_WRN("take sem again timeout");
 					}
 				} else { /* the memory will be free when driver call pCallback */
 					xfer->abort = true;
 					ret = xfer->ret;
 					k_spin_unlock(&xfer->lock, key);
+					k_mutex_unlock(&pDevice->lock);
+					LOG_ERR("Xfer command timeout abort");
 					return ret;
 				}
 			}
@@ -3051,6 +3097,8 @@ int i3c_npcm4xx_master_priv_xfer(struct i3c_dev_desc *i3cdev, struct i3c_priv_xf
 	}
 
 	ret = xfer->ret;
+
+	k_mutex_unlock(&pDevice->lock);
 
 	hal_I3C_MemFree(xfer);
 
@@ -3091,15 +3139,17 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 		return -ENOMEM;
 	}
 
+	k_mutex_lock(&pDevice->lock, K_FOREVER);
+
 	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL,
 			pCallback, (void *)xfer, port, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
 
-	k_sem_init(&pDevice->xfer_complete, 0, 1);
+	k_sem_init(&xfer->xfer_complete, 0, 1);
 
 	i3c_npcm4xx_start_xfer(obj, xfer);
 
 	/* wait done, xfer.ret will be changed in ISR */
-	if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+	if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 		key = k_spin_lock(&xfer->lock);
 		if (xfer->complete == true) {
 			/* In this case, means context switch after callback function
@@ -3108,13 +3158,14 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 			 */
 			LOG_WRN("sem timeout but task complete, get sem again to clear flag");
 			k_spin_unlock(&xfer->lock, key);
-			if (k_sem_take(&pDevice->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
+			if (k_sem_take(&xfer->xfer_complete, I3C_NPCM4XX_CCC_TIMEOUT) != 0) {
 				LOG_WRN("take sem again timeout");
 			}
 		} else { /* the memory will be free when driver call pCallback */
 			xfer->abort = true;
 			ret = xfer->ret;
 			k_spin_unlock(&xfer->lock, key);
+			k_mutex_unlock(&pDevice->lock);
 			return ret;
 		}
 	} else {
@@ -3124,6 +3175,8 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	}
 
 	ret = xfer->ret;
+
+	k_mutex_unlock(&pDevice->lock);
 
 	hal_I3C_MemFree(xfer);
 
