@@ -61,11 +61,13 @@ struct i3c_ibi_status {
 
 struct i3c_npcm4xx_xfer {
 	int ret;
+	int tx_len;
 	int rx_len;
 	int ncmds;
 	struct k_spinlock lock;
 	bool abort;
 	bool complete;
+	struct k_sem xfer_complete;
 };
 
 struct i3c_npcm4xx_dev_priv {

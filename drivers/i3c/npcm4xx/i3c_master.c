@@ -32,6 +32,7 @@ static uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 	I3C_TRANSFER_TASK_t *pTask;
 	I3C_DEVICE_INFO_t *pDevice;
 	I3C_BUS_INFO_t *pBus;
+	struct I3C_CallBackResult CallBackResult;
 
 	if (TaskInfo == 0) {
 		return I3C_ERR_PARAMETER_INVALID;
@@ -52,8 +53,12 @@ static uint32_t I3C_Master_Callback(uint32_t TaskInfo, uint32_t ErrDetail)
 	pBus = pDevice->pOwner;
 
 	/* Indirect Callback, callback defined in create master task */
+	/* FIXME: use workqueue to avoid callback blocked */
 	if ((pTaskInfo->pCallback != NULL)) {
-		pTaskInfo->pCallback((uint32_t)pTaskInfo, pTaskInfo->pCallbackData);
+		CallBackResult.result = pTaskInfo->result;
+		CallBackResult.tx_len = *(pTask->pWrLen);
+		CallBackResult.rx_len = *(pTask->pRdLen);
+		pTaskInfo->pCallback(pTaskInfo->pCallbackData, &CallBackResult);
 	}
 
 	I3C_Complete_Task(pTaskInfo);
@@ -98,8 +103,11 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 	I3C_TASK_INFO_t *pTaskInfo;
 	uint8_t port;
 	I3C_DEVICE_INFO_t *pDevice;
+	I3C_BUS_INFO_t *pBus;
 	I3C_ErrCode_Enum result;
-	uint32_t key;
+	struct I3C_CallBackResult CallBackResult;
+	ptrI3C_RetFunc pCallback = NULL;
+	void *pCallbackData;
 
 	if (Parm == 0) {
 		return;
@@ -118,17 +126,25 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 	port = pTaskInfo->Port;
 	pDevice = I3C_Get_INODE(port);
 	result = pTaskInfo->result;
+	pBus = pDevice->pOwner;
 
-	/* Disable interrupt to avoid context switch in callback function
-	 * before driver emit stop. (limit: Cannot sleep in callback function)
-	 */
-	key = irq_lock();
+	if ((pTaskInfo->pCallback != NULL)) {
+		pCallback = pTaskInfo->pCallback;
+		pCallbackData = pTaskInfo->pCallbackData;
+		CallBackResult.result = pTaskInfo->result;
+		CallBackResult.tx_len = *(pTask->pWrLen);
+		CallBackResult.rx_len = *(pTask->pRdLen);
+	}
 
-	I3C_Master_Callback((uint32_t) pTaskInfo, pTaskInfo->result);
+	I3C_Complete_Task(pTaskInfo);
+	pBus->pCurrentTask = NULL;
 
 	hal_I3C_Stop(port);
 
-	irq_unlock(key);
+	/* FIXME: use workqueue to avoid callback blocked */
+	if (pCallback!= NULL) {
+		pCallback(pCallbackData, &CallBackResult);
+	}
 }
 
 /*---------------------------------------------------------------------------------*/

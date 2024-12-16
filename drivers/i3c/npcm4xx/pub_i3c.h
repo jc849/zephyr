@@ -428,7 +428,13 @@ enum I3C_IBITYPE {
 
 #define I3C_IBITYPE_Enum enum I3C_IBITYPE
 
-typedef uint32_t (*ptrI3C_RetFunc)(uint32_t TaskInfo, void *pCallbackData);
+struct I3C_CallBackResult {
+	uint32_t result;
+	uint32_t tx_len;
+	uint32_t rx_len;
+};
+
+typedef uint32_t (*ptrI3C_RetFunc)(void *pCallbackData, struct I3C_CallBackResult *CallBackResult);
 
 struct I3C_CAPABILITY_INFO {
 	uint8_t	MASTER : 1;
@@ -514,7 +520,6 @@ struct I3C_DEVICE_INFO {
 	uint8_t dma_rx_channel;
 
 	struct k_mutex lock;
-	struct k_sem xfer_complete;
 	struct k_sem ibi_complete;
 };
 
