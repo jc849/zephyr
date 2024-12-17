@@ -2172,13 +2172,18 @@ int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_de
 	pDevice = I3C_Get_INODE(port);
 	pBus = pDevice->pOwner;
 
-	/* up layer send u64 little endian format, covert to big endian
-	 * and suppose pid only need 6 bytes
-	 */
-	sys_put_be64(slave->info.pid, convert_pid);
+	if (slave->info.assigned_dynamic_addr != 0) {
+		pDevInfo = GetDevInfoByDynamicAddr(pBus, slave->info.assigned_dynamic_addr);
+	} else {
+		/* up layer send u64 little endian format, covert to big endian
+		 * and suppose pid only need 6 bytes
+		 */
+		sys_put_be64(slave->info.pid, convert_pid);
 
-	pDevInfo = GetDevInfoByCharacteristics(pBus, (uint8_t *)&convert_pid[2],
-			slave->info.bcr, slave->info.dcr);
+		pDevInfo = GetDevInfoByCharacteristics(pBus, (uint8_t *)&convert_pid[2],
+				slave->info.bcr, slave->info.dcr);
+	}
+
 	if (pDevInfo) {
 		RemoveDevInfo(pBus, pDevInfo);
 	} else {
