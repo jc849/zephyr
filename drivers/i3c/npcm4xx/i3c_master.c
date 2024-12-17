@@ -139,6 +139,9 @@ void I3C_Master_Stop_Request(uint32_t Parm)
 	I3C_Complete_Task(pTaskInfo);
 	pBus->pCurrentTask = NULL;
 
+	/* Before we emit stop, disable all DMA */
+	hal_I3C_Disable_Master_DMA(port);
+
 	hal_I3C_Stop(port);
 
 	/* FIXME: use workqueue to avoid callback blocked */
@@ -184,6 +187,12 @@ void I3C_Master_Retry_Frame(uint32_t Parm)
 
 			/* wait a moment for slave to prepare response data */
 			/* k_usleep(WAIT_SLAVE_PREPARE_RESPONSE_TIME); */
+		}
+
+		if (pTask->protocol == I3C_TRANSFER_PROTOCOL_CCCr ||
+				READ_TRANSFER_PROTOCOL(pTask->protocol)) {
+			/* Before we retry read transaction, disable RX DMA */
+			hal_I3C_Disable_Master_RX_DMA(pTaskInfo->Port);
 		}
 
 		I3C_Master_Start_Request((uint32_t) pTaskInfo);
