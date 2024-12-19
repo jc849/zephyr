@@ -33,6 +33,9 @@ config ESPI_NPCM4XX_PERIPHERAL_HOST_CMD_PARAM_SIZE
 # The default value 'y' for the existing options if ESPI_NPCM4XX is selected.
 if ESPI_NPCM4XX
 
+config ESPI_FLASH_CHANNEL
+	default  y
+
 config ESPI_OOB_CHANNEL
 	default  y
 
