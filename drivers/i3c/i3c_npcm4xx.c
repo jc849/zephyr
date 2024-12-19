@@ -231,6 +231,7 @@ void work_entdaa_fun(struct k_work *item)
 	I3C_DEVICE_INFO_t *pDevice;
 	ptrI3C_RetFunc pCallback;
 	k_spinlock_key_t key;
+	I3C_ErrCode_Enum result;
 
 	for (i = 0; i < I3C_PORT_MAX; i++) {
 		if (item == &work_entdaa[i])
@@ -266,8 +267,15 @@ void work_entdaa_fun(struct k_work *item)
 
 	k_mutex_lock(&pDevice->lock, K_FOREVER);
 
-	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL, pCallback,
-			(void *)xfer, i, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
+	result = I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL,
+			pCallback, (void *)xfer, i, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
+
+	if (result != I3C_ERR_OK) {
+		LOG_ERR("Workqueue create ENTDAA task failed");
+		k_mutex_unlock(&pDevice->lock);
+		hal_I3C_MemFree(xfer);
+		return;
+	}
 
 	k_sem_init(&xfer->xfer_complete, 0, 1);
 
@@ -2652,6 +2660,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 	int pos = 0, ret = 0;
 	k_spinlock_key_t key;
 	I3C_DEVICE_INFO_t *pDevice;
+	I3C_ErrCode_Enum result;
 
 	/* To construct task */
 	uint8_t CCC;
@@ -2711,7 +2720,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
 			memcpy(&TxBuf[1], ccc->payload.data, 1);
-			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
+			result = I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_RSTDAA) {
 			if (ccc->payload.length != 0) {
@@ -2721,7 +2730,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 
 			TxLen = 1;
 			TxBuf[0] = ccc->addr;
-			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
+			result = I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMWL) {
 			if (ccc->payload.length != 2) {
@@ -2736,7 +2745,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			TxLen = 3;
 			TxBuf[0] = ccc->addr;
 			memcpy(&TxBuf[1], ccc->payload.data, 2);
-			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
+			result = I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETMRL) {
 			if ((ccc->payload.length != 2) && (ccc->payload.length != 3)) {
@@ -2751,7 +2760,7 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			TxLen = ccc->payload.length + 1;
 			TxBuf[0] = ccc->addr;
 			memcpy(&TxBuf[1], ccc->payload.data, ccc->payload.length);
-			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
+			result = I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_SETDASA) {
 			if (ccc->payload.length != 1) {
@@ -2766,28 +2775,28 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			TxLen = 2;
 			TxBuf[0] = ccc->addr;
 			memcpy(&TxBuf[1], ccc->payload.data, ccc->payload.length);
-			I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
+			result = I3C_Master_Insert_Task_CCCw(CCC, 1, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETMWL) {
 			TxLen = 1;
 			RxLen = 2;
 			TxBuf[0] = ccc->addr;
 			RxBuf = ccc->payload.data;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+			result = I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETMRL) {
 			TxLen = 1;
 			RxLen = 3;
 			TxBuf[0] = ccc->addr;
 			RxBuf = ccc->payload.data;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+			result = I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETPID) {
 			TxLen = 1;
 			RxLen = 6;
 			TxBuf[0] = ccc->addr;
 			RxBuf = ccc->payload.data;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+			result = I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if ((CCC == CCC_DIRECT_GETBCR) || (CCC == CCC_DIRECT_GETDCR)
 			|| (CCC == CCC_DIRECT_GETACCMST)) {
@@ -2795,14 +2804,14 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			RxLen = 1;
 			TxBuf[0] = ccc->addr;
 			RxBuf = ccc->payload.data;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+			result = I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate,Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else if (CCC == CCC_DIRECT_GETSTATUS) {
 			TxLen = 1;
 			RxLen = 2;
 			TxBuf[0] = ccc->addr;
 			RxBuf = ccc->payload.data;
-			I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
+			result = I3C_Master_Insert_Task_CCCr(CCC, 1, TxLen, &RxLen, TxBuf, RxBuf,
 					Baudrate, Timeout, pCallback, (void *)xfer, PortId, Policy, bHIF);
 		} else {
 			k_mutex_unlock(&pDevice->lock);
@@ -2862,8 +2871,15 @@ int i3c_npcm4xx_master_send_ccc(const struct device *dev, struct i3c_ccc_cmd *cc
 			return -EINVAL;
 		}
 
-		I3C_Master_Insert_Task_CCCb(CCC, TxLen, TxBuf, Baudrate, Timeout,
+		result = I3C_Master_Insert_Task_CCCb(CCC, TxLen, TxBuf, Baudrate, Timeout,
 				pCallback, (void *)xfer, PortId, Policy, bHIF);
+	}
+
+	if (result != I3C_ERR_OK) {
+		LOG_ERR("Create CCC task failed");
+		k_mutex_unlock(&pDevice->lock);
+		hal_I3C_MemFree(xfer);
+		return -EINVAL;
 	}
 
 	k_sem_init(&xfer->xfer_complete, 0, 1);
@@ -3071,6 +3087,7 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 	uint32_t Baudrate = 0;
 	k_spinlock_key_t key;
 	I3C_DEVICE_INFO_t *pDevice;
+	I3C_ErrCode_Enum result;
 
 	config = DEV_CFG(i3cdev->bus);
 	port = config->inst_id;
@@ -3096,8 +3113,15 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 
 	k_mutex_lock(&pDevice->lock, K_FOREVER);
 
-	I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL,
+	result = I3C_Master_Insert_Task_ENTDAA(&rxlen, RxBuf_expected, Baudrate, TIMEOUT_TYPICAL,
 			pCallback, (void *)xfer, port, I3C_TASK_POLICY_APPEND_LAST, IS_HIF);
+
+	if (result != I3C_ERR_OK) {
+		LOG_ERR("Create ENTDAA task failed");
+		k_mutex_unlock(&pDevice->lock);
+		hal_I3C_MemFree(xfer);
+		return -EINVAL;
+	}
 
 	k_sem_init(&xfer->xfer_complete, 0, 1);
 
