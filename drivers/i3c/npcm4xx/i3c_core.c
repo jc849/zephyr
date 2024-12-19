@@ -629,55 +629,6 @@ bool IS_Internal_DEVICE(void *pDevice)
 
 /*------------------------------------------------------------------------------*/
 /**
- * @brief                           Used to reset devices on the bus
- * @param [in]      pBus            pointer to the bus object
- * @return                          None
- */
-/*------------------------------------------------------------------------------*/
-void I3C_Reset(uint8_t busNo)
-{
-	I3C_BUS_INFO_t *pBus = NULL;
-	I3C_DEVICE_INFO_t *pDevice;
-	I3C_DEVICE_INFO_SHORT_t *pDev = NULL;
-	I3C_DEVICE_INFO_SHORT_t *pRemoveDev;
-	I3C_TRANSFER_TASK_t *pTask;
-
-	pBus = &gBus[busNo];
-	pDev = pBus->pDevList;
-
-	while (pDev != NULL) {
-		pRemoveDev = pDev;
-
-		if (IS_Internal_DEVICE(pDev->pDeviceInfo)) {
-			pDevice = pDev->pDeviceInfo;
-
-			while (pDevice->task_count) {
-				if (pDevice->pTaskListHead == NULL) {
-					break;
-				}
-
-				pTask = pDevice->pTaskListHead;
-				I3C_Complete_Task(pTask->pTaskInfo);
-			};
-
-			/* used to disable I3C */
-			pDevice->mode = I3C_DEVICE_MODE_DISABLE;
-			pDevice->pOwner = NULL;
-			pDevice->pDevInfo = NULL;
-			hal_I3C_Config_Device(pDevice);
-		}
-
-		/* clear devices info on the bus */
-		pDev = pDev->pNextDev;
-		RemoveDevInfo(pBus, pRemoveDev);
-	}
-
-	pBus->pCurrentTask = NULL;
-	pBus->pCurrentMaster = NULL;
-}
-
-/*------------------------------------------------------------------------------*/
-/**
  * @brief                           Remove a specific device info from the bus
  * @param [in]      pBus            The bus the device belongs to
  * @param [in]      pDevInfo        Specify what should be removed

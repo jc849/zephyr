@@ -64,8 +64,6 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TAS
 
 bool IS_Internal_DEVICE(void *pDevice);
 
-
-void I3C_Reset(uint8_t busNo);
 void RemoveDevInfo(I3C_BUS_INFO_t *pBus, I3C_DEVICE_INFO_SHORT_t *pDevInfo);
 void ResetDevInfo(I3C_BUS_INFO_t *pBus, I3C_DEVICE_INFO_SHORT_t *pDevInfo);
 

@@ -60,6 +60,24 @@ K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area4, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE
 K_THREAD_STACK_DEFINE(npcm4xx_i3c_stack_area5, NPCM4XX_I3C_WORK_QUEUE_STACK_SIZE);
 #endif
 
+#define ENTER_MASTER_ISR()      { \
+	/* GPIO_Set_Data(GPIOC, 4, GPIO_DATA_LOW); */ \
+	/* GPIOC5 goes L */ \
+	/* RegClrBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(5)); */ }
+#define EXIT_MASTER_ISR()       { \
+	/* GPIO_Set_Data(GPIOC, 4, GPIO_DATA_HIGH); */ \
+	/* GPIOC5 goes H */ \
+	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(5)); */ }
+
+#define ENTER_SLAVE_ISR()   { \
+	/* GPIO_Set_Data(GPIOC, 5, GPIO_DATA_LOW); */ \
+	/* GPIOC4 goes L */ \
+	/* RegClrBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(4)); */ }
+#define EXIT_SLAVE_ISR()    { \
+	/* GPIO_Set_Data(GPIOC, 5, GPIO_DATA_HIGH); */ \
+	/* GPIOC4 goes H */ \
+	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(4)); */ }
+
 struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
 
 struct k_work work_stop[I3C_PORT_MAX];
@@ -2592,74 +2610,6 @@ static void i3c_npcm4xx_master_rx_ibi(struct i3c_npcm4xx_obj *obj)
 	priv->ibi.callbacks->write_done(priv->ibi.context);
 }
 
-union i3c_device_cmd_queue_port_s {
-	volatile uint32_t value;
-
-#define COMMAND_PORT_XFER_CMD		0x0
-#define COMMAND_PORT_XFER_ARG		0x1
-#define COMMAND_PORT_SHORT_ARG		0x2
-#define COMMAND_PORT_ADDR_ASSIGN	0x3
-#define COMMAND_PORT_SLAVE_DATA_CMD	0x0
-
-#define COMMAND_PORT_SPEED_I3C_SDR	0
-#define COMMAND_PORT_SPEED_I3C_I2C_FM	7
-#define COMMAND_PORT_SPEED_I2C_FM	0
-#define COMMAND_PORT_SPEED_I2C_FMP	1
-	struct {
-		volatile uint32_t cmd_attr :3; /* bit[2:0] */
-		volatile uint32_t tid :4; /* bit[6:3] */
-		volatile uint32_t cmd :8; /* bit[14:7] */
-		volatile uint32_t cp :1; /* bit[15] */
-		volatile uint32_t dev_idx :5; /* bit[20:16] */
-		volatile uint32_t speed :3; /* bit[23:21] */
-		volatile uint32_t reserved0 :2; /* bit[25:24] */
-		volatile uint32_t roc :1; /* bit[26] */
-		volatile uint32_t sdap :1; /* bit[27] */
-		volatile uint32_t rnw :1; /* bit[28] */
-		volatile uint32_t reserved1 :1; /* bit[29] */
-		volatile uint32_t toc :1; /* bit[30] */
-		volatile uint32_t pec :1; /* bit[31] */
-	} xfer_cmd;
-
-	struct {
-		volatile uint32_t cmd_attr :3; /* bit[2:0] */
-		volatile uint32_t reserved0 :5; /* bit[7:3] */
-		volatile uint32_t db :8; /* bit[15:8] */
-		volatile uint32_t dl :16; /* bit[31:16] */
-	} xfer_arg;
-
-	struct {
-		volatile uint32_t cmd_attr :3; /* bit[2:0] */
-		volatile uint32_t byte_strb :3; /* bit[5:3] */
-		volatile uint32_t reserved0 :2; /* bit[7:6] */
-		volatile uint32_t db0 :8; /* bit[15:8] */
-		volatile uint32_t db1 :8; /* bit[23:16] */
-		volatile uint32_t db2 :8; /* bit[31:24] */
-	} short_data_arg;
-
-	struct {
-		volatile uint32_t cmd_attr :3; /* bit[2:0] */
-		volatile uint32_t tid :4; /* bit[6:3] */
-		volatile uint32_t cmd :8; /* bit[14:7] */
-		volatile uint32_t cp :1; /* bit[15] */
-		volatile uint32_t dev_idx :5; /* bit[20:16] */
-		volatile uint32_t dev_cnt :3; /* bit[23:21] */
-		volatile uint32_t reserved0 :2; /* bit[25:24] */
-		volatile uint32_t roc :1; /* bit[26] */
-		volatile uint32_t reserved1 :3; /* bit[29:27] */
-		volatile uint32_t toc :1; /* bit[30] */
-		volatile uint32_t reserved2 :1; /* bit[31] */
-	} addr_assign_cmd;
-
-	struct {
-		volatile uint32_t cmd_attr :3; /* bit[2:0] */
-		volatile uint32_t tid :3; /* bit[5:3] */
-		volatile uint32_t reserved0 :10; /* bit[15:5] */
-		volatile uint32_t dl :16; /* bit[31:16] */
-	} slave_data_cmd;
-};
-/* offset 0x0c */
-
 static uint32_t i3c_npcm4xx_master_send_done(void *pCallbackData, struct I3C_CallBackResult *CallBackResult)
 {
 	struct i3c_npcm4xx_xfer *xfer;
@@ -3189,29 +3139,6 @@ int i3c_npcm4xx_master_send_entdaa(struct i3c_dev_desc *i3cdev)
 }
 
 void I3C_Slave_Handle_DMA(uint32_t Parm);
-uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t *pRx_buff,
-	bool bHDR);
-
-#define ENTER_MASTER_ISR()	{ \
-	/* GPIO_Set_Data(GPIOC, 4, GPIO_DATA_LOW); */ \
-	/* GPIOC5 goes L */ \
-	/* RegClrBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(5)); */ }
-#define EXIT_MASTER_ISR()	{ \
-	/* GPIO_Set_Data(GPIOC, 4, GPIO_DATA_HIGH); */ \
-	/* GPIOC5 goes H */ \
-	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(5)); */ }
-
-#define ENTER_SLAVE_ISR()   { \
-	/* GPIO_Set_Data(GPIOC, 5, GPIO_DATA_LOW); */ \
-	/* GPIOC4 goes L */ \
-	/* RegClrBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(4)); */ }
-#define EXIT_SLAVE_ISR()    { \
-	/* GPIO_Set_Data(GPIOC, 5, GPIO_DATA_HIGH); */ \
-	/* GPIOC4 goes H */ \
-	/* RegSetBit(M8(0x40081000 + (0x0C * 0x2000L)), BIT(4)); */ }
-
-#define UpdateTaskInfoResult(t, r) { t->result = r; }
-#define UpdateTaskResult(t, r) { UpdateTaskInfoResult(t->pTaskInfo, r); }
 
 void I3C_Master_ISR(uint8_t I3C_IF)
 {
@@ -3251,20 +3178,20 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 		case I3C_MERRWARN_NACK_MASK:
 			mstatus = I3C_GET_REG_MSTATUS(I3C_IF);
 			if ((mstatus & I3C_MSTATUS_STATE_MASK) == I3C_MSTATUS_STATE_DAA) {
-				UpdateTaskResult(pTask, I3C_ERR_NACK);
+				pTask->pTaskInfo->result = I3C_ERR_NACK;
 			} else {
 				mstatus = I3C_GET_REG_MSTATUS(I3C_IF);
 				I3C_SET_REG_MSTATUS(I3C_IF, mstatus | I3C_MSTATUS_COMPLETE_MASK);
 
 				if (pTask->pFrameList[pTask->frame_idx].direction
 					== I3C_TRANSFER_DIR_WRITE) {
-					UpdateTaskResult(pTask, I3C_ERR_NACK);
+					pTask->pTaskInfo->result = I3C_ERR_NACK;
 					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
 						&work_stop[I3C_IF]);
 					EXIT_MASTER_ISR();
 					return;
 				} else {
-					UpdateTaskResult(pTask, I3C_ERR_NACK);
+					pTask->pTaskInfo->result = I3C_ERR_NACK;
 					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
 						&work_retry[I3C_IF]);
 				}
@@ -4090,114 +4017,6 @@ static void i3c_npcm4xx_isr(const struct device *dev)
 
 		return;
 	}
-}
-
-/*
- * Usage:      Used to validate the register info from the input data
- *
- * port, data read from which internal device
- * rx_cnt, used to pass the length of read data
- * pRx_buff, used to pass the address of read data buffer
- * pRetInfo, used to return the update offset of register
- * pTx_buff, used to return the address of register buffer
- *
- * return:
- * 0         : complete or can't find "Index" now
- * 1-255     : valid "Index"
- * 0xFFFFFFFB: master send hdrcmd read but "Index" change
- * 0xFFFFFFFC: master send hdrcmd write
- * 0xFFFFFFFD: master send hdrcmd too fast and slave can't handle them
- * 0xFFFFFFFE: Invalid "Index"
- * 0xFFFFFFFF: Invalid Parameter
- */
-uint32_t I3C_Slave_Register_Access(I3C_PORT_Enum port, uint16_t rx_cnt, uint8_t *pRx_buff,
-	bool bHDR)
-{
-	I3C_DEVICE_INFO_t *pDevice;
-	uint8_t cmd_id, hdrCmd1, hdrCmd2;
-	I3C_ErrCode_Enum result;
-	uint32_t tmp32;
-
-	pDevice = I3C_Get_INODE(port);
-
-	hdrCmd1 = 0;
-	if (bHDR) {
-		tmp32 = I3C_GET_REG_HDRCMD(port);
-		hdrCmd1 = (uint8_t)(tmp32 & I3C_HDRCMD_CMD0_MASK);
-		hdrCmd2 = hdrCmd1 & 0x7F;
-
-		if (tmp32 & I3C_HDRCMD_OVFLW_MASK) {
-			return 0xFFFFFFFD;
-		}
-
-		if (hdrCmd1 & 0x80) {
-			if ((tmp32 & I3C_HDRCMD_NEWCMD_MASK) == 0) {
-				LOG_INF("HDR Read Error !!!\r\n");
-				return 0xFFFFFFFF;
-			}
-
-			if (hdrCmd2 != pDevice->cmdIndex) {
-				LOG_INF("HDR Read Error: \"Index\" change !!!\r\n");
-				return 0xFFFFFFFB;
-			} else {
-				return 0;
-			}
-		} else {
-			if (tmp32 & I3C_HDRCMD_NEWCMD_MASK) {
-				return 0xFFFFFFFC;
-			}
-		}
-
-		result = GetRegisterIndex(pDevice, 1, (uint8_t *)&hdrCmd2, &cmd_id);
-	} else {
-		result = GetRegisterIndex(pDevice, rx_cnt, pRx_buff, &cmd_id);
-	}
-
-	if (result == I3C_ERR_PARAMETER_INVALID)
-		return 0xFFFFFFFF;
-	if (result == I3C_ERR_DATA_ERROR)
-		return 0xFFFFFFFE;
-	if (result == I3C_ERR_PENDING)
-		return 0;
-
-	pDevice->cmdIndex = cmd_id;
-
-	if ((bHDR && rx_cnt) || (!bHDR && (rx_cnt >
-		GetCmdWidth(pDevice->pReg[pDevice->cmdIndex].attr.width)))) {
-		if ((pDevice->pReg[pDevice->cmdIndex].attr.write == 0) ||
-			(bHDR && (hdrCmd1 & 0x80))) {
-			pDevice->pRxBuf = NULL;
-			pDevice->rxLen = 0;
-			pDevice->rxOffset = 0;
-			return 0;
-		}
-
-		pDevice->rxLen = pDevice->pReg[pDevice->cmdIndex].len;
-		pDevice->rxOffset = 0;
-		if (!bHDR) {
-			pRx_buff += GetCmdWidth(pDevice->pReg[cmd_id].attr.width);
-			rx_cnt -= GetCmdWidth(pDevice->pReg[cmd_id].attr.width);
-		}
-
-		while (rx_cnt) {
-			if (pDevice->rxOffset >= pDevice->rxLen)
-				break;
-
-			pDevice->pReg[pDevice->cmdIndex].buf[pDevice->rxOffset] = *pRx_buff;
-			pDevice->rxOffset++;
-			pRx_buff++;
-			rx_cnt--;
-		}
-	}
-
-	if (pDevice->pReg[pDevice->cmdIndex].attr.read) {
-		I3C_Slave_Prepare_Response(pDevice, pDevice->pReg[pDevice->cmdIndex].len,
-			pDevice->pReg[pDevice->cmdIndex].buf);
-	} else {
-		I3C_Slave_Prepare_Response(pDevice, 0, NULL);
-	}
-
-	return 0;
 }
 
 static int i3c_init_work_queue(I3C_PORT_Enum port)
