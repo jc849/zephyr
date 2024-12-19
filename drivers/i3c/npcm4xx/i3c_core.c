@@ -879,7 +879,12 @@ I3C_TASK_INFO_t *I3C_Master_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 
 	key = irq_lock();
 
-	InsertTaskNode(pDevice, pTaskInfo->pTask, Policy);
+	if (InsertTaskNode(pDevice, pTaskInfo->pTask, Policy) != I3C_ERR_OK) {
+		FreeTaskNode(pTaskInfo->pTask);
+		hal_I3C_MemFree(pTaskInfo);
+		irq_unlock(key);
+		return NULL;
+	}
 
 	pDevice->task_count++;
 
@@ -955,7 +960,12 @@ I3C_TASK_INFO_t *I3C_Slave_Create_Task(I3C_TRANSFER_PROTOCOL_Enum Protocol,
 
 	key = irq_lock();
 
-	InsertTaskNode(pDevice, pTaskInfo->pTask, I3C_TASK_POLICY_APPEND_LAST);
+	if (InsertTaskNode(pDevice, pTaskInfo->pTask, I3C_TASK_POLICY_APPEND_LAST) != I3C_ERR_OK) {
+		FreeTaskNode(pTaskInfo->pTask);
+		hal_I3C_MemFree(pTaskInfo);
+		irq_unlock(key);
+		return NULL;
+	}
 
 	pDevice->task_count++;
 
@@ -2265,7 +2275,6 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 I3C_ErrCode_Enum InsertTaskNode(I3C_DEVICE_INFO_t *pDevice,
 	I3C_TRANSFER_TASK_t *pNewTask, uint8_t bType)
 {
-	I3C_TRANSFER_TASK_t *pNextTask;
 	I3C_TRANSFER_TASK_t *pThisTask;
 
 	if (pDevice == NULL) {
@@ -2297,29 +2306,7 @@ I3C_ErrCode_Enum InsertTaskNode(I3C_DEVICE_INFO_t *pDevice,
 		return I3C_ERR_OK;
 	}
 
-	if (pThisTask->protocol != I3C_TRANSFER_PROTOCOL_EVENT) {
-		pNewTask->pNextTask = pThisTask;
-		pDevice->pTaskListHead = pNewTask;
-		return I3C_ERR_OK;
-	}
-
-CHECK_NEXT:
-	pNextTask = pThisTask->pNextTask;
-	if (pNextTask == NULL) {
-		pThisTask->pNextTask = pNewTask;
-		return I3C_ERR_OK;
-	}
-
-	if (pNextTask->protocol != I3C_TRANSFER_PROTOCOL_EVENT) {
-		pNewTask->pNextTask = pThisTask->pNextTask;
-		pThisTask->pNextTask = pNewTask;
-		return I3C_ERR_OK;
-	}
-
-	pThisTask = pNextTask;
-	goto CHECK_NEXT;
-
-	return I3C_ERR_OK;
+	return I3C_ERR_PARAMETER_INVALID;
 }
 
 /*------------------------------------------------------------------------------*/
