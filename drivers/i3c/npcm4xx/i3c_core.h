@@ -32,6 +32,7 @@ I3C_DEVICE_INFO_t *Get_Current_Master_From_Port(I3C_PORT_Enum port);
 I3C_PORT_Enum I3C_Get_IPORT(I3C_DEVICE_INFO_t *pDevice);
 bool IsValidDynamicAddress(uint8_t addr);
 bool IsValidStaticAddress(uint8_t addr);
+bool IsValidPID(uint8_t *pid);
 I3C_ErrCode_Enum I3C_Port_Default_Setting(I3C_PORT_Enum port);
 void I3C_Setup_External_Device(void);
 
@@ -59,7 +60,7 @@ I3C_DEVICE_INFO_SHORT_t *NewDevInfo(I3C_BUS_INFO_t *pBus, void *pDevice,
 	uint8_t bcr, uint8_t dcr);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByStaticAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, uint8_t slaveAddr);
-I3C_DEVICE_INFO_SHORT_t *GetDevInfoByCharacteristics(I3C_BUS_INFO_t *pBus, uint8_t *pid, uint8_t bcr, uint8_t dcr);
+I3C_DEVICE_INFO_SHORT_t *GetDevInfoByPID(I3C_BUS_INFO_t *pBus, uint8_t *pid);
 I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TASK_t *pTask);
 
 bool IS_Internal_DEVICE(void *pDevice);

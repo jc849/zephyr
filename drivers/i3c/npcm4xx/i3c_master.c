@@ -17,7 +17,7 @@ extern struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
 extern struct k_work work_retry[I3C_PORT_MAX];
 extern struct k_work work_entdaa[I3C_PORT_MAX];
 
-static uint8_t default_assign_address = 0x40;
+static uint8_t default_assign_address = 0x9;
 
 /**
  * @brief                           Callback for I3C master
@@ -236,10 +236,17 @@ void I3C_Master_End_Request(uint32_t Parm)
 /*------------------------------------------------------------------------------*/
 void I3C_Master_Run_Next_Frame(uint32_t Parm)
 {
-	I3C_TRANSFER_TASK_t *pTask;
-	I3C_TASK_INFO_t *pTaskInfo;
-	I3C_BUS_INFO_t *pBus;
-	I3C_DEVICE_INFO_SHORT_t *pDev;
+	I3C_TRANSFER_TASK_t *pTask = NULL;
+	I3C_TASK_INFO_t *pTaskInfo = NULL;
+	I3C_BUS_INFO_t *pBus = NULL;
+	I3C_DEVICE_INFO_SHORT_t *pDev = NULL;
+	I3C_DEVICE_ATTRIB_t attr;
+	I3C_DEVICE_INFO_t *pDevice = NULL;
+	uint8_t rx_buf[8] = {0};
+	uint8_t bcr = 0;
+	uint8_t dcr = 0;
+	uint8_t assign_address = default_assign_address;
+	bool found = false;
 
 	if (Parm == 0) {
 		return;
@@ -258,14 +265,16 @@ void I3C_Master_Run_Next_Frame(uint32_t Parm)
 		return;
 	}
 
-	if (pTask->protocol == I3C_TRANSFER_PROTOCOL_ENTDAA) {
-		uint8_t rx_buf[8] = {0};
-		uint8_t bcr;
-		uint8_t dcr;
-		bool found = false;
-		pBus = Get_Bus_From_Port(pTaskInfo->Port);
+	pBus = Get_Bus_From_Port(pTaskInfo->Port);
+	if (pBus) {
+		pDevice = pBus->pCurrentMaster;
+	} else {
+		LOG_ERR("Bus NULL in Run_Next_Frame");
+		return;
+	}
 
-		/* previous slave dynamic address has been accepted, if (pTask->frame_idx != 0)
+	if (pTask->protocol == I3C_TRANSFER_PROTOCOL_ENTDAA) {
+		/* Previous slave dynamic address has been accepted, if (pTask->frame_idx != 0)
 		 * we will process them in the ENTDAA's callback
 		 *
 		 * Now, we try to assign slave dynamic address in according to PID, BCR, DCR and
@@ -298,14 +307,38 @@ void I3C_Master_Run_Next_Frame(uint32_t Parm)
 
 		/* Cannot match any device, assign default dynamic address */
 		if (found == false) {
-			LOG_WRN("Cannot found match device, assigned address 0x%x", default_assign_address);
-			pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = default_assign_address;
-			default_assign_address++;
+			/* Found a empty dynamic address, suppose max address => 0x77 */
+			for (assign_address = default_assign_address; assign_address < 0x78; assign_address++) {
+				if (IsValidDynamicAddress(assign_address)) {
+					if (GetDevInfoByDynamicAddr(pBus, assign_address)) {
+						continue;
+					} else {
+						break;
+					}
+				}
+			}
+
+			pTask->pFrameList[pTask->frame_idx + 1].access_buf[8] = assign_address;
 		}
 	}
 
 	pTask->frame_idx++;
 	I3C_Master_Start_Request((uint32_t)pTaskInfo);
+
+	/* Print debug message and create device node after emit start */
+	if (pTask->protocol == I3C_TRANSFER_PROTOCOL_ENTDAA) {
+		if (found == true) {
+			LOG_INF("Match device, assign address to 0x%x", pDev->dynamicAddr);
+		} else {
+			LOG_WRN("Cannot match device, assign address to 0x%x", assign_address);
+
+			attr.b.present = 1;
+			if (NewDevInfo(pBus, NULL, attr, assign_address, assign_address,
+						(uint8_t *)&rx_buf[0], bcr, dcr) == NULL) {
+				LOG_ERR("Create device info fail");
+			}
+		}
+	}
 }
 
 /*------------------------------------------------------------------------------*/
