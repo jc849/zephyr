@@ -159,6 +159,19 @@ I3C_PORT_Enum I3C_Get_IPORT(I3C_DEVICE_INFO_t *pDevice)
 	return I3C_PORT_MAX;
 }
 
+bool IsValidPID(uint8_t *pid) {
+	uint8_t index;
+
+	/* PID 6 bytes */
+	for (index = 0; index < 6; index++) {
+		if (pid[index] != 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /*------------------------------------------------------------------------------*/
 /**
  * @brief                           Validate dynamic address setting
@@ -426,45 +439,62 @@ bool I3C_IS_BUS_WAIT_STOP_OR_RETRY(I3C_BUS_INFO_t *pBus)
 I3C_DEVICE_INFO_SHORT_t *NewDevInfo(I3C_BUS_INFO_t *pBus, void *pDevice, I3C_DEVICE_ATTRIB_t attr,
 	uint8_t prefferedAddr, uint8_t dynamicAddr, uint8_t *pid, uint8_t bcr, uint8_t dcr)
 {
-	I3C_DEVICE_INFO_SHORT_t *pNewDev;
-	I3C_DEVICE_INFO_SHORT_t *pThisDev;
+	I3C_DEVICE_INFO_SHORT_t *pNewDev = NULL;
+	I3C_DEVICE_INFO_SHORT_t *pThisDev = NULL;
 
 	if (pBus == NULL) {
 		return NULL;
 	}
 
-	if (pDevice == NULL) {
-		return NULL;
+	if (IsValidPID(pid)) {
+		pNewDev = GetDevInfoByPID(pBus, pid);
 	}
 
-	pNewDev = (I3C_DEVICE_INFO_SHORT_t *)hal_I3C_MemAlloc(sizeof(I3C_DEVICE_INFO_SHORT_t));
-	if (pNewDev == NULL) {
-		return NULL;
+	if (dynamicAddr != 0) {
+		pNewDev = GetDevInfoByDynamicAddr(pBus, dynamicAddr);
 	}
 
-	pNewDev->pDeviceInfo = pDevice;
-	pNewDev->attr = attr;
-	pNewDev->dynamicAddr = dynamicAddr;
-	memcpy(pNewDev->pid, pid, 6);
-	pNewDev->bcr = bcr;
-	pNewDev->dcr = dcr;
-	pNewDev->staticAddr = prefferedAddr;
-	pNewDev->pNextDev = NULL;
+	if (pNewDev) {
+		/* Update attribute and address */
+		pNewDev->pDeviceInfo = pDevice;
+		pNewDev->attr = attr;
+		memcpy(pNewDev->pid, pid, 6);
+		pNewDev->bcr = bcr;
+		pNewDev->dcr = dcr;
+		pNewDev->dynamicAddr = dynamicAddr;
+		pNewDev->staticAddr = prefferedAddr;
+		return pNewDev;
+	} else {
+		/* Create new device info */
+		pNewDev = (I3C_DEVICE_INFO_SHORT_t *)hal_I3C_MemAlloc(sizeof(I3C_DEVICE_INFO_SHORT_t));
+		if (pNewDev == NULL) {
+			return NULL;
+		}
 
-	if (pBus->DevCount == 0) {
-		pBus->pDevList = pNewDev;
-		pBus->DevCount = 1;
+		pNewDev->pDeviceInfo = pDevice;
+		pNewDev->attr = attr;
+		pNewDev->dynamicAddr = dynamicAddr;
+		memcpy(pNewDev->pid, pid, 6);
+		pNewDev->bcr = bcr;
+		pNewDev->dcr = dcr;
+		pNewDev->staticAddr = prefferedAddr;
+		pNewDev->pNextDev = NULL;
+
+		if (pBus->DevCount == 0) {
+			pBus->pDevList = pNewDev;
+			pBus->DevCount = 1;
+			return pNewDev;
+		}
+
+		pThisDev = pBus->pDevList;
+		while (pThisDev->pNextDev != NULL) {
+			pThisDev = pThisDev->pNextDev;
+		}
+
+		pThisDev->pNextDev = pNewDev;
+		pBus->DevCount++;
 		return pNewDev;
 	}
-
-	pThisDev = pBus->pDevList;
-	while (pThisDev->pNextDev != NULL) {
-		pThisDev = pThisDev->pNextDev;
-	}
-
-	pThisDev->pNextDev = pNewDev;
-	pBus->DevCount++;
-	return pNewDev;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -531,8 +561,7 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, uint8_t s
  * @return                          Return device info with specified pid
  */
 /*------------------------------------------------------------------------------*/
-I3C_DEVICE_INFO_SHORT_t *GetDevInfoByCharacteristics(I3C_BUS_INFO_t *pBus, uint8_t *pid,
-		uint8_t bcr, uint8_t dcr)
+I3C_DEVICE_INFO_SHORT_t *GetDevInfoByPID(I3C_BUS_INFO_t *pBus, uint8_t *pid)
 {
 	I3C_DEVICE_INFO_SHORT_t *pDev;
 
@@ -546,8 +575,7 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByCharacteristics(I3C_BUS_INFO_t *pBus, uint8
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
-		if ((memcmp(pDev->pid, pid, sizeof(pDev->pid)) == 0) && (pDev->bcr == bcr) &&
-				(pDev->dcr == dcr)) {
+		if (memcmp(pDev->pid, pid, sizeof(pDev->pid)) == 0) {
 			return pDev;
 		}
 
@@ -617,6 +645,9 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByTask(I3C_BUS_INFO_t *pBus, I3C_TRANSFER_TAS
 bool IS_Internal_DEVICE(void *pDevice)
 {
 	I3C_PORT_Enum port;
+
+	if (pDevice == NULL)
+		return false;
 
 	for (port = I3C1_IF; port < I3C_PORT_MAX; port++) {
 		if (pDevice == &gI3c_dev_node_internal[port]) {

@@ -2135,48 +2135,66 @@ int i3c_npcm4xx_master_attach_device(const struct device *dev, struct i3c_dev_de
 		return -ENOMEM;
 	}
 
-	/* allocate private data of the device */
-	priv = (struct i3c_npcm4xx_dev_priv *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_dev_priv));
-	__ASSERT(priv, "failed to allocat device private data\n");
-
-	priv->pos = -1;
-	priv->ibi.enable = false;
-	priv->ibi.callbacks = NULL;
-	priv->ibi.context = slave;
-	priv->ibi.incomplete = NULL;
-	slave->priv_data = priv;
-
 	if (slave->info.i2c_mode) {
 		slave->info.dynamic_addr = slave->info.static_addr;
 	} else if (slave->info.assigned_dynamic_addr) {
 		slave->info.dynamic_addr = slave->info.assigned_dynamic_addr;
 	}
 
-	/* assign dev as slave's bus controller */
-	slave->bus = dev;
-
-	/* find a free position from master's hw_dat_free_pos */
-	for (i = 0; i < DEVICE_COUNT_MAX; i++) {
-		if (obj->hw_dat_free_pos & BIT(i))
-			break;
-	}
-
-	/* can't attach if no free space */
-	if (i == DEVICE_COUNT_MAX)
-		return i;
-
 	pos = i3c_npcm4xx_get_pos(obj, slave->info.dynamic_addr);
 	if (pos >= 0) {
-		LOG_WRN("addr %x has been registered at %d\n",
+		LOG_WRN("addr %x has been registered at %d, update information\n",
 			slave->info.dynamic_addr, pos);
-		return pos;
+
+		/* assign dev as slave's bus controller */
+		if (slave->bus == NULL) {
+			slave->bus = dev;
+		}
+
+		/* assign priv data
+		 * TODO: Add reference count for pDevInfo and free priv_data
+		 */
+		if (slave->priv_data == NULL) {
+			slave->priv_data = obj->dev_descs[pos]->priv_data;
+		}
+
+		return 0;
+	} else {
+		/* find a free position from master's hw_dat_free_pos */
+		for (i = 0; i < DEVICE_COUNT_MAX; i++) {
+			if (obj->hw_dat_free_pos & BIT(i))
+				break;
+		}
+
+		/* can't attach if no free space */
+		if (i == DEVICE_COUNT_MAX) {
+			RemoveDevInfo(pBus, pDevInfo);
+			return -ENOMEM;
+		}
+
+		/* assign dev as slave's bus controller */
+		slave->bus = dev;
+
+		/* allocate private data of the device */
+		priv = (struct i3c_npcm4xx_dev_priv *)hal_I3C_MemAlloc(sizeof(struct i3c_npcm4xx_dev_priv));
+		if (priv == NULL) {
+			RemoveDevInfo(pBus, pDevInfo);
+			return -ENOMEM;
+		}
+
+		priv->pos = -1;
+		priv->ibi.enable = false;
+		priv->ibi.callbacks = NULL;
+		priv->ibi.context = slave;
+		priv->ibi.incomplete = NULL;
+		slave->priv_data = priv;
+
+		priv->pos = i;
+
+		obj->dev_addr_tbl[i] = slave->info.dynamic_addr;
+		obj->dev_descs[i] = slave;
+		obj->hw_dat_free_pos &= ~BIT(i);
 	}
-
-	priv->pos = i;
-
-	obj->dev_addr_tbl[i] = slave->info.dynamic_addr;
-	obj->dev_descs[i] = slave;
-	obj->hw_dat_free_pos &= ~BIT(i);
 
 	return 0;
 }
@@ -2198,6 +2216,7 @@ int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_de
 	pDevice = I3C_Get_INODE(port);
 	pBus = pDevice->pOwner;
 
+	/* Remove by dynamic address */
 	if (slave->info.assigned_dynamic_addr != 0) {
 		pDevInfo = GetDevInfoByDynamicAddr(pBus, slave->info.assigned_dynamic_addr);
 	} else {
@@ -2206,8 +2225,12 @@ int i3c_npcm4xx_master_detach_device(const struct device *dev, struct i3c_dev_de
 		 */
 		sys_put_be64(slave->info.pid, convert_pid);
 
-		pDevInfo = GetDevInfoByCharacteristics(pBus, (uint8_t *)&convert_pid[2],
-				slave->info.bcr, slave->info.dcr);
+		if (IsValidPID((uint8_t *)&convert_pid[2])) {
+			pDevInfo = GetDevInfoByPID(pBus, (uint8_t *)&convert_pid[2]);
+		} else {
+			LOG_ERR("Invalid PID");
+			return -EINVAL;
+		}
 	}
 
 	if (pDevInfo) {
