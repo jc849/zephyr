@@ -14,7 +14,6 @@ LOG_MODULE_REGISTER(npcm4xx_i3c_master, CONFIG_I3C_LOG_LEVEL);
 
 extern struct i3c_npcm4xx_obj *gObj[I3C_PORT_MAX];
 extern struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
-extern struct k_work work_retry[I3C_PORT_MAX];
 extern struct k_work work_entdaa[I3C_PORT_MAX];
 
 static uint8_t default_assign_address = 0x9;

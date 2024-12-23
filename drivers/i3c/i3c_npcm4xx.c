@@ -82,7 +82,6 @@ struct k_work_q npcm4xx_i3c_work_q[I3C_PORT_MAX];
 
 struct k_work work_stop[I3C_PORT_MAX];
 struct k_work work_next[I3C_PORT_MAX];
-struct k_work work_retry[I3C_PORT_MAX];
 struct k_work work_send_ibi[I3C_PORT_MAX];
 struct k_work work_entdaa[I3C_PORT_MAX];
 
@@ -147,36 +146,6 @@ void work_next_fun(struct k_work *item)
 		return;
 
 	I3C_Master_Run_Next_Frame((uint32_t)pTask);
-}
-
-void work_retry_fun(struct k_work *item)
-{
-	uint8_t i;
-	I3C_BUS_INFO_t *pBus;
-	I3C_DEVICE_INFO_t *pDevice;
-	I3C_TRANSFER_TASK_t *pTask;
-
-	for (i = 0; i < I3C_PORT_MAX; i++) {
-		if (item == &work_retry[i])
-			break;
-	}
-
-	if (i == I3C_PORT_MAX)
-		return;
-
-	pDevice = Get_Current_Master_From_Port(i);
-	if (pDevice == NULL)
-		return;
-
-	pBus = Get_Bus_From_Port(i);
-	if (pBus == NULL)
-		return;
-
-	pTask = pDevice->pTaskListHead;
-	if (pTask == NULL)
-		return;
-
-	I3C_Master_Retry_Frame((uint32_t)pTask);
 }
 
 void work_send_ibi_fun(struct k_work *item)
@@ -3230,18 +3199,10 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 				mstatus = I3C_GET_REG_MSTATUS(I3C_IF);
 				I3C_SET_REG_MSTATUS(I3C_IF, mstatus | I3C_MSTATUS_COMPLETE_MASK);
 
-				if (pTask->pFrameList[pTask->frame_idx].direction
-					== I3C_TRANSFER_DIR_WRITE) {
-					pTask->pTaskInfo->result = I3C_ERR_NACK;
-					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
+				k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
 						&work_stop[I3C_IF]);
-					EXIT_MASTER_ISR();
-					return;
-				} else {
-					pTask->pTaskInfo->result = I3C_ERR_NACK;
-					k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
-						&work_retry[I3C_IF]);
-				}
+				EXIT_MASTER_ISR();
+				return;
 			}
 			break;
 
@@ -4117,7 +4078,6 @@ static int i3c_init_work_queue(I3C_PORT_Enum port)
 
 	k_work_init(&work_stop[port], work_stop_fun);
 	k_work_init(&work_next[port], work_next_fun);
-	k_work_init(&work_retry[port], work_retry_fun);
 	k_work_init(&work_send_ibi[port], work_send_ibi_fun);
 	k_work_init(&work_entdaa[port], work_entdaa_fun);
 
