@@ -543,6 +543,11 @@ I3C_DEVICE_INFO_SHORT_t *GetDevInfoByDynamicAddr(I3C_BUS_INFO_t *pBus, uint8_t s
 
 	pDev = pBus->pDevList;
 	while (pDev != NULL) {
+		if(IS_Internal_DEVICE(pDev->pDeviceInfo)) {
+			pDev = pDev->pNextDev;
+			continue;
+		}
+
 		if (pDev->dynamicAddr == slaveAddr) {
 			return pDev;
 		}
