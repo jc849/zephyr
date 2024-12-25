@@ -11,3 +11,12 @@ config SNOOP_NPCM
 	  SoCs.
 	  Say y if you wish to use P80 data byte snooping
 	  on NPCM SMC.
+
+config C2H_NPCM
+	bool "NPCM4XX core access to host modules driver"
+	depends on SOC_FAMILY_NPCM4XX
+	help
+	  This option enables the c2h driver for NPCM
+	  SoCs.
+	  Say y if you wish to access host modules
+	  on NPCM SMC.

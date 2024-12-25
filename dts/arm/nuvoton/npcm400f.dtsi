@@ -258,6 +258,11 @@
 			label = "USBD_0";
 			status = "disabled";
 		};
+
+		c2h: c2h {
+			compatible = "nuvoton,npcm4xx-c2h";
+			status = "disabled";
+		};
 	};
 
 	soc-id {

@@ -620,3 +620,7 @@
 &snoop {
 	status = "okay";
 };
+
+&c2h {
+	status = "okay";
+};
