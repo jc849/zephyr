@@ -15,11 +15,6 @@ LOG_MODULE_REGISTER(spi_npcm4xx_fiu, LOG_LEVEL_ERR);
 
 #include "spi_context.h"
 
-enum npcm4xx_fiu_ctrl_type {
-	NORMAL_SPI,
-	HOST_SPI
-};
-
 enum npcm4xx_fiu_spi_nor_type {
 	PRIVATE_SPI_NOR,
 	SHARE_SPI_NOR,
@@ -29,8 +24,10 @@ enum npcm4xx_fiu_spi_nor_type {
 
 /* Device config */
 struct npcm4xx_spi_fiu_config {
-	/* flash interface unit base address */
-	mm_reg_t base;
+	/* flash interface unit core base address */
+	mm_reg_t core_base;
+	/* flash interface unit host base address */
+	mm_reg_t host_base;
 	/* clock configuration */
 	struct npcm4xx_clk_cfg clk_cfg;
 	/* direct access memory for backup */
@@ -39,8 +36,6 @@ struct npcm4xx_spi_fiu_config {
 	mm_reg_t share_mmap_base;
 	/* direct access memory for private */
 	mm_reg_t private_mmap_base;
-	/* controller type */
-	enum npcm4xx_fiu_ctrl_type ctrl_type;
 };
 
 /* Device data */
@@ -56,12 +51,19 @@ struct npcm4xx_spi_fiu_data {
 
 /* Driver convenience defines */
 #define HAL_INSTANCE(dev)                                                                          \
-	((struct fiu_reg *)((const struct npcm4xx_spi_fiu_config *)(dev)->config)->base)
+	((struct fiu_reg *)((const struct npcm4xx_spi_fiu_config *)(dev)->config)->core_base)
+#define HAL_HOST_INSTANCE(dev)                                                                     \
+	((struct fiu_reg *)((const struct npcm4xx_spi_fiu_config *)(dev)->config)->host_base)
 
 static inline void spi_npcm4xx_fiu_uma_lock(const struct device *dev)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
+#ifdef CONFIG_ESPI
+	struct fiu_reg *const host_inst = HAL_HOST_INSTANCE(dev);
 
+	/* Wait until host FIU inactive */
+	while (!(host_inst->FIU_MSR_STS & BIT(NPCM4XX_FIU_MSR_STS_MSTR_INACT)));
+#endif
 	inst->FIU_MSR_IE_CFG |= BIT(NPCM4XX_FIU_MSR_IE_CFG_UMA_BLOCK);
 }
 
@@ -210,6 +212,27 @@ static int spi_npcm4xx_fiu_transceive(const struct device *dev,
 	return error;
 }
 
+static inline void spi_npcm4xx_host_fiu_set_direct_read_mode(const struct device *dev)
+{
+	struct fiu_reg *const inst = HAL_INSTANCE(dev);
+	struct fiu_reg *const host_inst = HAL_HOST_INSTANCE(dev);
+
+	/* Direct mode, normal, fast, or quad read */
+	host_inst->SPI_FL_CFG = inst->SPI_FL_CFG;
+	host_inst->RESP_CFG = inst->RESP_CFG;
+
+	/* Direct read command */
+	host_inst->RD_CMD_PVT = inst->RD_CMD_PVT;
+	host_inst->RD_CMD_SHD = inst->RD_CMD_SHD;
+	host_inst->RD_CMD_BACK = inst->RD_CMD_BACK;
+	host_inst->SET_CMD_EN = inst->SET_CMD_EN;
+	host_inst->ADDR_4B_EN = inst->ADDR_4B_EN;
+
+	/* Burst config, exclude host/slave flag */
+	host_inst->BURST_CFG =
+		inst->BURST_CFG & ~BIT(NPCM4XX_BURST_CFG_SLAVE);
+}
+
 /* set 4 bytes address for
  * 1. Direct access(read/write)
  * 2. UMA(set CTS_A_SIZE case)
@@ -314,6 +337,10 @@ static inline void spi_npcm4xx_fiu_set_direct_read_mode(const struct device *dev
 
 	/* configure 3/4 bytes address */
 	spi_npcm4xx_fiu_set_address_mode(dev, spi_cfg, op_info);
+
+#ifdef CONFIG_ESPI
+	spi_npcm4xx_host_fiu_set_direct_read_mode(dev);
+#endif
 }
 
 static void spi_nor_npcm4xx_fiu_direct_read_transceive(const struct device *dev,
@@ -437,7 +464,12 @@ spi_nor_uma_done:
 static inline void spi_npcm4xx_fiu_direct_write_lock(const struct device *dev)
 {
 	struct fiu_reg *const inst = HAL_INSTANCE(dev);
+#ifdef CONFIG_ESPI
+	struct fiu_reg *const host_inst = HAL_HOST_INSTANCE(dev);
 
+	/* Wait until host FIU inactive */
+	while (!(host_inst->FIU_MSR_STS & BIT(NPCM4XX_FIU_MSR_STS_MSTR_INACT)));
+#endif
 	/* set direct write block */
 	inst->DIRECT_WR_CFG |= BIT(NPCM4XX_DIRECT_WR_CFG_DIRECT_WR_BLOCK);
 	/* enable direct write behavior, default use 0x2 (PP) */
@@ -824,11 +856,11 @@ static struct spi_driver_api spi_npcm4xx_fiu_api = {
 
 #define NPCM4XX_FIU_INIT(inst)                                                                      \
 		static struct npcm4xx_spi_fiu_config npcm4xx_spi_fiu_config_##inst = {              \
-		.base = DT_INST_REG_ADDR_BY_NAME(inst, ctrl_reg),                                   \
+		.core_base = DT_INST_REG_ADDR_BY_NAME(inst, core_reg),                              \
+		.host_base = DT_INST_REG_ADDR_BY_NAME(inst, host_reg),                              \
 		.backup_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, backup_mmap),                    \
 		.share_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, share_mmap),                      \
 		.private_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, private_mmap),                  \
-		.ctrl_type = DT_ENUM_IDX(DT_INST(inst, DT_DRV_COMPAT), ctrl_type),                  \
 		.clk_cfg = NPCM4XX_DT_CLK_CFG_ITEM(inst),		                            \
 	};                                                                                          \
                                                                                                     \

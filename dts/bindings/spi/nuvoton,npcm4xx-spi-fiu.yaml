@@ -12,20 +12,6 @@ properties:
     required: true
   clocks:
     required: true
-  ctrl-type:
-    type: string
-    required: true
-    description: |
-      Distinguish the controller auxiliary type.
-
-      There are two types for a Nuvoton controller:
-      host(master/host) SPI flash controller (hspi),
-      and normal(slave/core) SPI flash controller (nspi).
-
-    enum:
-      - "hspi"
-      - "nspi"
-
   spi-ctrl-caps-mask:
     type: int
     required: false
