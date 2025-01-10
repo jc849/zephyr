@@ -29,8 +29,8 @@ LOG_MODULE_REGISTER(npcm_spim_qspi, LOG_LEVEL_ERR);
 struct npcm_qspi_spim_config {
 	/* Flash controller base address */
 	uintptr_t base;
-	/* Clock configuration */
-	struct npcm_clk_cfg clk_cfg;
+	/* Clock config */
+	uint32_t clk_cfg;
 };
 
 /* NPCM SPI Normal functions */
@@ -322,7 +322,7 @@ static int qspi_npcm_spim_init(const struct device *dev)
 {
 	const struct npcm_qspi_spim_config *const config = dev->config;
 	struct npcm_qspi_data *const data = dev->data;
-	const struct device *const clk_dev = DEVICE_DT_GET(NPCM_CLK_CTRL_NODE);
+	const struct device *const clk_dev = DEVICE_DT_GET(DT_NODELABEL(pcc));
 	int ret;
 
 	if (!device_is_ready(clk_dev)) {
@@ -332,7 +332,7 @@ static int qspi_npcm_spim_init(const struct device *dev)
 
 	/* Turn on device clock first and get source clock freq. */
 	ret = clock_control_on(clk_dev,
-			       (clock_control_subsys_t)&config->clk_cfg);
+			       (clock_control_subsys_t)config->clk_cfg);
 	if (ret < 0) {
 		LOG_ERR("Turn on SPIM clock fail %d", ret);
 		return ret;
@@ -350,7 +350,7 @@ static int qspi_npcm_spim_init(const struct device *dev)
 #define NPCM_SPI_SPIM_INIT(n)							\
 static const struct npcm_qspi_spim_config npcm_qspi_spim_config_##n = {		\
 	.base = DT_INST_REG_ADDR(n),						\
-	.clk_cfg = NPCM_DT_CLK_CFG_ITEM(n),					\
+	.clk_cfg = DT_INST_PHA(n, clocks, clk_cfg),				\
 };										\
 static struct npcm_qspi_data npcm_qspi_data_##n = {				\
 	.qspi_ops = &npcm_qspi_spim_ops						\
