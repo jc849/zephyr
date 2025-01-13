@@ -8,6 +8,7 @@
 
 #include <drivers/clock_control.h>
 #include <drivers/spi.h>
+#include <sys/util.h>
 #include <logging/log.h>
 #include <soc.h>
 #include <header.h>
@@ -64,6 +65,10 @@ enum npcm4xx_spim_spi_nor_type {
 	SPIM_FW_SPI_NOR,
 	SPIM_MAX_SPI_NOR
 };
+
+#define NPCM4XX_SPIM_MAX_FREQ		MHZ(50)
+#define NPCM4XX_SPIM_CLK_DIVIDER	0x1
+
 /* Driver convenience defines */
 #define HAL_INSTANCE(dev)                                                                          \
 	((struct spim_reg *)((const struct npcm4xx_spi_spim_config *)(dev)->config)->base)
@@ -662,6 +667,8 @@ RAMFUNC static int spi_npcm4xx_spim_init(const struct device *dev)
 	const struct npcm4xx_spi_spim_config *const config = dev->config;
 	const struct device *const clk_dev =
 					device_get_binding(NPCM4XX_CLK_CTRL_NAME);
+	struct spim_reg *const inst = HAL_INSTANCE(dev);
+	uint32_t clock_rate;
 	int ret;
 
 	if (!device_is_ready(clk_dev)) {
@@ -675,6 +682,21 @@ RAMFUNC static int spi_npcm4xx_spim_init(const struct device *dev)
 	if (ret < 0) {
 		LOG_ERR("Turn on FIU clock fail %d", ret);
 		return ret;
+	}
+
+	if (clock_control_get_rate(clk_dev,
+				(clock_control_subsys_t)&config->clk_cfg,
+				&clock_rate) < 0) {
+		LOG_ERR("Get SPIM source clock fail");
+		return -EIO;
+	}
+
+	/* Make SPIM frequency < NPCM_SPIM_MAX_FREQ */
+	if (clock_rate > NPCM4XX_SPIM_MAX_FREQ) {
+		SET_FIELD(inst->SPIM_CTL1, NPCM4XX_SPIM_CTL1_DIVIDER,
+				NPCM4XX_SPIM_CLK_DIVIDER);
+	} else {
+		SET_FIELD(inst->SPIM_CTL1, NPCM4XX_SPIM_CTL1_DIVIDER, 0x0);
 	}
 
 #ifndef CONFIG_XIP
