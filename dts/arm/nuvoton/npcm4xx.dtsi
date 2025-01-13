@@ -494,7 +494,7 @@
 			#size-cells = <0>;
 			reg-names = "ctrl_reg", "spi_mmap";
 			reg = <0x40017000 0x100>, <0x80000 0x2000000>;
-			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL1 0>;
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_CORE NPCM4XX_PWDWN_CTL1 0>;
 			spi-ctrl-caps-mask = <0x000f0f0c>;
 			label = "SPI_SPIM0";
 			status = "disabled";
