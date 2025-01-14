@@ -1865,7 +1865,7 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 			pFrameNode[0].retry_count = 0;
 			pFrameNode[0].pNextFrame = NULL;
 		} else if (I3C_TRANSFER_PROTOCOL(Protocol)) {
-			pNewTask->frame_count = 1;
+			pNewTask->frame_count = 2;
 			pFrameNode = (I3C_TRANSFER_FRAME_t *)hal_I3C_MemAlloc(
 				sizeof(I3C_TRANSFER_FRAME_t) * pNewTask->frame_count);
 
@@ -1875,16 +1875,29 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 			}
 
 			pFrameNode[0].pOwner = pNewTask;
-			pFrameNode[0].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE;
+			pFrameNode[0].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE |
+				I3C_TRANSFER_NO_STOP;
 			pFrameNode[0].type = I3C_TRANSFER_TYPE_SDR;
 			pFrameNode[0].baudrate = Baudrate;
-			pFrameNode[0].address = Addr;
+			pFrameNode[0].address = I3C_BROADCAST_ADDR;
 			pFrameNode[0].direction = I3C_TRANSFER_DIR_WRITE;
-			pFrameNode[0].access_len = *pWrCnt;
+			pFrameNode[0].access_len = 0;
 			pFrameNode[0].access_idx = 0;
-			pFrameNode[0].access_buf = pTxBuf;
+			pFrameNode[0].access_buf = NULL;
 			pFrameNode[0].retry_count = 3;
-			pFrameNode[0].pNextFrame = NULL;
+			pFrameNode[0].pNextFrame = &pFrameNode[1];
+
+			pFrameNode[1].pOwner = pNewTask;
+			pFrameNode[1].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE;
+			pFrameNode[1].type = I3C_TRANSFER_TYPE_SDR;
+			pFrameNode[1].baudrate = Baudrate;
+			pFrameNode[1].address = Addr;
+			pFrameNode[1].direction = I3C_TRANSFER_DIR_WRITE;
+			pFrameNode[1].access_len = *pWrCnt;
+			pFrameNode[1].access_idx = 0;
+			pFrameNode[1].access_buf = pTxBuf;
+			pFrameNode[1].retry_count = 3;
+			pFrameNode[1].pNextFrame = NULL;
 		} else if (DDR_TRANSFER_PROTOCOL(Protocol)) {
 			pNewTask->frame_count = 1;
 			pFrameNode = (I3C_TRANSFER_FRAME_t *)hal_I3C_MemAlloc(
@@ -1931,7 +1944,7 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 			pFrameNode[0].retry_count = 0;
 			pFrameNode[0].pNextFrame = NULL;
 		} else if (I3C_TRANSFER_PROTOCOL(Protocol)) {
-			pNewTask->frame_count = 1;
+			pNewTask->frame_count = 2;
 			pFrameNode = (I3C_TRANSFER_FRAME_t *)hal_I3C_MemAlloc(
 				sizeof(I3C_TRANSFER_FRAME_t) * pNewTask->frame_count);
 
@@ -1941,16 +1954,29 @@ I3C_ErrCode_Enum CreateTaskNode(I3C_TASK_INFO_t *pTaskInfo,
 			}
 
 			pFrameNode[0].pOwner = pNewTask;
-			pFrameNode[0].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE;
+			pFrameNode[0].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE |
+				I3C_TRANSFER_NO_STOP;
 			pFrameNode[0].type = I3C_TRANSFER_TYPE_SDR;
 			pFrameNode[0].baudrate = Baudrate;
-			pFrameNode[0].address = Addr;
-			pFrameNode[0].direction = I3C_TRANSFER_DIR_READ;
-			pFrameNode[0].access_len = *pRdCnt;
+			pFrameNode[0].address = I3C_BROADCAST_ADDR;
+			pFrameNode[0].direction = I3C_TRANSFER_DIR_WRITE;
+			pFrameNode[0].access_len = 0;
 			pFrameNode[0].access_idx = 0;
-			pFrameNode[0].access_buf = pRxBuf;
+			pFrameNode[0].access_buf = NULL;
 			pFrameNode[0].retry_count = 3;
-			pFrameNode[0].pNextFrame = NULL;
+			pFrameNode[0].pNextFrame = &pFrameNode[1];
+
+			pFrameNode[1].pOwner = pNewTask;
+			pFrameNode[1].flag = I3C_TRANSFER_NORMAL | I3C_TRANSFER_RETRY_ENABLE;
+			pFrameNode[1].type = I3C_TRANSFER_TYPE_SDR;
+			pFrameNode[1].baudrate = Baudrate;
+			pFrameNode[1].address = Addr;
+			pFrameNode[1].direction = I3C_TRANSFER_DIR_READ;
+			pFrameNode[1].access_len = *pRdCnt;
+			pFrameNode[1].access_idx = 0;
+			pFrameNode[1].access_buf = pRxBuf;
+			pFrameNode[1].retry_count = 3;
+			pFrameNode[1].pNextFrame = NULL;
 		} else if (DDR_TRANSFER_PROTOCOL(Protocol)) {
 			pNewTask->frame_count = 1;
 			pFrameNode = (I3C_TRANSFER_FRAME_t *)hal_I3C_MemAlloc(sizeof(

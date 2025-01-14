@@ -3355,7 +3355,7 @@ void I3C_Master_ISR(uint8_t I3C_IF)
 					EXIT_MASTER_ISR();
 					return;
 				}
-
+				/* 7E+ Wr + RW */
 				k_work_submit_to_queue(&npcm4xx_i3c_work_q[I3C_IF],
 					&work_next[I3C_IF]);
 			} else {
