@@ -281,6 +281,7 @@ static void spi_nor_npcm4xx_spip_fifo_transceive(const struct device *dev,
 	uint32_t index = 0, dummy_write = 0;
 	uint8_t *buf_data = NULL;
 	uint8_t sub_addr = 0;
+	uint8_t dummy_clk_per_byte = 0;
 
 	normal_op_info = &op_info;
 
@@ -293,23 +294,36 @@ static void spi_nor_npcm4xx_spip_fifo_transceive(const struct device *dev,
 	/* send command */
 	spi_npcm4xx_spip_write_data(dev, (uint32_t)normal_op_info->opcode);
 
+	/* In 144 or 122 mode, address and dummy cycle need enable quad or dual mode.
+	 * We only support 8bit WIDTH, so 144 mode send one dummy byte need 2 clocks,
+	 * 122 mode need 4 clocks, others case need 8 clocks to send one dummy byte.
+	 */
+	if (op_info.mode == JESD216_MODE_144) {
+		inst->CTL &= ~BIT(NPCM4XX_CTL_DUALIOEN);
+		inst->CTL |= BIT(NPCM4XX_CTL_QUADIOEN);
+		inst->CTL |= BIT(NPCM4XX_CTL_QDIODIR);
+		dummy_clk_per_byte = 2;
+	} else if (op_info.mode == JESD216_MODE_122) {
+		inst->CTL |= BIT(NPCM4XX_CTL_DUALIOEN);
+		inst->CTL &= ~BIT(NPCM4XX_CTL_QUADIOEN);
+		inst->CTL |= BIT(NPCM4XX_CTL_QDIODIR);
+		dummy_clk_per_byte = 4;
+	} else {
+		dummy_clk_per_byte = 8;
+	}
+
 	/* send address */
 	index = normal_op_info->addr_len;
+
 	while (index) {
 		index = index - 1;
 		sub_addr = (normal_op_info->addr >> (8 * index)) & 0xff;
 		spi_npcm4xx_spip_write_data(dev, (uint32_t)sub_addr);
 	}
 
-	/* only support single mode dummy byte */
-	if ((normal_op_info->dummy_cycle % NPCM4XX_SPIP_SINGLE_DUMMY_BYTE) != 0) {
-		LOG_ERR("SPIP now only support single mode");
-		return;
-	}
-
 	/* send dummy bytes */
 	for (index = 0; index < normal_op_info->dummy_cycle;
-				index += NPCM4XX_SPIP_SINGLE_DUMMY_BYTE) {
+				index += dummy_clk_per_byte) {
 		spi_npcm4xx_spip_write_data(dev, dummy_write);
 	}
 
@@ -321,6 +335,22 @@ static void spi_nor_npcm4xx_spip_fifo_transceive(const struct device *dev,
 	if (buf_data == NULL) {
 		inst->FIFOCTL |= BIT(NPCM4XX_FIFOCTL_RXRST);
 		goto spi_nor_normal_done;
+	}
+
+	/* If 114 or 112 mode, enable quad or dual mode after send dummy bytes */
+	if (op_info.mode == JESD216_MODE_114) {
+		inst->CTL &= ~BIT(NPCM4XX_CTL_DUALIOEN);
+		inst->CTL |= BIT(NPCM4XX_CTL_QUADIOEN);
+	} else if (op_info.mode == JESD216_MODE_112) {
+		inst->CTL |= BIT(NPCM4XX_CTL_DUALIOEN);
+		inst->CTL &= ~BIT(NPCM4XX_CTL_QUADIOEN);
+	}
+
+	/* For read, change direct to input mode */
+	if (normal_op_info->data_direct == SPI_NOR_DATA_DIRECT_IN) {
+		if (inst->CTL & BIT(NPCM4XX_CTL_QDIODIR)) {
+			inst->CTL &= ~BIT(NPCM4XX_CTL_QDIODIR);
+		}
 	}
 
 	/* read data from SPI flash */
@@ -343,6 +373,9 @@ static void spi_nor_npcm4xx_spip_fifo_transceive(const struct device *dev,
 	}
 
 spi_nor_normal_done:
+	inst->CTL &= ~BIT(NPCM4XX_CTL_QUADIOEN);
+	inst->CTL &= ~BIT(NPCM4XX_CTL_DUALIOEN);
+	inst->CTL &= ~BIT(NPCM4XX_CTL_QDIODIR);
 
 	SPI_SET_SS0_HIGH(dev);
 }
