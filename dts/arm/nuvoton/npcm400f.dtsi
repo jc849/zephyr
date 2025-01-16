@@ -176,6 +176,7 @@
 			reg = <0x40004000 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL0 2>;
 			interrupts = <64 3>;
 			instance-id = <0>;
 			status = "disabled";
@@ -189,6 +190,7 @@
 			reg = <0x40004200 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL8 0>;
 			interrupts = <65 3>;
 			instance-id = <1>;
 			status = "disabled";
@@ -202,6 +204,7 @@
 			reg = <0x40004400 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL8 1>;
 			interrupts = <66 3>;
 			instance-id = <2>;
 			status = "disabled";
@@ -215,6 +218,7 @@
 			reg = <0x40004600 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL8 2>;
 			interrupts = <67 3>;
 			instance-id = <3>;
 			status = "disabled";
@@ -228,6 +232,7 @@
 			reg = <0x40004800 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL8 3>;
 			interrupts = <68 3>;
 			instance-id = <4>;
 			status = "disabled";
@@ -241,6 +246,7 @@
 			reg = <0x40004a00 0x200
 			       0x4000d000 0x20>;
 			reg-names = "i3c", "pmc";
+			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL8 4>;
 			interrupts = <69 3>;
 			instance-id = <5>;
 			status = "disabled";
