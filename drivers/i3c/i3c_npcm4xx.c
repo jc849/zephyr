@@ -13,6 +13,7 @@
 #include <irq.h>
 #include <kernel/thread_stack.h>
 #include <portability/cmsis_os2.h>
+#include <drivers/clock_control.h>
 
 #include "pub_i3c.h"
 #include "i3c_core.h"
@@ -418,6 +419,8 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 	if ((pDevice->capability.OFFLINE == false) && (pDevice->bcr & 0x08))
 		return I3C_ERR_PARAMETER_INVALID;
 
+	obj = gObj[port];
+
 	result = I3C_ERR_OK;
 
 	/* SKEW = 0, HKEEP = 3 */
@@ -503,11 +506,11 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 	sconfig &= ~I3C_CONFIG_BAMATCH_MASK;
 	if ((pDevice->capability.IBI) || (pDevice->capability.ASYNC0)) {
 		/* prevent slave assert 100 us timeout error */
-		sconfig |= I3C_CONFIG_BAMATCH(I3C_CLOCK_SLOW_FREQUENCY / I3C_1MHz_VAL_CONST);
+		sconfig |= I3C_CONFIG_BAMATCH(obj->apb3_rate / I3C_1MHz_VAL_CONST);
 		/* sconfig |= I3C_CONFIG_BAMATCH(0x7F); */
 
 		/* if support ASYNC-0, update TCCLOCK */
-		I3C_SET_REG_TCCLOCK(port, I3C_TCCLOCK_FREQ(2 * (I3C_CLOCK_FREQUENCY /
+		I3C_SET_REG_TCCLOCK(port, I3C_TCCLOCK_FREQ(2 * (obj->apb3_rate /
 			I3C_1MHz_VAL_CONST)) | I3C_TCCLOCK_ACCURACY(30));
 	}
 
@@ -534,8 +537,6 @@ I3C_ErrCode_Enum hal_I3C_Config_Device(I3C_DEVICE_INFO_t *pDevice)
 		sconfig |= I3C_CONFIG_SADDR(pDevice->staticAddr);
 
 	sconfig &= ~I3C_CONFIG_S0IGNORE_MASK;
-
-	obj = gObj[port];
 
 	sconfig &= ~I3C_CONFIG_MATCHSS_MASK;
 	sconfig &= ~I3C_CONFIG_NACK_MASK;
@@ -624,6 +625,7 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 	uint32_t ODBAUD;
 	uint32_t I2CBAUD;
 	uint32_t ODHPP = 1;
+	uint32_t apb3_rate;
 	I3C_DEVICE_INFO_t *pMasterDevice;
 
 	uint32_t mconfig;
@@ -632,6 +634,8 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 
 	if (pTaskInfo == NULL)
 		return;
+
+	apb3_rate = gObj[pTaskInfo->Port]->apb3_rate;
 
 	mconfig = I3C_GET_REG_MCONFIG(pTaskInfo->Port);
 
@@ -660,12 +664,12 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 	if (pFrame->type == I3C_TRANSFER_TYPE_I2C) {
 		switch(pFrame->baudrate) {
 			case I3C_TRANSFER_SPEED_I2C_1MHZ:
-				if (APB3_CLK == 96000000) { // 926 - 922 KHz
+				if (apb3_rate == 96000000) { // 926 - 922 KHz
 					PPBAUD = 3;
 					PPLOW = 0;
 					ODBAUD = 12;
 					I2CBAUD = 0;
-				} else if (APB3_CLK == 48000000) { // 878 - 880 KHz
+				} else if (apb3_rate == 48000000) { // 878 - 880 KHz
 					PPBAUD = 2;
 					PPLOW = 0;
 					ODBAUD = 8;
@@ -673,12 +677,12 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				}
 				break;
 			case I3C_TRANSFER_SPEED_I2C_400KHZ:
-				if (APB3_CLK == 96000000) { // 371 - 369 KHz
+				if (apb3_rate == 96000000) { // 371 - 369 KHz
 					PPBAUD = 9;
 					PPLOW = 0;
 					ODBAUD = 12;
 					I2CBAUD = 0;
-				} else if (APB3_CLK == 48000000) { // 340 - 338 KHz
+				} else if (apb3_rate == 48000000) { // 340 - 338 KHz
 					PPBAUD = 9;
 					PPLOW = 0;
 					ODBAUD = 6;
@@ -686,12 +690,12 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				}
 				break;
 			default:
-				if (APB3_CLK == 96000000) { // 98 - 96 KHz
+				if (apb3_rate == 96000000) { // 98 - 96 KHz
 					PPBAUD = 15;
 					PPLOW = 0;
 					ODBAUD = 30;
 					I2CBAUD = 0;
-				} else if (APB3_CLK == 48000000) { // 98 - 97 KHz
+				} else if (apb3_rate == 48000000) { // 98 - 97 KHz
 					PPBAUD = 2;
 					PPLOW = 0;
 					ODBAUD = 80;
@@ -705,11 +709,11 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 		switch(pFrame->baudrate) {
 			case I3C_TRANSFER_SPEED_SDR_12p5MHZ:
 				// I3C PP=12.5MHz, OD Freq = 1MHz if ODHPP = 0
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 2;
 					PPLOW = 2;
 					ODBAUD = 15;
-				} else if (APB3_CLK == 48000000) {
+				} else if (apb3_rate == 48000000) {
 					PPBAUD = 0;
 					PPLOW = 2;
 					ODBAUD = 23;
@@ -717,11 +721,11 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				break;
 			case I3C_TRANSFER_SPEED_SDR_8MHZ:
 				// I3C PP=8MHz, OD Freq = 1MHz if ODHPP = 0
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 2;
 					PPLOW = 6;
 					ODBAUD = 15;
-				} else if (APB3_CLK == 48000000) {
+				} else if (apb3_rate == 48000000) {
 					PPBAUD = 0;
 					PPLOW = 4;
 					ODBAUD = 23;
@@ -729,11 +733,11 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				break;
 			case I3C_TRANSFER_SPEED_SDR_6MHZ:
 				// I3C PP=6MHz, OD Freq = 1MHz if ODHPP = 0
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 2;
 					PPLOW = 10;
 					ODBAUD = 15;
-				} else if (APB3_CLK == 48000000) {
+				} else if (apb3_rate == 48000000) {
 					PPBAUD = 1;
 					PPLOW = 4;
 					ODBAUD = 11;
@@ -741,11 +745,11 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				break;
 			case I3C_TRANSFER_SPEED_SDR_4MHZ:
 				// I3C PP=4MHz, OD Freq = 1MHz if ODHPP = 0
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 5;
 					PPLOW = 12;
 					ODBAUD = 7;
-                                } else if (APB3_CLK == 48000000) {
+                                } else if (apb3_rate == 48000000) {
 					PPBAUD = 0;
 					PPLOW = 10;
 					ODBAUD = 23;
@@ -753,22 +757,22 @@ void I3C_SetXferRate(I3C_TASK_INFO_t *pTaskInfo)
 				break;
 			case I3C_TRANSFER_SPEED_SDR_2MHZ:
 				// I3C PP=2MHz, OD Freq = 1MHz if ODHPP = 0
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 15;
 					PPLOW = 15;
 					ODBAUD = 2;
-				} else if (APB3_CLK == 48000000) {
+				} else if (apb3_rate == 48000000) {
 					PPBAUD = 4;
 					PPLOW = 14;
 					ODBAUD = 4;
 				}
 				break;
 			default:
-				if (APB3_CLK == 96000000) {
+				if (apb3_rate == 96000000) {
 					PPBAUD = 15;
 					PPLOW = 15;
 					ODBAUD = 5;
-				} else if (APB3_CLK == 48000000) {
+				} else if (apb3_rate == 48000000) {
 					PPBAUD = 15;
 					PPLOW = 15;
 					ODBAUD = 1;
@@ -4098,17 +4102,37 @@ static int i3c_npcm4xx_init(const struct device *dev)
 	struct i3c_npcm4xx_obj *obj = DEV_DATA(dev);
 	I3C_PORT_Enum port = config->inst_id;
 	I3C_DEVICE_INFO_t *pDevice;
+	const struct device *const clk_dev = device_get_binding(NPCM4XX_CLK_CTRL_NAME);
+	uint32_t apb3_rate;
 	int ret;
 
-	LOG_INF("size_t=%d, uint32_t=%d\n", sizeof(size_t), sizeof(uint32_t));
-	LOG_INF("Base=%x\n", (uint32_t) config->base);
-	LOG_INF("slave=%d, secondary=%d\n", config->slave, config->secondary);
-	LOG_INF("i2c_scl_hz=%d, i3c_scl_hz=%d\n", config->i2c_scl_hz, config->i3c_scl_hz);
+	LOG_INF("size_t=%d, uint32_t=%d", sizeof(size_t), sizeof(uint32_t));
+	LOG_INF("Base=%x", (uint32_t) config->base);
+	LOG_INF("slave=%d, secondary=%d", config->slave, config->secondary);
+	LOG_INF("i2c_scl_hz=%d, i3c_scl_hz=%d", config->i2c_scl_hz, config->i3c_scl_hz);
+
+	/* Turn on device clock first and get source clock freq. */
+	ret = clock_control_on(clk_dev, (clock_control_subsys_t *)
+			&config->clk_cfg);
+	if (ret < 0) {
+		LOG_ERR("Turn on I3C clock fail %d", ret);
+		return ret;
+	}
+
+	ret = clock_control_get_rate(clk_dev, (clock_control_subsys_t *)
+			&config->clk_cfg, &apb3_rate);
+	if (ret < 0) {
+		LOG_ERR("Get I3C clock rate error %d", ret);
+		return ret;
+	} else {
+		LOG_INF("apb3 rate=%d", apb3_rate);
+	}
 
 	obj->dev = dev;
 	obj->task_count = 0;
 	obj->pTaskListHead = NULL;
 	obj->pDevice = &gI3c_dev_node_internal[port];
+	obj->apb3_rate = apb3_rate;
 
 	obj->config = config;
 	obj->hw_dat_free_pos = GENMASK(DEVICE_COUNT_MAX - 1, 0);
@@ -4203,6 +4227,7 @@ static int i3c_npcm4xx_init(const struct device *dev)
 		.i3c_scl_hz = DT_INST_PROP_OR(n, i3c_scl_hz, 0),\
 		.base = (struct i3c_reg *)DT_INST_REG_ADDR_BY_NAME(n, i3c),\
 		.pmc_base = DT_INST_REG_ADDR_BY_NAME(n, pmc),\
+		.clk_cfg = NPCM4XX_DT_CLK_CFG_ITEM(n),\
 		.irq = DT_INST_IRQN(n),\
 	};\
 	static struct i3c_npcm4xx_obj i3c_npcm4xx_obj##n;\

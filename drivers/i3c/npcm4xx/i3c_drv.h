@@ -21,13 +21,6 @@
 
 #define I3C_1MHz_VAL_CONST		    1000000UL
 
-#define APB3_CLK                    96000000                    /** ARM Peripheral Bus 3    */
-
-#define I3C_CLOCK_FREQUENCY         APB3_CLK
-#define I3C_FCLOCK_FREQUENCY	    APB3_CLK
-#define I3C_CLOCK_SLOW_FREQUENCY	APB3_CLK
-#define I3C_CLOCK_SLOW_TC_FREQUENCY	APB3_CLK
-
 /*
  * define for register
  */
@@ -91,6 +84,7 @@ struct i3c_npcm4xx_config {
 	struct i3c_reg *base;
 	uintptr_t pmc_base;
 	uint32_t irq;
+	struct npcm4xx_clk_cfg clk_cfg;
 	bool slave;
 	bool secondary;
 	uint8_t hj_req;
@@ -144,6 +138,7 @@ struct i3c_npcm4xx_obj {
 	osEventFlagsId_t ibi_event;
 	osEventFlagsId_t data_event;
 	uint16_t extra_val;
+	uint32_t apb3_rate;
 };
 
 #define DEV_CFG(dev)			((struct i3c_npcm4xx_config *)(dev)->config)
