@@ -1311,10 +1311,6 @@ I3C_ErrCode_Enum ValidateBaudrate(I3C_TRANSFER_PROTOCOL_Enum Protocol, uint32_t 
 		if (BaudRate == I3C_TRANSFER_SPEED_SDR_1MHZ) {
 			return I3C_ERR_OK;
 		}
-
-		if (BaudRate == I3C_TRANSFER_SPEED_SDR_IBI)	{
-			return I3C_ERR_OK;
-		}
 	}
 
 	return I3C_ERR_PARAMETER_INVALID;
