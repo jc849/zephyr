@@ -514,7 +514,7 @@
 			compatible = "nuvoton,npcm4xx-spi-fiu";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg-names = "core_reg", "host_reg", "backup_mmap", "share_mmap", "private_mmap";
+			reg-names = "core_reg", "host_reg", "private_mmap", "share_mmap", "backup_mmap";
 			reg = <0x40020000 0x100>, <0x40021000 0x100>, <0x60000000 0x10000000>,
 				<0x70000000 0x10000000>, <0x80000000 0x10000000>;
 			clocks = <&pcc NPCM4XX_CLOCK_BUS_APB3 NPCM4XX_PWDWN_CTL1 2>;
