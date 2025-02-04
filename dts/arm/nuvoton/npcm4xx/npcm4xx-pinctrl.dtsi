@@ -24,6 +24,8 @@
 	pinctrl_peci0_default: peci0_default {};
 	pinctrl_shd_spi_default: shd_spi_default{};
 	pinctrl_shd_spi_quad: shd_spi_quad{};
+	pinctrl_pvt_spi_cs: pvt_spi_cs{};
+	pinctrl_back_spi_cs: back_spi_cs{};
 	pinctrl_vin7_default: vin7_default {};
 	pinctrl_vin5_default: vin5_default {};
 	pinctrl_vin16_default: vin16_default {};
