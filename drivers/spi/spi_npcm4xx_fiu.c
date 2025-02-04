@@ -30,12 +30,12 @@ struct npcm4xx_spi_fiu_config {
 	mm_reg_t host_base;
 	/* clock configuration */
 	struct npcm4xx_clk_cfg clk_cfg;
-	/* direct access memory for backup */
-	mm_reg_t backup_mmap_base;
-	/* direct access memory for share */
-	mm_reg_t share_mmap_base;
 	/* direct access memory for private */
 	mm_reg_t private_mmap_base;
+	/* direct access memory for share */
+	mm_reg_t share_mmap_base;
+	/* direct access memory for backup */
+	mm_reg_t backup_mmap_base;
 };
 
 /* Device data */
@@ -858,9 +858,9 @@ static struct spi_driver_api spi_npcm4xx_fiu_api = {
 		static struct npcm4xx_spi_fiu_config npcm4xx_spi_fiu_config_##inst = {              \
 		.core_base = DT_INST_REG_ADDR_BY_NAME(inst, core_reg),                              \
 		.host_base = DT_INST_REG_ADDR_BY_NAME(inst, host_reg),                              \
-		.backup_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, backup_mmap),                    \
-		.share_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, share_mmap),                      \
 		.private_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, private_mmap),                  \
+		.share_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, share_mmap),                      \
+		.backup_mmap_base = DT_INST_REG_ADDR_BY_NAME(inst, backup_mmap),                    \
 		.clk_cfg = NPCM4XX_DT_CLK_CFG_ITEM(inst),		                            \
 	};                                                                                          \
                                                                                                     \
