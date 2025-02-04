@@ -80,6 +80,14 @@ FUN_DEFINE(DT_NODELABEL(pinctrl_peci0_default), PECI)
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(spi_fiu0), okay) && CONFIG_SPI_NPCM4XX_FIU
 FUN_DEFINE(DT_NODELABEL(pinctrl_shd_spi_default), SHD_CS, SHD_SCLK, SHD_DIO0, SHD_DIO1)
 FUN_DEFINE(DT_NODELABEL(pinctrl_shd_spi_quad), SHD_DIO2, SHD_DIO3)
+/* Support enable private chip select */
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(spi_fiu0_cs0), okay)
+FUN_DEFINE(DT_NODELABEL(pinctrl_pvt_spi_cs), PVT_CS)
+#endif
+/* Support enable backup chip select */
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(spi_fiu0_cs2), okay)
+FUN_DEFINE(DT_NODELABEL(pinctrl_back_spi_cs), BACK_CS)
+#endif
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(adc0), okay) && CONFIG_ADC_NPCM4XX
